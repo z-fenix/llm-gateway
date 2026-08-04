@@ -88,6 +88,17 @@ pub fn plan_route(
 }
 
 #[cfg(test)]
+pub fn tests_helper_channel(id: &str) -> crate::db::models::Channel {
+    crate::db::models::Channel {
+        id: id.into(), name: id.into(), provider_type: "openai".into(),
+        base_url: "http://x".into(), api_key: "k".into(), models: vec![],
+        priority: 0, weight: 1, enabled: true, timeout_secs: 60,
+        total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,
+        created_at: 1, updated_at: 1,
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

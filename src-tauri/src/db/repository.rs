@@ -95,6 +95,33 @@ impl Repository {
             Ok(None)
         }
     }
+
+    pub fn set_model_map(&self, channel_id: &str, source: &str, target: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO channel_model_maps (id,channel_id,source_model,target_model) VALUES (?1,?2,?3,?4)
+             ON CONFLICT(channel_id,source_model) DO UPDATE SET target_model=excluded.target_model",
+            params![uuid::Uuid::new_v4().to_string(), channel_id, source, target],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_model_map(&self, channel_id: &str) -> AppResult<Vec<(String, String)>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT source_model, target_model FROM channel_model_maps WHERE channel_id=?1",
+        )?;
+        let rows = stmt.query_map(params![channel_id], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
 }
 
 fn row_to_channel(r: &rusqlite::Row) -> rusqlite::Result<Channel> {
