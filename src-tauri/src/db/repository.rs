@@ -96,6 +96,31 @@ impl Repository {
         }
     }
 
+    pub fn consume_quota(&self, key_id: &str, tokens: i64) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "UPDATE api_keys SET quota_used=quota_used+?1, total_tokens=total_tokens+?1,
+             total_calls=total_calls+1, last_used_at=?2 WHERE id=?3",
+            rusqlite::params![tokens, chrono::Utc::now().timestamp(), key_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn record_channel_stats(&self, channel_id: &str, tokens: i64, latency_ms: i64, success: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        // 简化：累计调用与 token，平均延迟用滑动近似，success_rate 用指数滑动
+        conn.execute(
+            "UPDATE channels SET total_calls=total_calls+1, total_tokens=total_tokens+?1,
+             avg_latency_ms = CASE WHEN total_calls=0 THEN ?2 ELSE (avg_latency_ms*total_calls + ?2)/(total_calls+1) END,
+             success_rate = success_rate*0.9 + ?3*0.1
+             WHERE id=?4",
+            rusqlite::params![tokens, latency_ms, if success {1.0} else {0.0}, channel_id],
+        )?;
+        Ok(())
+    }
+
     pub fn set_model_map(&self, channel_id: &str, source: &str, target: &str) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock().unwrap();
