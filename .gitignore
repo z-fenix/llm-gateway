@@ -1,0 +1,5 @@
+/target
+src-tauri/target/
+.idea/
+src-tauri/gen/
+.DS_Store

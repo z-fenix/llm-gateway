@@ -1,0 +1,33 @@
+[package]
+name = "llm-gateway"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "llm_gateway_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+doctest = false
+
+[build-dependencies]
+tauri-build = { version = "2.6", features = [] }
+
+[dependencies]
+tauri = { version = "2.11", features = [] }
+tauri-plugin-store = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+thiserror = "2.0"
+anyhow = "1.0"
+rusqlite = { version = "0.40", features = ["bundled"] }
+tokio = { version = "1.53", features = ["macros", "rt-multi-thread", "time", "sync"] }
+axum = "0.8"
+reqwest = { version = "0.13", features = ["rustls", "json", "stream"] }
+futures = "0.3"
+bytes = "1.5"
+uuid = { version = "1.24", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+log = "0.4"
+
+[dev-dependencies]
+tempfile = "3"
