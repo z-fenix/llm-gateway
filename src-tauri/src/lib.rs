@@ -1,5 +1,6 @@
 pub mod db;
 pub mod error;
+pub mod protocol;
 pub mod router;
 
 pub fn run() {
