@@ -3,6 +3,7 @@ use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
 
+#[derive(Clone)]
 pub struct Repository {
     pub db: Db,
 }
