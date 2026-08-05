@@ -1,4 +1,4 @@
-use super::models::{ApiKey, Channel};
+use super::models::{ApiKey, Channel, RequestLog, RolePattern, RoleRoute};
 use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
@@ -147,6 +147,97 @@ impl Repository {
             out.push(r?);
         }
         Ok(out)
+    }
+
+    pub fn next_log_seq(&self) -> AppResult<i64> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let n: i64 = conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| r.get(0))?;
+        Ok(n)
+    }
+
+    pub fn insert_log(&self, l: &RequestLog) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22)",
+            params![
+                l.id, l.seq, l.trace_id, l.api_key_id, l.key_name, l.channel_id, l.channel_name,
+                l.role, l.request_model, l.upstream_model, l.protocol, l.status_code,
+                l.input_tokens, l.output_tokens, l.latency_ms, l.is_stream as i64, l.error,
+                l.fallback as i64, l.tool_calls, l.request_body, l.response_body, l.created_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_role_route(&self, role: &str) -> AppResult<Option<RoleRoute>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes WHERE role=?1 AND enabled=1",
+        )?;
+        let mut rows = stmt.query(params![role])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(RoleRoute {
+                id: r.get(0)?, role: r.get(1)?, channel_id: r.get(2)?,
+                target_model: r.get(3)?, enabled: r.get::<_, i64>(4)? != 0, updated_at: r.get(5)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn list_role_patterns(&self) -> AppResult<Vec<RolePattern>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id,pattern,role,priority,enabled FROM role_patterns ORDER BY priority DESC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(RolePattern {
+                id: r.get(0)?, pattern: r.get(1)?, role: r.get(2)?,
+                priority: r.get(3)?, enabled: r.get::<_, i64>(4)? != 0,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn upsert_role_route(&self, r: &RoleRoute) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO role_routes (id,role,channel_id,target_model,enabled,updated_at) VALUES (?1,?2,?3,?4,?5,?6)
+             ON CONFLICT(role) DO UPDATE SET channel_id=excluded.channel_id, target_model=excluded.target_model, enabled=excluded.enabled, updated_at=excluded.updated_at",
+            params![r.id, r.role, r.channel_id, r.target_model, r.enabled as i64, r.updated_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn latest_log(&self) -> AppResult<Option<RequestLog>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
+        )?;
+        let mut rows = stmt.query([])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(RequestLog {
+                id: r.get(0)?, seq: r.get(1)?, trace_id: r.get(2)?,
+                api_key_id: r.get(3)?, key_name: r.get(4)?, channel_id: r.get(5)?,
+                channel_name: r.get(6)?, role: r.get(7)?, request_model: r.get(8)?,
+                upstream_model: r.get(9)?, protocol: r.get(10)?, status_code: r.get(11)?,
+                input_tokens: r.get(12)?, output_tokens: r.get(13)?, latency_ms: r.get(14)?,
+                is_stream: r.get::<_, i64>(15)? != 0, error: r.get(16)?,
+                fallback: r.get::<_, i64>(17)? != 0, tool_calls: r.get(18)?,
+                request_body: r.get(19)?, response_body: r.get(20)?, created_at: r.get(21)?,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }
 
