@@ -9,24 +9,35 @@ export default function RoleRoutesPage() {
   const [patterns, setPatterns] = useState<RolePattern[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [fallback, setFallbackState] = useState<[string, string] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleError = (err: unknown) => {
+    console.error(err);
+    setError(err instanceof Error ? err.message : String(err));
+  };
 
   const load = () => {
-    api.listRoleRoutes().then(setRoutes).catch(console.error);
-    api.listRolePatterns().then(setPatterns).catch(console.error);
-    api.listChannels().then(setChannels).catch(console.error);
-    api.getFallback().then(setFallbackState).catch(console.error);
+    api.listRoleRoutes().then(setRoutes).catch(handleError);
+    api.listRolePatterns().then(setPatterns).catch(handleError);
+    api.listChannels().then(setChannels).catch(handleError);
+    api.getFallback().then(setFallbackState).catch(handleError);
   };
   useEffect(() => { load(); }, []);
 
   const routeFor = (role: string) => routes.find((r) => r.role === role);
 
   const bind = async (role: string, channel_id: string, target_model: string) => {
-    if (!channel_id) { await api.deleteRoleRoute(role); } else { await api.setRoleRoute(role, channel_id, target_model); }
-    load();
+    try {
+      if (!channel_id) { await api.deleteRoleRoute(role); } else { await api.setRoleRoute(role, channel_id, target_model); }
+      load();
+    } catch (err) {
+      handleError(err);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {error && <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
       <div>
         <h1 className="mb-2 text-xl font-bold">角色路由</h1>
         <p className="mb-3 text-sm text-gray-500">Claude Code 请求里的角色 → 固定走指定渠道的上游模型；失败走全局兜底。</p>
@@ -47,7 +58,7 @@ export default function RoleRoutesPage() {
                   </td>
                   <td>
                     <input className="w-full border rounded px-2 py-1" placeholder="上游模型，如 deepseek-v4-flash"
-                      defaultValue={r?.target_model ?? ""} disabled={!r?.channel_id}
+                      key={r?.target_model ?? ""} defaultValue={r?.target_model ?? ""} disabled={!r?.channel_id}
                       onBlur={(e) => r?.channel_id && bind(role, r.channel_id, e.target.value)} />
                   </td>
                 </tr>
@@ -61,13 +72,13 @@ export default function RoleRoutesPage() {
         <h2 className="mb-2 font-semibold">全局兜底模型</h2>
         <div className="flex gap-2">
           <select className="border rounded px-2 py-1" value={fallback?.[0] ?? ""}
-            onChange={(e) => e.target.value ? api.setFallback(e.target.value, fallback?.[1] ?? "").then(load) : api.clearFallback().then(load)}>
+            onChange={(e) => e.target.value ? api.setFallback(e.target.value, fallback?.[1] ?? "").then(load).catch(handleError) : api.clearFallback().then(load).catch(handleError)}>
             <option value="">（无兜底）</option>
             {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <input className="border rounded px-2 py-1" placeholder="兜底上游模型" defaultValue={fallback?.[1] ?? ""}
-            disabled={!fallback?.[0]}
-            onBlur={(e) => fallback?.[0] && api.setFallback(fallback[0], e.target.value).then(load)} />
+            key={fallback?.[1] ?? ""} disabled={!fallback?.[0]}
+            onBlur={(e) => fallback?.[0] && api.setFallback(fallback[0], e.target.value).then(load).catch(handleError)} />
         </div>
       </div>
 
@@ -81,7 +92,7 @@ export default function RoleRoutesPage() {
                 <td className="p-2 font-mono">{p.pattern}</td>
                 <td>{p.role}</td><td>{p.priority}</td>
                 <td>{p.enabled ? "启用" : "禁用"}</td>
-                <td><button className="text-red-600" onClick={() => api.deleteRolePattern(p.id).then(load)}>删除</button></td>
+                <td><button className="text-red-600" onClick={() => api.deleteRolePattern(p.id).then(load).catch(handleError)}>删除</button></td>
               </tr>
             ))}
           </tbody>

@@ -8,17 +8,31 @@ export default function ChannelsPage() {
   const [editing, setEditing] = useState<Channel | null>(null);
   const [creating, setCreating] = useState(false);
   const [testMsg, setTestMsg] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  const load = () => api.listChannels().then(setList).catch(console.error);
+  const handleError = (err: unknown) => {
+    console.error(err);
+    setError(err instanceof Error ? err.message : String(err));
+  };
+
+  const load = () => api.listChannels().then(setList).catch(handleError);
   useEffect(() => { load(); }, []);
 
   const save = async (c: Channel) => {
-    if (c.id) await api.updateChannel(c); else await api.createChannel(c);
-    setCreating(false); setEditing(null); load();
+    try {
+      if (c.id) await api.updateChannel(c); else await api.createChannel(c);
+      setCreating(false); setEditing(null); load();
+    } catch (err) {
+      handleError(err);
+    }
   };
   const test = async (id: string) => {
-    const r = await api.testChannel(id);
-    setTestMsg((m) => ({ ...m, [id]: r.ok ? `✓ ${r.latency_ms}ms` : `✗ ${r.error}` }));
+    try {
+      const r = await api.testChannel(id);
+      setTestMsg((m) => ({ ...m, [id]: r.ok ? `✓ ${r.latency_ms}ms` : `✗ ${r.error}` }));
+    } catch (err) {
+      handleError(err);
+    }
   };
 
   return (
@@ -27,6 +41,7 @@ export default function ChannelsPage() {
         <h1 className="text-xl font-bold">渠道管理</h1>
         <button className="rounded bg-blue-600 px-3 py-1 text-white" onClick={() => setCreating(true)}>新建渠道</button>
       </div>
+      {error && <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
       {(creating || editing) && (
         <div className="mb-4">
           <ChannelForm initial={editing ?? undefined} onSubmit={save} onCancel={() => { setCreating(false); setEditing(null); }} />
@@ -48,7 +63,7 @@ export default function ChannelsPage() {
               <td className="space-x-2">
                 <button className="text-blue-600" onClick={() => setEditing(c)}>编辑</button>
                 <button className="text-green-600" onClick={() => test(c.id)}>测试</button>
-                <button className="text-red-600" onClick={() => api.deleteChannel(c.id).then(load)}>删除</button>
+                <button className="text-red-600" onClick={() => api.deleteChannel(c.id).then(load).catch(handleError)}>删除</button>
                 {testMsg[c.id] && <span className="text-xs">{testMsg[c.id]}</span>}
               </td>
             </tr>

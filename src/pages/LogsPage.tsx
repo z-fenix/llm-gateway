@@ -1,6 +1,15 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import type { RequestLog } from "../types";
+
+function prettyJson(s?: string | null): string {
+  if (!s) return "(无内容)";
+  try {
+    return JSON.stringify(JSON.parse(s), null, 2);
+  } catch {
+    return s;
+  }
+}
 
 export default function LogsPage() {
   const [keyword, setKeyword] = useState("");
@@ -26,8 +35,8 @@ export default function LogsPage() {
         </tr></thead>
         <tbody>
           {data.items.map((l) => (
-            <>
-              <tr key={l.id} className="border-b cursor-pointer hover:bg-gray-50" onClick={() => setOpen(open === l.id ? null : l.id)}>
+            <Fragment key={l.id}>
+              <tr className="border-b cursor-pointer hover:bg-gray-50" onClick={() => setOpen(open === l.id ? null : l.id)}>
                 <td className="p-2">{l.seq}</td>
                 <td>{new Date(l.created_at * 1000).toLocaleTimeString()}</td>
                 <td>{l.key_name}</td>
@@ -41,17 +50,17 @@ export default function LogsPage() {
                 <td>{l.fallback ? "是" : ""}</td>
               </tr>
               {open === l.id && (
-                <tr key={l.id + "-d"} className="border-b bg-gray-50">
+                <tr className="border-b bg-gray-50">
                   <td colSpan={11} className="p-2">
                     <div className="text-xs text-gray-500">TraceID: {l.trace_id}{l.error && <span className="ml-2 text-red-600">{l.error}</span>}</div>
                     <div className="mt-1 grid grid-cols-2 gap-2">
-                      <pre className="max-h-48 overflow-auto rounded border bg-white p-2 text-xs">{JSON.stringify(JSON.parse(l.request_body ?? "{}"), null, 2)}</pre>
-                      <pre className="max-h-48 overflow-auto rounded border bg-white p-2 text-xs">{l.response_body ? JSON.stringify(JSON.parse(l.response_body), null, 2) : "(无响应体 / 流式)"}</pre>
+                      <pre className="max-h-48 overflow-auto rounded border bg-white p-2 text-xs">{prettyJson(l.request_body)}</pre>
+                      <pre className="max-h-48 overflow-auto rounded border bg-white p-2 text-xs">{l.response_body ? prettyJson(l.response_body) : "(无响应体 / 流式)"}</pre>
                     </div>
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>
