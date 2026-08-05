@@ -8,6 +8,8 @@ pub mod router;
 
 use db::Db;
 use proxy::state::AppState;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
 
 pub fn run() {
@@ -19,6 +21,29 @@ pub fn run() {
             let db = Db::open(&dir.join("llm-gateway.db")).expect("open db");
             let state = AppState::new(db);
             app.manage(state.clone());
+
+            // 系统托盘：退出 + 点击显示窗口
+            let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&quit_item])?;
+            let mut tray_builder = TrayIconBuilder::new()
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    if event.id.as_ref() == "quit" {
+                        app.exit(0);
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { .. } = event {
+                        if let Some(window) = tray.app_handle().get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                });
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+            let _tray = tray_builder.build(app)?;
 
             // 启动网关（独立 tokio runtime 线程，避免阻塞 Tauri）
             std::thread::spawn(move || {
