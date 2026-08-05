@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod commands;
 pub mod db;
 pub mod error;
 pub mod provider;
@@ -11,6 +12,7 @@ use proxy::state::AppState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
+use tauri_plugin_store::StoreExt;
 
 pub fn run() {
     tauri::Builder::default()
@@ -20,6 +22,20 @@ pub fn run() {
             std::fs::create_dir_all(&dir).ok();
             let db = Db::open(&dir.join("llm-gateway.db")).expect("open db");
             let state = AppState::new(db);
+
+            // 从 tauri-plugin-store 加载 fallback 并同步到 AppState
+            if let Ok(store) = app.store("store.bin") {
+                if let Some(value) = store.get("fallback") {
+                    if let Some(obj) = value.as_object() {
+                        let channel_id = obj.get("channel_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let model = obj.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        if !channel_id.is_empty() && !model.is_empty() {
+                            *state.fallback.write().unwrap() = Some((channel_id, model));
+                        }
+                    }
+                }
+            }
+
             app.manage(state.clone());
 
             // 系统托盘：退出 + 点击显示窗口
@@ -63,7 +79,29 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            commands::channel::list_channels,
+            commands::channel::create_channel,
+            commands::channel::update_channel,
+            commands::channel::delete_channel,
+            commands::channel::test_channel,
+            commands::api_key::list_api_keys,
+            commands::api_key::create_api_key,
+            commands::api_key::set_api_key_enabled,
+            commands::api_key::delete_api_key,
+            commands::api_key::update_quota,
+            commands::role_route::list_role_routes,
+            commands::role_route::set_role_route,
+            commands::role_route::delete_role_route,
+            commands::role_route::list_role_patterns,
+            commands::role_route::upsert_role_pattern,
+            commands::role_route::delete_role_pattern,
+            commands::role_route::get_fallback,
+            commands::role_route::set_fallback,
+            commands::role_route::clear_fallback,
+            commands::log::list_logs,
+            commands::stats::get_stats,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

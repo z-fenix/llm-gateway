@@ -239,6 +239,133 @@ impl Repository {
             Ok(None)
         }
     }
+
+    pub fn update_channel(&self, c: &Channel) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "UPDATE channels SET name=?2,provider_type=?3,base_url=?4,api_key=?5,models=?6,priority=?7,weight=?8,enabled=?9,timeout_secs=?10,updated_at=?11 WHERE id=?1",
+            rusqlite::params![c.id,c.name,c.provider_type,c.base_url,c.api_key,serde_json::to_string(&c.models).unwrap(),c.priority,c.weight,c.enabled as i64,c.timeout_secs,c.updated_at],
+        )?;
+        Ok(())
+    }
+    pub fn delete_channel(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("DELETE FROM channels WHERE id=?1", [id])?;
+        Ok(())
+    }
+    pub fn set_api_key_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("UPDATE api_keys SET enabled=?2 WHERE id=?1", rusqlite::params![id, enabled as i64])?;
+        Ok(())
+    }
+    pub fn delete_api_key(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("DELETE FROM api_keys WHERE id=?1", [id])?;
+        Ok(())
+    }
+    pub fn update_quota(&self, id: &str, quota_total: Option<i64>) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("UPDATE api_keys SET quota_total=?2 WHERE id=?1", rusqlite::params![id, quota_total])?;
+        Ok(())
+    }
+    pub fn list_api_keys(&self) -> AppResult<Vec<ApiKey>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at FROM api_keys ORDER BY created_at DESC")?;
+        let rows = stmt.query_map([], |r| Ok(ApiKey {
+            id: r.get(0)?, key: r.get(1)?, name: r.get(2)?, enabled: r.get::<_,i64>(3)? != 0,
+            quota_total: r.get(4)?, quota_used: r.get(5)?, total_calls: r.get(6)?,
+            total_tokens: r.get(7)?, created_at: r.get(8)?, last_used_at: r.get(9)?,
+        }))?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+    pub fn delete_role_route(&self, role: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("DELETE FROM role_routes WHERE role=?1", [role])?;
+        Ok(())
+    }
+    pub fn list_role_routes(&self) -> AppResult<Vec<crate::db::models::RoleRoute>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes")?;
+        let rows = stmt.query_map([], |r| Ok(crate::db::models::RoleRoute {
+            id: r.get(0)?, role: r.get(1)?, channel_id: r.get(2)?, target_model: r.get(3)?,
+            enabled: r.get::<_,i64>(4)? != 0, updated_at: r.get(5)?,
+        }))?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+    pub fn upsert_role_pattern(&self, p: &crate::db::models::RolePattern) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO role_patterns (id,pattern,role,priority,enabled) VALUES (?1,?2,?3,?4,?5)
+             ON CONFLICT(id) DO UPDATE SET pattern=excluded.pattern, role=excluded.role, priority=excluded.priority, enabled=excluded.enabled",
+            rusqlite::params![p.id,p.pattern,p.role,p.priority,p.enabled as i64],
+        )?;
+        Ok(())
+    }
+    pub fn delete_role_pattern(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("DELETE FROM role_patterns WHERE id=?1", [id])?;
+        Ok(())
+    }
+    pub fn count_logs(&self, keyword: Option<&str>) -> AppResult<i64> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let n: i64 = match keyword {
+            Some(k) => conn.query_row(
+                "SELECT COUNT(*) FROM request_logs WHERE request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1",
+                [format!("%{}%", k)], |r| r.get(0))?,
+            None => conn.query_row("SELECT COUNT(*) FROM request_logs", [], |r| r.get(0))?,
+        };
+        Ok(n)
+    }
+    pub fn list_logs(&self, keyword: Option<&str>, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let like = keyword.map(|k| format!("%{}%", k));
+        let sql = "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at FROM request_logs
+                   WHERE (?1 IS NULL OR request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1)
+                   ORDER BY seq DESC LIMIT ?2 OFFSET ?3";
+        let mut stmt = conn.prepare(sql)?;
+        let rows = stmt.query_map(rusqlite::params![like, limit, offset], |r| Ok(RequestLog {
+            id: r.get(0)?, seq: r.get(1)?, trace_id: r.get(2)?, api_key_id: r.get(3)?,
+            key_name: r.get(4)?, channel_id: r.get(5)?, channel_name: r.get(6)?, role: r.get(7)?,
+            request_model: r.get(8)?, upstream_model: r.get(9)?, protocol: r.get(10)?,
+            status_code: r.get(11)?, input_tokens: r.get(12)?, output_tokens: r.get(13)?,
+            latency_ms: r.get(14)?, is_stream: r.get::<_,i64>(15)? != 0, error: r.get(16)?,
+            fallback: r.get::<_,i64>(17)? != 0, tool_calls: r.get(18)?, request_body: r.get(19)?,
+            response_body: r.get(20)?, created_at: r.get(21)?,
+        }))?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+    pub fn stats(&self) -> AppResult<(i64,i64,i64,i64,i64,i64)> {
+        // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms)
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let today_start = chrono::Local::now().date_naive().and_hms_opt(0,0,0).unwrap().and_utc().timestamp();
+        let (tr, tt): (i64,i64) = conn.query_row(
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs WHERE created_at>=?1",
+            [today_start], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let (ar, at): (i64,i64) = conn.query_row(
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs", [], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let ac: i64 = conn.query_row("SELECT COUNT(*) FROM channels WHERE enabled=1", [], |r| r.get(0))?;
+        let lat: i64 = conn.query_row("SELECT CAST(COALESCE(AVG(latency_ms),0) AS INTEGER) FROM request_logs", [], |r| r.get(0))?;
+        Ok((tr, tt, ar, at, ac, lat))
+    }
 }
 
 fn row_to_channel(r: &rusqlite::Row) -> rusqlite::Result<Channel> {
@@ -311,5 +438,149 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM role_patterns", [], |r| r.get(0))
             .unwrap();
         assert_eq!(n, 4);
+    }
+
+    #[test]
+    fn channel_update_and_delete() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let mut c = ch("c1");
+        repo.insert_channel(&c).unwrap();
+        c.name = "updated".into();
+        c.api_key = "sk-new".into();
+        repo.update_channel(&c).unwrap();
+        let got = repo.get_channel("c1").unwrap().unwrap();
+        assert_eq!(got.name, "updated");
+        assert_eq!(got.api_key, "sk-new");
+        repo.delete_channel("c1").unwrap();
+        assert!(repo.get_channel("c1").unwrap().is_none());
+    }
+
+    #[test]
+    fn api_key_crud_and_quota() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let k = ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: Some(1000), quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        };
+        repo.insert_api_key(&k).unwrap();
+        let keys = repo.list_api_keys().unwrap();
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys[0].name, "alice");
+
+        repo.set_api_key_enabled("k1", false).unwrap();
+        assert!(!repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap().enabled);
+        repo.set_api_key_enabled("k1", true).unwrap();
+
+        repo.update_quota("k1", Some(5000)).unwrap();
+        assert_eq!(repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap().quota_total, Some(5000));
+        repo.update_quota("k1", None).unwrap();
+        assert_eq!(repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap().quota_total, None);
+
+        repo.delete_api_key("k1").unwrap();
+        assert!(repo.get_api_key_by_key("sk-lgw-a").unwrap().is_none());
+        assert!(repo.list_api_keys().unwrap().is_empty());
+    }
+
+    #[test]
+    fn role_route_crud() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        let rr = RoleRoute {
+            id: "rr1".into(), role: "coder".into(), channel_id: "ch1".into(),
+            target_model: "gpt-4o".into(), enabled: true, updated_at: 1,
+        };
+        repo.upsert_role_route(&rr).unwrap();
+        let routes = repo.list_role_routes().unwrap();
+        assert_eq!(routes.len(), 1);
+        assert_eq!(routes[0].role, "coder");
+
+        repo.delete_role_route("coder").unwrap();
+        assert!(repo.list_role_routes().unwrap().is_empty());
+    }
+
+    #[test]
+    fn role_pattern_upsert_and_delete() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let p = RolePattern {
+            id: "rp1".into(), pattern: ".*code.*".into(), role: "coder".into(),
+            priority: 10, enabled: true,
+        };
+        repo.upsert_role_pattern(&p).unwrap();
+        let patterns = repo.list_role_patterns().unwrap();
+        assert!(patterns.iter().any(|x| x.id == "rp1"));
+
+        let mut p2 = p.clone();
+        p2.pattern = ".*review.*".into();
+        repo.upsert_role_pattern(&p2).unwrap();
+        let got = repo.list_role_patterns().unwrap().into_iter().find(|x| x.id == "rp1").unwrap();
+        assert_eq!(got.pattern, ".*review.*");
+
+        repo.delete_role_pattern("rp1").unwrap();
+        assert!(!repo.list_role_patterns().unwrap().iter().any(|x| x.id == "rp1"));
+    }
+
+    fn make_log(seq: i64, model: &str, tokens: i64, latency: i64, created_at: i64) -> RequestLog {
+        RequestLog {
+            id: format!("l{}", seq), seq, trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()), key_name: Some("alice".into()),
+            channel_id: Some("ch1".into()), channel_name: Some("ch".into()),
+            role: Some("coder".into()), request_model: Some(model.into()),
+            upstream_model: Some(model.into()), protocol: "openai".into(),
+            status_code: Some(200), input_tokens: tokens, output_tokens: tokens,
+            latency_ms: latency, is_stream: false, error: None, fallback: false,
+            tool_calls: None, request_body: None, response_body: None, created_at,
+        }
+    }
+
+    #[test]
+    fn log_query_and_pagination() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2)).unwrap();
+        repo.insert_log(&make_log(3, "gpt-4o", 30, 300, 3)).unwrap();
+
+        assert_eq!(repo.count_logs(None).unwrap(), 3);
+        assert_eq!(repo.count_logs(Some("gpt-4o")).unwrap(), 2);
+
+        let page = repo.list_logs(None, 2, 0).unwrap();
+        assert_eq!(page.len(), 2);
+        assert_eq!(page[0].seq, 3);
+        assert_eq!(page[1].seq, 2);
+
+        let page = repo.list_logs(Some("gpt-4o"), 10, 0).unwrap();
+        assert_eq!(page.len(), 2);
+    }
+
+    #[test]
+    fn stats_aggregation() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        let mut c2 = ch("ch2");
+        c2.enabled = false;
+        repo.insert_channel(&c2).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+
+        let today = chrono::Local::now().timestamp();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, today)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-4o", 20, 200, today - 86400 * 2)).unwrap();
+
+        let (tr, tt, ar, at, ac, lat) = repo.stats().unwrap();
+        assert_eq!(tr, 1);
+        assert_eq!(tt, 20);
+        assert_eq!(ar, 2);
+        assert_eq!(at, 60);
+        assert_eq!(ac, 1);
+        assert_eq!(lat, 150);
     }
 }
