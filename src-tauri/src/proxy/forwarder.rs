@@ -3,6 +3,8 @@ use crate::protocol::types::ChatRequest;
 use crate::provider::adapter::{auth_header, build_upstream_body, upstream_url};
 use crate::proxy::sse::{Protocol, SseAccumulator, Usage};
 use crate::proxy::state::AppState;
+use bytes::Bytes;
+use futures::Stream;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -20,6 +22,14 @@ pub struct Outcome {
 pub struct ForwardResult {
     pub outcome: Outcome,
     pub role: Option<String>,
+}
+
+pub struct StreamHandle {
+    pub channel: Channel,
+    pub model: String,
+    pub via_fallback: bool,
+    pub usage_protocol: crate::proxy::sse::Protocol,
+    pub byte_stream: std::pin::Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
 }
 
 #[derive(Debug, Error)]
@@ -101,6 +111,68 @@ pub async fn forward(
                 }
                 last_err = Some(e);
             }
+        }
+    }
+    Err(last_err.unwrap_or(ForwardError::NoChannel))
+}
+
+pub async fn forward_stream(
+    state: &AppState,
+    chat: &ChatRequest,
+    role_route: Option<(String, String)>,
+) -> Result<StreamHandle, ForwardError> {
+    let all = state.repo.list_channels().map_err(|e| ForwardError::Http(e.to_string()))?;
+    let by_id = |id: &str| all.iter().find(|c| c.id == id).cloned();
+    let mut candidates: Vec<(Channel, String, bool)> = Vec::new();
+    if let Some((cid, model)) = &role_route {
+        if let Some(ch) = by_id(cid) { candidates.push((ch, model.clone(), false)); }
+        if let Some((fid, fmodel)) = state.fallback.read().unwrap().clone() {
+            if let Some(fch) = by_id(&fid) { candidates.push((fch, fmodel, true)); }
+        }
+    } else {
+        let maps_fn = |c: &Channel, m: &str| {
+            let maps = state.repo.get_model_map(&c.id).unwrap_or_default();
+            crate::router::model_map::resolve_model(&maps, m)
+        };
+        for t in crate::router::dispatch::plan_route(None, None, &all, &maps_fn, &chat.model, 1) {
+            candidates.push((t.channel, t.model, t.via_fallback));
+        }
+    }
+    if candidates.is_empty() { return Err(ForwardError::NoChannel); }
+
+    let mut last_err = None;
+    for (ch, model, via_fallback) in candidates {
+        let url = upstream_url(&ch.provider_type, &ch.base_url, true);
+        let mut body = build_upstream_body(chat, &ch.provider_type, &model);
+        body["stream"] = serde_json::json!(true);
+        let (hname, hval) = auth_header(&ch.provider_type, &ch.api_key);
+        let resp = state.http.post(&url)
+            .header(hname, hval)
+            .header("content-type", "application/json")
+            .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64))
+            .json(&body).send().await;
+        match resp {
+            Ok(r) if r.status().is_success() => {
+                let usage_protocol = if ch.provider_type == "claude" || ch.provider_type == "anthropic" {
+                    crate::proxy::sse::Protocol::Anthropic
+                } else {
+                    crate::proxy::sse::Protocol::OpenAI
+                };
+                return Ok(StreamHandle {
+                    channel: ch, model, via_fallback, usage_protocol,
+                    byte_stream: Box::pin(r.bytes_stream()),
+                });
+            }
+            Ok(r) => {
+                let status = r.status().as_u16();
+                let text = r.text().await.unwrap_or_default();
+                let e = ForwardError::Upstream { status, body: text };
+                if let ForwardError::Upstream { status, .. } = &e {
+                    if !is_failover_status(*status) { return Err(e); }
+                }
+                last_err = Some(e);
+            }
+            Err(e) => { last_err = Some(ForwardError::Http(e.to_string())); }
         }
     }
     Err(last_err.unwrap_or(ForwardError::NoChannel))

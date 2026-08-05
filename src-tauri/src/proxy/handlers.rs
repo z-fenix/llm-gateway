@@ -4,11 +4,13 @@ use crate::protocol::{anthropic, openai, types::ChatRequest};
 use crate::proxy::forwarder::{self, ForwardError};
 use crate::proxy::state::AppState;
 use axum::{
+    body::Body,
     extract::State,
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
+use futures::StreamExt;
 use serde_json::json;
 
 fn extract_key(headers: &HeaderMap) -> Option<String> {
@@ -182,6 +184,10 @@ async fn handle(
         None => None,
     };
 
+    if chat.stream {
+        return handle_stream(state, &trace_id, &api_key, chat, role_route, proto, &request_model, &body, started).await;
+    }
+
     // 5. forward
     let result = forwarder::forward(&state, &chat, role_route, &api_key,
     )
@@ -223,6 +229,109 @@ async fn handle(
                 proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body,
             );
             err_response(status, code, &trace_id)
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn handle_stream(
+    state: AppState,
+    trace_id: &str,
+    api_key: &crate::db::models::ApiKey,
+    chat: ChatRequest,
+    role_route: Option<(String, String)>,
+    proto: Protocol,
+    request_model: &str,
+    req_body: &serde_json::Value,
+    started: std::time::Instant,
+) -> Response {
+    match forwarder::forward_stream(&state, &chat, role_route).await {
+        Ok(handle) => {
+            let channel = handle.channel.clone();
+            let model = handle.model.clone();
+            let via_fallback = handle.via_fallback;
+            let usage_protocol = handle.usage_protocol;
+            let state2 = state.clone();
+            let trace = trace_id.to_string();
+            let api_key2 = api_key.clone();
+            let role = {
+                let conn = state.db.conn();
+                let conn = conn.lock().unwrap();
+                crate::router::role::detect_role(&conn, request_model)
+            };
+            let req_model = request_model.to_string();
+            let req_body_s = req_body.to_string();
+
+            let acc = std::sync::Arc::new(std::sync::Mutex::new(
+                crate::proxy::sse::SseAccumulator::new(usage_protocol),
+            ));
+            let acc_log = acc.clone();
+
+            let mut buffer = String::new();
+            let stream = handle.byte_stream.map(move |chunk| {
+                if let Ok(bytes) = &chunk {
+                    buffer.push_str(&String::from_utf8_lossy(bytes));
+                    while let Some(pos) = buffer.find('\n') {
+                        let line = buffer.drain(..=pos).collect::<String>();
+                        let line = line.trim_end_matches('\n');
+                        acc.lock().unwrap().feed_line(line);
+                    }
+                }
+                chunk.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+            });
+
+            let wrapped = stream.chain(futures::stream::once(async move {
+                let usage = acc_log.lock().unwrap().usage();
+                let _ = state2
+                    .repo
+                    .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64);
+                let seq = state2.repo.next_log_seq().unwrap_or(1);
+                let _ = state2.repo.insert_log(&RequestLog {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    seq,
+                    trace_id: trace,
+                    api_key_id: Some(api_key2.id.clone()),
+                    key_name: Some(api_key2.name.clone()),
+                    channel_id: Some(channel.id.clone()),
+                    channel_name: Some(channel.name.clone()),
+                    role,
+                    request_model: Some(req_model),
+                    upstream_model: Some(model),
+                    protocol: match proto {
+                        Protocol::OpenAI => "openai".into(),
+                        Protocol::Anthropic => "anthropic".into(),
+                    },
+                    status_code: Some(200),
+                    input_tokens: usage.input_tokens as i64,
+                    output_tokens: usage.output_tokens as i64,
+                    latency_ms: started.elapsed().as_millis() as i64,
+                    is_stream: true,
+                    error: None,
+                    fallback: via_fallback,
+                    tool_calls: None,
+                    request_body: Some(req_body_s),
+                    response_body: None,
+                    created_at: chrono::Utc::now().timestamp(),
+                });
+                Ok(bytes::Bytes::new())
+            }));
+
+            Response::builder()
+                .header("content-type", "text/event-stream")
+                .header("cache-control", "no-cache")
+                .body(Body::from_stream(wrapped))
+                .unwrap()
+        }
+        Err(e) => {
+            let (status, code) = match &e {
+                ForwardError::NoChannel => (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel"),
+                ForwardError::Upstream { status, .. } => (
+                    StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY),
+                    "upstream_error",
+                ),
+                ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
+            };
+            err_response(status, code, trace_id)
         }
     }
 }

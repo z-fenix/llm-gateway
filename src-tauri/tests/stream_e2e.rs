@@ -1,0 +1,125 @@
+mod common;
+
+use axum::{routing::post, Router};
+use futures::stream;
+use llm_gateway_lib::db::models::{ApiKey, Channel, RoleRoute};
+use llm_gateway_lib::db::repository::Repository;
+use llm_gateway_lib::db::Db;
+use llm_gateway_lib::proxy::{server, state::AppState};
+
+async fn spawn_sse_upstream() -> String {
+    let app = Router::new().route("/v1/chat/completions", post(|| async {
+        let chunks = vec![
+            Ok::<_, std::convert::Infallible>(r#"data: {"choices":[{"delta":{"content":"he"}}]}"#.to_string() + "\n\n"),
+            Ok(r#"data: {"choices":[{"delta":{"content":"llo"}}],"usage":{"prompt_tokens":7,"completion_tokens":2,"total_tokens":9}}"#.to_string() + "\n\n"),
+            Ok("data: [DONE]".to_string() + "\n\n"),
+        ];
+        axum::response::Response::builder()
+            .header("content-type", "text/event-stream")
+            .body(axum::body::Body::from_stream(stream::iter(chunks)))
+            .unwrap()
+    }));
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127,0,0,1],0))).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{}", addr)
+}
+
+async fn spawn_split_chunk_upstream() -> String {
+    let app = Router::new().route("/v1/chat/completions", post(|| async {
+        let line = r#"data: {"choices":[{"delta":{"content":"x"}}],"usage":{"prompt_tokens":3,"completion_tokens":4,"total_tokens":7}}"# .to_string() + "\n\n";
+        let split_at = line.len() / 2;
+        let chunks = vec![
+            Ok::<_, std::convert::Infallible>(line[..split_at].to_string()),
+            Ok(line[split_at..].to_string()),
+        ];
+        axum::response::Response::builder()
+            .header("content-type", "text/event-stream")
+            .body(axum::body::Body::from_stream(stream::iter(chunks)))
+            .unwrap()
+    }));
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127,0,0,1],0))).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{}", addr)
+}
+
+fn make_state(base_url: String) -> AppState {
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&Channel {
+        id: "c1".into(), name: "c1".into(), provider_type: "openai".into(),
+        base_url: base_url, api_key: "sk-real".into(), models: vec![], priority: 0,
+        weight: 1, enabled: true, timeout_secs: 5, total_calls: 0, total_tokens: 0,
+        success_rate: 1.0, avg_latency_ms: 0, created_at: 1, updated_at: 1,
+    }).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(), key: "sk-lgw-test".into(), name: "t".into(), enabled: true,
+        quota_total: None, quota_used: 0, total_calls: 0, total_tokens: 0,
+        created_at: 1, last_used_at: None,
+    }).unwrap();
+    repo.upsert_role_route(&RoleRoute {
+        id: "r1".into(), role: "sonnet".into(), channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(), enabled: true, updated_at: 1,
+    }).unwrap();
+    AppState::new(db)
+}
+
+#[tokio::test]
+async fn stream_passthrough_and_usage_logged() {
+    let base = spawn_sse_upstream().await;
+    let state = make_state(base);
+    let _h = server::start(state.clone(), 0).await;
+    let addr = server::bound_addr().unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+    assert_eq!(resp.headers().get("content-type").unwrap(), "text/event-stream");
+    let text = resp.text().await.unwrap();
+    assert!(text.contains("he"));
+    assert!(text.contains("[DONE]"));
+
+    // usage 已入库（7 + 2）
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.input_tokens, 7);
+    assert_eq!(log.output_tokens, 2);
+    assert!(log.is_stream);
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 9);
+}
+
+#[tokio::test]
+async fn stream_split_chunk_usage_accumulated() {
+    let base = spawn_split_chunk_upstream().await;
+    let state = make_state(base);
+    let _h = server::start(state.clone(), 0).await;
+    let addr = server::bound_addr().unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let text = resp.text().await.unwrap();
+    assert!(text.contains(r#""content":"x""#));
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.input_tokens, 3);
+    assert_eq!(log.output_tokens, 4);
+    assert!(log.is_stream);
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 7);
+}
