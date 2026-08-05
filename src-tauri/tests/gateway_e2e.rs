@@ -78,3 +78,54 @@ async fn invalid_key_rejected_401() {
         .send().await.unwrap();
     assert_eq!(resp.status(), 401);
 }
+
+#[tokio::test]
+async fn failure_paths_persist_request_log() {
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(), key: "sk-lgw-dead".into(), name: "dead".into(), enabled: true,
+        quota_total: Some(100), quota_used: 100, total_calls: 0, total_tokens: 0,
+        created_at: 1, last_used_at: None,
+    }).unwrap();
+
+    let state = AppState::new(db);
+    let _h = server::start(state.clone(), 0).await;
+    let addr = server::bound_addr().unwrap();
+    let client = reqwest::Client::new();
+
+    // invalid key → 401
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer wrong-key")
+        .json(&serde_json::json!({"model":"x","messages":[]}))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 401);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    let trace_401 = v["error"]["trace_id"].as_str().unwrap();
+    assert!(!trace_401.is_empty());
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(401));
+    assert_eq!(log.error.as_deref(), Some("invalid_api_key"));
+    assert_eq!(log.protocol, "openai");
+    assert!(!log.trace_id.is_empty());
+
+    // quota exceeded → 429 (anthropic 端点，鉴权失败发生在协议解析之前)
+    let resp = client
+        .post(format!("http://{}/v1/messages", addr))
+        .header("x-api-key", "sk-lgw-dead")
+        .json(&serde_json::json!({"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hi"}],"max_tokens":10}))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 429);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    let trace_429 = v["error"]["trace_id"].as_str().unwrap();
+    assert!(!trace_429.is_empty());
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(429));
+    assert_eq!(log.error.as_deref(), Some("quota_exceeded"));
+    assert_eq!(log.protocol, "anthropic");
+    assert!(!log.trace_id.is_empty());
+    assert_ne!(log.trace_id, trace_401);
+}

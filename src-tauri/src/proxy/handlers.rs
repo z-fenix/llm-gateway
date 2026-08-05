@@ -68,6 +68,32 @@ enum Protocol {
     Anthropic,
 }
 
+fn log_failure(
+    state: &AppState,
+    trace_id: &str,
+    api_key: Option<&crate::db::models::ApiKey>,
+    proto: Protocol,
+    status: StatusCode,
+    code: &str,
+    request_model: Option<&str>,
+    req_body: &serde_json::Value,
+) -> Response {
+    write_log(
+        state,
+        trace_id,
+        api_key,
+        None,
+        None,
+        request_model,
+        proto,
+        Some(status.as_u16() as i64),
+        Some(code.to_string()),
+        0,
+        req_body,
+    );
+    err_response(status, code, trace_id)
+}
+
 async fn handle(
     state: AppState,
     headers: HeaderMap,
@@ -80,21 +106,38 @@ async fn handle(
     // 1. auth
     let key = match extract_key(&headers) {
         Some(k) => k,
-        None => return err_response(StatusCode::UNAUTHORIZED, "invalid_api_key", &trace_id),
+        None => {
+            return log_failure(
+                &state, &trace_id, None, proto, StatusCode::UNAUTHORIZED,
+                "invalid_api_key", None, &body,
+            )
+        }
     };
     let api_key = match auth::authorize(&state.repo, &key) {
         Ok(Ok(k)) => k,
         Ok(Err(AuthError::QuotaExceeded)) => {
-            return err_response(StatusCode::TOO_MANY_REQUESTS, "quota_exceeded", &trace_id)
+            return log_failure(
+                &state, &trace_id, None, proto, StatusCode::TOO_MANY_REQUESTS,
+                "quota_exceeded", None, &body,
+            )
         }
         Ok(Err(AuthError::Disabled)) => {
-            return err_response(StatusCode::UNAUTHORIZED, "api_key_disabled", &trace_id)
+            return log_failure(
+                &state, &trace_id, None, proto, StatusCode::UNAUTHORIZED,
+                "api_key_disabled", None, &body,
+            )
         }
         Ok(Err(AuthError::Invalid)) => {
-            return err_response(StatusCode::UNAUTHORIZED, "invalid_api_key", &trace_id)
+            return log_failure(
+                &state, &trace_id, None, proto, StatusCode::UNAUTHORIZED,
+                "invalid_api_key", None, &body,
+            )
         }
         Err(_) => {
-            return err_response(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", &trace_id)
+            return log_failure(
+                &state, &trace_id, None, proto, StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error", None, &body,
+            )
         }
     };
 
@@ -102,11 +145,21 @@ async fn handle(
     let chat: ChatRequest = match proto {
         Protocol::OpenAI => match openai::request_to_chat(&body) {
             Ok(c) => c,
-            Err(e) => return err_response(StatusCode::BAD_REQUEST, &e, &trace_id),
+            Err(e) => {
+                return log_failure(
+                    &state, &trace_id, Some(&api_key), proto, StatusCode::BAD_REQUEST,
+                    &e, None, &body,
+                )
+            }
         },
         Protocol::Anthropic => match anthropic::request_to_chat(&body) {
             Ok(c) => c,
-            Err(e) => return err_response(StatusCode::BAD_REQUEST, &e, &trace_id),
+            Err(e) => {
+                return log_failure(
+                    &state, &trace_id, Some(&api_key), proto, StatusCode::BAD_REQUEST,
+                    &e, None, &body,
+                )
+            }
         },
     };
     let request_model = chat.model.clone();
@@ -142,8 +195,8 @@ async fn handle(
             let usage_total = (o.usage.input_tokens + o.usage.output_tokens) as i64;
             let _ = state.repo.consume_quota(&api_key.id, usage_total);
             write_log(
-                &state, &trace_id, &api_key, Some(o), Some(&role), &request_model,
-                proto, None, latency, &body,
+                &state, &trace_id, Some(&api_key), Some(o), Some(&role), Some(&request_model),
+                proto, None, None, latency, &body,
             );
             let resp_body = match proto {
                 Protocol::OpenAI => {
@@ -166,8 +219,8 @@ async fn handle(
                 ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
             };
             write_log(
-                &state, &trace_id, &api_key, None, Some(&role), &request_model,
-                proto, Some(e.to_string()), latency, &body,
+                &state, &trace_id, Some(&api_key), None, Some(&role), Some(&request_model),
+                proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body,
             );
             err_response(status, code, &trace_id)
         }
@@ -209,11 +262,12 @@ fn to_chat_response(
 fn write_log(
     state: &AppState,
     trace_id: &str,
-    api_key: &crate::db::models::ApiKey,
+    api_key: Option<&crate::db::models::ApiKey>,
     o: Option<&forwarder::Outcome>,
     role: Option<&Option<String>>,
-    request_model: &str,
+    request_model: Option<&str>,
     proto: Protocol,
+    status_code: Option<i64>,
     error: Option<String>,
     latency: i64,
     req_body: &serde_json::Value,
@@ -223,18 +277,18 @@ fn write_log(
         id: uuid::Uuid::new_v4().to_string(),
         seq,
         trace_id: trace_id.to_string(),
-        api_key_id: Some(api_key.id.clone()),
-        key_name: Some(api_key.name.clone()),
+        api_key_id: api_key.map(|k| k.id.clone()),
+        key_name: api_key.map(|k| k.name.clone()),
         channel_id: o.map(|x| x.channel.id.clone()),
         channel_name: o.map(|x| x.channel.name.clone()),
         role: role.cloned().flatten(),
-        request_model: Some(request_model.to_string()),
+        request_model: request_model.map(|s| s.to_string()),
         upstream_model: o.map(|x| x.model.clone()),
         protocol: match proto {
             Protocol::OpenAI => "openai".into(),
             Protocol::Anthropic => "anthropic".into(),
         },
-        status_code: o.map(|x| x.status as i64),
+        status_code: status_code.or_else(|| o.map(|x| x.status as i64)),
         input_tokens: o.map(|x| x.usage.input_tokens as i64).unwrap_or(0),
         output_tokens: o.map(|x| x.usage.output_tokens as i64).unwrap_or(0),
         latency_ms: latency,
