@@ -2,6 +2,7 @@ pub mod auth;
 pub mod db;
 pub mod error;
 pub mod protocol;
+pub mod proxy;
 pub mod router;
 
 pub fn run() {
