@@ -43,7 +43,9 @@ pub fn run() {
             if let Some(icon) = app.default_window_icon() {
                 tray_builder = tray_builder.icon(icon.clone());
             }
-            let _tray = tray_builder.build(app)?;
+            if let Err(e) = tray_builder.build(app) {
+                log::warn!("failed to create system tray: {}", e);
+            }
 
             // 启动网关（独立 tokio runtime 线程，避免阻塞 Tauri）
             std::thread::spawn(move || {
