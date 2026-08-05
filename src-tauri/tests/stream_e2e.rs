@@ -44,6 +44,47 @@ async fn spawn_split_chunk_upstream() -> String {
     format!("http://{}", addr)
 }
 
+async fn spawn_error_upstream() -> String {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0))).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut buf = [0u8; 1024];
+        let _ = socket.read(&mut buf).await;
+        let body = r#"data: {"choices":[{"delta":{"content":"he"}}]}"#;
+        let chunk = format!("{:X}\r\n{}\r\n", body.len(), body);
+        let response = format!(
+            "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ntransfer-encoding: chunked\r\n\r\n{}",
+            chunk
+        );
+        let _ = socket.write_all(response.as_bytes()).await;
+        // Abruptly close without the terminating 0-length chunk, forcing reqwest body-stream error.
+        let _ = socket.shutdown().await;
+    });
+    format!("http://{}", addr)
+}
+
+async fn spawn_utf8_split_upstream() -> String {
+    let app = Router::new().route("/v1/chat/completions", post(|| async {
+        let line = (r#"data: {"choices":[{"delta":{"content":"中"}}],"usage":{"prompt_tokens":3,"completion_tokens":4,"total_tokens":7}}"#.to_string() + "\n\n").into_bytes();
+        // Split inside the UTF-8 sequence of "中" (E4 B8 AD) so a multi-byte char straddles chunks.
+        let split_at = line.windows(3).position(|w| w == [0xE4, 0xB8, 0xAD]).unwrap() + 1;
+        let chunks = vec![
+            Ok::<_, std::convert::Infallible>(bytes::Bytes::copy_from_slice(&line[..split_at])),
+            Ok(bytes::Bytes::copy_from_slice(&line[split_at..])),
+        ];
+        axum::response::Response::builder()
+            .header("content-type", "text/event-stream")
+            .body(axum::body::Body::from_stream(stream::iter(chunks)))
+            .unwrap()
+    }));
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127,0,0,1],0))).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{}", addr)
+}
+
 fn make_state(base_url: String) -> AppState {
     let db = Db::new_in_memory().unwrap();
     let repo = Repository::new(db.clone());
@@ -114,6 +155,62 @@ async fn stream_split_chunk_usage_accumulated() {
     assert_eq!(resp.status(), 200);
     let text = resp.text().await.unwrap();
     assert!(text.contains(r#""content":"x""#));
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.input_tokens, 3);
+    assert_eq!(log.output_tokens, 4);
+    assert!(log.is_stream);
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 7);
+}
+
+#[tokio::test]
+async fn stream_upstream_error_logs_failure_and_skips_quota() {
+    let base = spawn_error_upstream().await;
+    let state = make_state(base);
+    let _h = server::start(state.clone(), 0).await;
+    let addr = server::bound_addr().unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+    // Upstream body stream error may cause client body collection to fail; ignore it.
+    let _ = resp.text().await;
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_ne!(log.status_code, Some(200));
+    assert!(log.error.is_some());
+    assert!(log.is_stream);
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 0);
+}
+
+#[tokio::test]
+async fn stream_split_utf8_usage_accumulated() {
+    let base = spawn_utf8_split_upstream().await;
+    let state = make_state(base);
+    let _h = server::start(state.clone(), 0).await;
+    let addr = server::bound_addr().unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let text = resp.text().await.unwrap();
+    assert!(text.contains(r#""content":"中""#));
 
     let repo = Repository::new(state.db);
     let log = repo.latest_log().unwrap().unwrap();

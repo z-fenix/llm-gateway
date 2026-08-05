@@ -12,6 +12,8 @@ use axum::{
 };
 use futures::StreamExt;
 use serde_json::json;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 fn extract_key(headers: &HeaderMap) -> Option<String> {
     if let Some(v) = headers.get("x-api-key").and_then(|v| v.to_str().ok()) {
@@ -262,30 +264,44 @@ async fn handle_stream(
             let req_model = request_model.to_string();
             let req_body_s = req_body.to_string();
 
-            let acc = std::sync::Arc::new(std::sync::Mutex::new(
+            let acc = Arc::new(std::sync::Mutex::new(
                 crate::proxy::sse::SseAccumulator::new(usage_protocol),
             ));
             let acc_log = acc.clone();
+            let stream_error = Arc::new(AtomicBool::new(false));
+            let stream_error_log = stream_error.clone();
 
-            let mut buffer = String::new();
+            let mut buffer: Vec<u8> = Vec::new();
             let stream = handle.byte_stream.map(move |chunk| {
-                if let Ok(bytes) = &chunk {
-                    buffer.push_str(&String::from_utf8_lossy(bytes));
-                    while let Some(pos) = buffer.find('\n') {
-                        let line = buffer.drain(..=pos).collect::<String>();
-                        let line = line.trim_end_matches('\n');
-                        acc.lock().unwrap().feed_line(line);
+                match chunk {
+                    Ok(bytes) => {
+                        buffer.extend_from_slice(&bytes);
+                        while let Some(pos) = buffer.iter().position(|&b| b == b'\n') {
+                            let line_bytes: Vec<u8> = buffer.drain(..=pos).collect();
+                            let line = String::from_utf8_lossy(&line_bytes);
+                            acc.lock().unwrap().feed_line(&line);
+                        }
+                        Ok(bytes)
+                    }
+                    Err(_e) => {
+                        stream_error.store(true, Ordering::SeqCst);
+                        Ok::<_, std::io::Error>(bytes::Bytes::new())
                     }
                 }
-                chunk.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
             });
 
             let wrapped = stream.chain(futures::stream::once(async move {
                 let usage = acc_log.lock().unwrap().usage();
-                let _ = state2
-                    .repo
-                    .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64);
+                let failed = stream_error_log.load(Ordering::SeqCst);
                 let seq = state2.repo.next_log_seq().unwrap_or(1);
+                let (status_code, error) = if failed {
+                    (Some(502), Some("upstream_stream_error".into()))
+                } else {
+                    let _ = state2
+                        .repo
+                        .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64);
+                    (Some(200), None)
+                };
                 let _ = state2.repo.insert_log(&RequestLog {
                     id: uuid::Uuid::new_v4().to_string(),
                     seq,
@@ -301,12 +317,12 @@ async fn handle_stream(
                         Protocol::OpenAI => "openai".into(),
                         Protocol::Anthropic => "anthropic".into(),
                     },
-                    status_code: Some(200),
+                    status_code,
                     input_tokens: usage.input_tokens as i64,
                     output_tokens: usage.output_tokens as i64,
                     latency_ms: started.elapsed().as_millis() as i64,
                     is_stream: true,
-                    error: None,
+                    error,
                     fallback: via_fallback,
                     tool_calls: None,
                     request_body: Some(req_body_s),
