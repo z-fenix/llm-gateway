@@ -10,6 +10,11 @@ pub fn bound_addr() -> Option<SocketAddr> {
     *BOUND.lock().unwrap()
 }
 
+fn set_bound(addr: SocketAddr) {
+    let mut b = BOUND.lock().unwrap();
+    *b = Some(addr);
+}
+
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(handlers::health))
@@ -19,18 +24,47 @@ pub fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
-pub async fn start(state: AppState, port: u16) -> tokio::task::JoinHandle<()> {
+pub async fn start(state: AppState, start_port: u16) -> Result<tokio::task::JoinHandle<()>, String> {
     let app = router(state);
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    let listener = std::net::TcpListener::bind(addr).expect("bind gateway");
-    listener.set_nonblocking(true).expect("set nonblocking");
-    let listener = tokio::net::TcpListener::from_std(listener).expect("tokio listener");
+    let listener = if start_port == 0 {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+        tokio::net::TcpListener::bind(addr)
+            .await
+            .map_err(|e| format!("bind test gateway: {}", e))?
+    } else {
+        let mut last_err = None;
+        let mut listener: Option<tokio::net::TcpListener> = None;
+        for port in start_port..=8787 {
+            let addr = SocketAddr::from(([127, 0, 0, 1], port));
+            match tokio::net::TcpListener::bind(addr).await {
+                Ok(l) => {
+                    let bound = l.local_addr().unwrap();
+                    if port != start_port {
+                        log::warn!("port {} occupied, gateway bound to {}", start_port, bound);
+                    } else {
+                        log::info!("llm-gateway listening on {}", bound);
+                    }
+                    listener = Some(l);
+                    break;
+                }
+                Err(e) => {
+                    last_err = Some(e);
+                }
+            }
+        }
+        listener.ok_or_else(|| {
+            format!(
+                "no available port in {}..=8787: {:?}",
+                start_port,
+                last_err
+            )
+        })?
+    };
+
     let local = listener.local_addr().unwrap();
-    {
-        let mut b = BOUND.lock().unwrap();
-        *b = Some(local);
-    }
-    tokio::spawn(async move {
+    set_bound(local);
+
+    Ok(tokio::spawn(async move {
         axum::serve(listener, app).await.expect("serve gateway");
-    })
+    }))
 }

@@ -110,7 +110,7 @@ fn make_state(base_url: String) -> AppState {
 async fn stream_passthrough_and_usage_logged() {
     let base = spawn_sse_upstream().await;
     let state = make_state(base);
-    let _h = server::start(state.clone(), 0).await;
+    let _h = server::start(state.clone(), 0).await.unwrap();
     let addr = server::bound_addr().unwrap();
 
     let resp = reqwest::Client::new()
@@ -141,7 +141,7 @@ async fn stream_passthrough_and_usage_logged() {
 async fn stream_split_chunk_usage_accumulated() {
     let base = spawn_split_chunk_upstream().await;
     let state = make_state(base);
-    let _h = server::start(state.clone(), 0).await;
+    let _h = server::start(state.clone(), 0).await.unwrap();
     let addr = server::bound_addr().unwrap();
 
     let resp = reqwest::Client::new()
@@ -169,7 +169,7 @@ async fn stream_split_chunk_usage_accumulated() {
 async fn stream_upstream_error_logs_failure_and_skips_quota() {
     let base = spawn_error_upstream().await;
     let state = make_state(base);
-    let _h = server::start(state.clone(), 0).await;
+    let _h = server::start(state.clone(), 0).await.unwrap();
     let addr = server::bound_addr().unwrap();
 
     let resp = reqwest::Client::new()
@@ -197,7 +197,7 @@ async fn stream_upstream_error_logs_failure_and_skips_quota() {
 async fn stream_split_utf8_usage_accumulated() {
     let base = spawn_utf8_split_upstream().await;
     let state = make_state(base);
-    let _h = server::start(state.clone(), 0).await;
+    let _h = server::start(state.clone(), 0).await.unwrap();
     let addr = server::bound_addr().unwrap();
 
     let resp = reqwest::Client::new()
