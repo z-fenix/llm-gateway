@@ -1,5 +1,3 @@
-use crate::db::Db;
-
 /// 大小写不敏感通配匹配：`*` 匹配任意字符序列（含空）。
 pub fn wildcard_match(pattern: &str, text: &str) -> bool {
     let p = pattern.to_lowercase();
@@ -50,6 +48,7 @@ pub fn detect_role(conn: &rusqlite::Connection, model: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Db;
 
     #[test]
     fn wildcard_cases() {

@@ -140,8 +140,10 @@ pub async fn forward_stream(
     }
     if candidates.is_empty() { return Err(ForwardError::NoChannel); }
 
+    let max = if role_route.is_some() { candidates.len() } else { (state.retry_count + 1).min(candidates.len()) };
     let mut last_err = None;
-    for (ch, model, via_fallback) in candidates {
+    for (ch, model, via_fallback) in candidates.into_iter().take(max) {
+        let start = std::time::Instant::now();
         let url = upstream_url(&ch.provider_type, &ch.base_url, true);
         let mut body = build_upstream_body(chat, &ch.provider_type, &model);
         body["stream"] = serde_json::json!(true);
@@ -153,6 +155,8 @@ pub async fn forward_stream(
             .json(&body).send().await;
         match resp {
             Ok(r) if r.status().is_success() => {
+                let latency = start.elapsed().as_millis() as i64;
+                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, true);
                 let usage_protocol = if ch.provider_type == "claude" || ch.provider_type == "anthropic" {
                     crate::proxy::sse::Protocol::Anthropic
                 } else {
@@ -164,15 +168,19 @@ pub async fn forward_stream(
                 });
             }
             Ok(r) => {
+                let latency = start.elapsed().as_millis() as i64;
                 let status = r.status().as_u16();
                 let text = r.text().await.unwrap_or_default();
+                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, false);
                 let e = ForwardError::Upstream { status, body: text };
-                if let ForwardError::Upstream { status, .. } = &e {
-                    if !is_failover_status(*status) { return Err(e); }
-                }
+                if !is_failover_status(status) { return Err(e); }
                 last_err = Some(e);
             }
-            Err(e) => { last_err = Some(ForwardError::Http(e.to_string())); }
+            Err(e) => {
+                let latency = start.elapsed().as_millis() as i64;
+                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, false);
+                last_err = Some(ForwardError::Http(e.to_string()));
+            }
         }
     }
     Err(last_err.unwrap_or(ForwardError::NoChannel))

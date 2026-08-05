@@ -38,8 +38,7 @@ async fn end_to_end_openai_with_role_route_and_logging() {
     }).unwrap();
 
     let state = AppState::new(db);
-    let _h = server::start(state.clone(), 0).await.unwrap(); // 0 = 随机端口，需 server 返回实际地址
-    let addr = server::bound_addr().unwrap();
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap(); // 0 = 随机端口
 
     let client = reqwest::Client::new();
     let resp = client
@@ -69,8 +68,7 @@ async fn end_to_end_openai_with_role_route_and_logging() {
 async fn invalid_key_rejected_401() {
     let db = Db::new_in_memory().unwrap();
     let state = AppState::new(db);
-    let _h = server::start(state, 0).await.unwrap();
-    let addr = server::bound_addr().unwrap();
+    let (_h, addr) = server::start(state, 0).await.unwrap();
     let resp = reqwest::Client::new()
         .post(format!("http://{}/v1/chat/completions", addr))
         .header("authorization", "Bearer wrong")
@@ -90,8 +88,7 @@ async fn failure_paths_persist_request_log() {
     }).unwrap();
 
     let state = AppState::new(db);
-    let _h = server::start(state.clone(), 0).await.unwrap();
-    let addr = server::bound_addr().unwrap();
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
     let client = reqwest::Client::new();
 
     // invalid key → 401

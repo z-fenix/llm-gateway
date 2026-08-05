@@ -2,18 +2,6 @@ use crate::proxy::handlers;
 use crate::proxy::state::AppState;
 use axum::{routing::{get, post}, Router};
 use std::net::SocketAddr;
-use std::sync::Mutex;
-
-static BOUND: Mutex<Option<SocketAddr>> = Mutex::new(None);
-
-pub fn bound_addr() -> Option<SocketAddr> {
-    *BOUND.lock().unwrap()
-}
-
-fn set_bound(addr: SocketAddr) {
-    let mut b = BOUND.lock().unwrap();
-    *b = Some(addr);
-}
 
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -24,7 +12,7 @@ pub fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
-pub async fn start(state: AppState, start_port: u16) -> Result<tokio::task::JoinHandle<()>, String> {
+pub async fn start(state: AppState, start_port: u16) -> Result<(tokio::task::JoinHandle<()>, SocketAddr), String> {
     let app = router(state);
     let listener = if start_port == 0 {
         let addr = SocketAddr::from(([127, 0, 0, 1], 0));
@@ -62,9 +50,8 @@ pub async fn start(state: AppState, start_port: u16) -> Result<tokio::task::Join
     };
 
     let local = listener.local_addr().unwrap();
-    set_bound(local);
 
-    Ok(tokio::spawn(async move {
+    Ok((tokio::spawn(async move {
         axum::serve(listener, app).await.expect("serve gateway");
-    }))
+    }), local))
 }

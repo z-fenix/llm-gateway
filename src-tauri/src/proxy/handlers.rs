@@ -187,7 +187,7 @@ async fn handle(
     };
 
     if chat.stream {
-        return handle_stream(state, &trace_id, &api_key, chat, role_route, proto, &request_model, &body, started).await;
+        return handle_stream(state, &trace_id, &api_key, chat, role_route, role.clone(), proto, &request_model, &body, started).await;
     }
 
     // 5. forward
@@ -242,6 +242,7 @@ async fn handle_stream(
     api_key: &crate::db::models::ApiKey,
     chat: ChatRequest,
     role_route: Option<(String, String)>,
+    role: Option<String>,
     proto: Protocol,
     request_model: &str,
     req_body: &serde_json::Value,
@@ -256,11 +257,6 @@ async fn handle_stream(
             let state2 = state.clone();
             let trace = trace_id.to_string();
             let api_key2 = api_key.clone();
-            let role = {
-                let conn = state.db.conn();
-                let conn = conn.lock().unwrap();
-                crate::router::role::detect_role(&conn, request_model)
-            };
             let req_model = request_model.to_string();
             let req_body_s = req_body.to_string();
 
@@ -293,7 +289,6 @@ async fn handle_stream(
             let wrapped = stream.chain(futures::stream::once(async move {
                 let usage = acc_log.lock().unwrap().usage();
                 let failed = stream_error_log.load(Ordering::SeqCst);
-                let seq = state2.repo.next_log_seq().unwrap_or(1);
                 let (status_code, error) = if failed {
                     (Some(502), Some("upstream_stream_error".into()))
                 } else {
@@ -304,7 +299,7 @@ async fn handle_stream(
                 };
                 let _ = state2.repo.insert_log(&RequestLog {
                     id: uuid::Uuid::new_v4().to_string(),
-                    seq,
+                    seq: 0,
                     trace_id: trace,
                     api_key_id: Some(api_key2.id.clone()),
                     key_name: Some(api_key2.name.clone()),
@@ -347,6 +342,34 @@ async fn handle_stream(
                 ),
                 ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
             };
+            let latency = started.elapsed().as_millis() as i64;
+            let _ = state.repo.insert_log(&RequestLog {
+                id: uuid::Uuid::new_v4().to_string(),
+                seq: 0,
+                trace_id: trace_id.to_string(),
+                api_key_id: Some(api_key.id.clone()),
+                key_name: Some(api_key.name.clone()),
+                channel_id: None,
+                channel_name: None,
+                role,
+                request_model: Some(request_model.to_string()),
+                upstream_model: None,
+                protocol: match proto {
+                    Protocol::OpenAI => "openai".into(),
+                    Protocol::Anthropic => "anthropic".into(),
+                },
+                status_code: Some(status.as_u16() as i64),
+                input_tokens: 0,
+                output_tokens: 0,
+                latency_ms: latency,
+                is_stream: true,
+                error: Some(e.to_string()),
+                fallback: false,
+                tool_calls: None,
+                request_body: Some(req_body.to_string()),
+                response_body: None,
+                created_at: chrono::Utc::now().timestamp(),
+            });
             err_response(status, code, trace_id)
         }
     }
@@ -397,10 +420,9 @@ fn write_log(
     latency: i64,
     req_body: &serde_json::Value,
 ) {
-    let seq = state.repo.next_log_seq().unwrap_or(1);
     let log = RequestLog {
         id: uuid::Uuid::new_v4().to_string(),
-        seq,
+        seq: 0,
         trace_id: trace_id.to_string(),
         api_key_id: api_key.map(|k| k.id.clone()),
         key_name: api_key.map(|k| k.name.clone()),

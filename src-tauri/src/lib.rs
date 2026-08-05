@@ -68,7 +68,7 @@ pub fn run() {
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 rt.block_on(async move {
                     match proxy::server::start(state.clone(), 8777).await {
-                        Ok(handle) => {
+                        Ok((handle, _addr)) => {
                             handle.await.expect("serve gateway");
                         }
                         Err(e) => {

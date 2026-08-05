@@ -149,21 +149,15 @@ impl Repository {
         Ok(out)
     }
 
-    pub fn next_log_seq(&self) -> AppResult<i64> {
-        let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
-        let n: i64 = conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| r.get(0))?;
-        Ok(n)
-    }
-
     pub fn insert_log(&self, l: &RequestLog) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock().unwrap();
+        let seq: i64 = conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| r.get(0))?;
         conn.execute(
             "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22)",
             params![
-                l.id, l.seq, l.trace_id, l.api_key_id, l.key_name, l.channel_id, l.channel_name,
+                l.id, seq, l.trace_id, l.api_key_id, l.key_name, l.channel_id, l.channel_name,
                 l.role, l.request_model, l.upstream_model, l.protocol, l.status_code,
                 l.input_tokens, l.output_tokens, l.latency_ms, l.is_stream as i64, l.error,
                 l.fallback as i64, l.tool_calls, l.request_body, l.response_body, l.created_at
