@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+pub mod redact;
+pub mod rules;
+pub mod scanner;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum RiskLevel {
