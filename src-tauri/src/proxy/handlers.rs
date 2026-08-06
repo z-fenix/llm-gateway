@@ -322,6 +322,12 @@ async fn handle_stream(
                     tool_calls: None,
                     request_body: Some(req_body_s),
                     response_body: None,
+                    risk_level: "clean".into(),
+                    risk_score: 0,
+                    risk_summary: None,
+                    security_action: "allow".into(),
+                    sanitized: false,
+                    blocked_reason: None,
                     created_at: chrono::Utc::now().timestamp(),
                 });
                 Ok(bytes::Bytes::new())
@@ -368,6 +374,12 @@ async fn handle_stream(
                 tool_calls: None,
                 request_body: Some(req_body.to_string()),
                 response_body: None,
+                risk_level: "clean".into(),
+                risk_score: 0,
+                risk_summary: None,
+                security_action: "allow".into(),
+                sanitized: false,
+                blocked_reason: None,
                 created_at: chrono::Utc::now().timestamp(),
             });
             err_response(status, code, trace_id)
@@ -445,6 +457,12 @@ fn write_log(
         tool_calls: None,
         request_body: Some(req_body.to_string()),
         response_body: o.map(|x| x.body.to_string()),
+        risk_level: "clean".into(),
+        risk_score: 0,
+        risk_summary: None,
+        security_action: "allow".into(),
+        sanitized: false,
+        blocked_reason: None,
         created_at: chrono::Utc::now().timestamp(),
     };
     let _ = state.repo.insert_log(&log);

@@ -1,4 +1,4 @@
-use super::models::{ApiKey, Channel, RequestLog, RolePattern, RoleRoute};
+use super::models::{ApiKey, BuiltinRule, Channel, CustomRule, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute};
 use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
@@ -154,13 +154,15 @@ impl Repository {
         let conn = conn.lock().unwrap();
         let seq: i64 = conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| r.get(0))?;
         conn.execute(
-            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22)",
+            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28)",
             params![
                 l.id, seq, l.trace_id, l.api_key_id, l.key_name, l.channel_id, l.channel_name,
                 l.role, l.request_model, l.upstream_model, l.protocol, l.status_code,
                 l.input_tokens, l.output_tokens, l.latency_ms, l.is_stream as i64, l.error,
-                l.fallback as i64, l.tool_calls, l.request_body, l.response_body, l.created_at
+                l.fallback as i64, l.tool_calls, l.request_body, l.response_body,
+                l.risk_level, l.risk_score, l.risk_summary, l.security_action, l.sanitized as i64,
+                l.blocked_reason, l.created_at
             ],
         )?;
         Ok(())
@@ -215,7 +217,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
         )?;
         let mut rows = stmt.query([])?;
         if let Some(r) = rows.next()? {
@@ -227,7 +229,10 @@ impl Repository {
                 input_tokens: r.get(12)?, output_tokens: r.get(13)?, latency_ms: r.get(14)?,
                 is_stream: r.get::<_, i64>(15)? != 0, error: r.get(16)?,
                 fallback: r.get::<_, i64>(17)? != 0, tool_calls: r.get(18)?,
-                request_body: r.get(19)?, response_body: r.get(20)?, created_at: r.get(21)?,
+                request_body: r.get(19)?, response_body: r.get(20)?,
+                risk_level: r.get(21)?, risk_score: r.get(22)?, risk_summary: r.get(23)?,
+                security_action: r.get(24)?, sanitized: r.get::<_, i64>(25)? != 0,
+                blocked_reason: r.get(26)?, created_at: r.get(27)?,
             }))
         } else {
             Ok(None)
@@ -329,7 +334,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock().unwrap();
         let like = keyword.map(|k| format!("%{}%", k));
-        let sql = "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,created_at FROM request_logs
+        let sql = "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs
                    WHERE (?1 IS NULL OR request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1)
                    ORDER BY seq DESC LIMIT ?2 OFFSET ?3";
         let mut stmt = conn.prepare(sql)?;
@@ -340,11 +345,120 @@ impl Repository {
             status_code: r.get(11)?, input_tokens: r.get(12)?, output_tokens: r.get(13)?,
             latency_ms: r.get(14)?, is_stream: r.get::<_,i64>(15)? != 0, error: r.get(16)?,
             fallback: r.get::<_,i64>(17)? != 0, tool_calls: r.get(18)?, request_body: r.get(19)?,
-            response_body: r.get(20)?, created_at: r.get(21)?,
+            response_body: r.get(20)?, risk_level: r.get(21)?, risk_score: r.get(22)?,
+            risk_summary: r.get(23)?, security_action: r.get(24)?,
+            sanitized: r.get::<_,i64>(25)? != 0, blocked_reason: r.get(26)?, created_at: r.get(27)?,
         }))?;
         let mut out = Vec::new();
         for r in rows { out.push(r?); }
         Ok(out)
+    }
+
+    pub fn insert_finding(&self, f: &RequestSecurityFinding) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO request_security_findings (id,log_id,phase,category,rule_id,severity,title,description,location,evidence_masked,evidence_hash,action,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
+            params![f.id, f.log_id, f.phase, f.category, f.rule_id, f.severity, f.title, f.description, f.location, f.evidence_masked, f.evidence_hash, f.action, f.created_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_findings(&self, log_id: &str) -> AppResult<Vec<RequestSecurityFinding>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id,log_id,phase,category,rule_id,severity,title,description,location,evidence_masked,evidence_hash,action,created_at FROM request_security_findings WHERE log_id=?1 ORDER BY created_at ASC")?;
+        let rows = stmt.query_map(params![log_id], |r| Ok(RequestSecurityFinding{
+            id:r.get(0)?, log_id:r.get(1)?, phase:r.get(2)?, category:r.get(3)?, rule_id:r.get(4)?,
+            severity:r.get(5)?, title:r.get(6)?, description:r.get(7)?, location:r.get(8)?,
+            evidence_masked:r.get(9)?, evidence_hash:r.get(10)?, action:r.get(11)?, created_at:r.get(12)?,
+        }))?;
+        let mut out=Vec::new(); for x in rows { out.push(x?); } Ok(out)
+    }
+
+    pub fn seed_builtin_rules(&self, rules: &[BuiltinRule]) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        for r in rules {
+            conn.execute(
+                "INSERT OR IGNORE INTO security_builtin_rules (id,rule_id,category,severity,title,description,toggle_key,enabled,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+                params![r.id, r.rule_id, r.category, r.severity, r.title, r.description, r.toggle_key, r.enabled as i64, r.created_at],
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn list_builtin_rules(&self) -> AppResult<Vec<BuiltinRule>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id,rule_id,category,severity,title,description,toggle_key,enabled,created_at FROM security_builtin_rules ORDER BY created_at ASC")?;
+        let rows = stmt.query_map([], |r| Ok(BuiltinRule {
+            id: r.get(0)?, rule_id: r.get(1)?, category: r.get(2)?, severity: r.get(3)?,
+            title: r.get(4)?, description: r.get(5)?, toggle_key: r.get(6)?,
+            enabled: r.get::<_, i64>(7)? != 0, created_at: r.get(8)?,
+        }))?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn update_builtin_rule(&self, id: &str, enabled: bool, severity: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "UPDATE security_builtin_rules SET enabled=?2, severity=?3 WHERE id=?1",
+            params![id, enabled as i64, severity],
+        )?;
+        Ok(())
+    }
+
+    pub fn reset_builtin_rules(&self, rules: &[BuiltinRule]) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("DELETE FROM security_builtin_rules", [])?;
+        drop(conn);
+        self.seed_builtin_rules(rules)
+    }
+
+    pub fn create_custom_rule(&self, r: &CustomRule) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO security_custom_rules (id,rule_type,category,pattern,severity,action,enabled,description,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+            params![r.id, r.rule_type, r.category, r.pattern, r.severity, r.action, r.enabled as i64, r.description, r.created_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_custom_rules(&self) -> AppResult<Vec<CustomRule>> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id,rule_type,category,pattern,severity,action,enabled,description,created_at FROM security_custom_rules ORDER BY created_at DESC")?;
+        let rows = stmt.query_map([], |r| Ok(CustomRule {
+            id: r.get(0)?, rule_type: r.get(1)?, category: r.get(2)?, pattern: r.get(3)?,
+            severity: r.get(4)?, action: r.get(5)?, enabled: r.get::<_, i64>(6)? != 0,
+            description: r.get(7)?, created_at: r.get(8)?,
+        }))?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn set_custom_rule_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute(
+            "UPDATE security_custom_rules SET enabled=?2 WHERE id=?1",
+            params![id, enabled as i64],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_custom_rule(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock().unwrap();
+        conn.execute("DELETE FROM security_custom_rules WHERE id=?1", [id])?;
+        Ok(())
     }
     pub fn stats(&self) -> AppResult<(i64,i64,i64,i64,i64,i64)> {
         // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms)
@@ -523,7 +637,10 @@ mod tests {
             upstream_model: Some(model.into()), protocol: "openai".into(),
             status_code: Some(200), input_tokens: tokens, output_tokens: tokens,
             latency_ms: latency, is_stream: false, error: None, fallback: false,
-            tool_calls: None, request_body: None, response_body: None, created_at,
+            tool_calls: None, request_body: None, response_body: None,
+            risk_level: "clean".into(), risk_score: 0, risk_summary: None,
+            security_action: "allow".into(), sanitized: false, blocked_reason: None,
+            created_at,
         }
     }
 
@@ -576,5 +693,111 @@ mod tests {
         assert_eq!(at, 60);
         assert_eq!(ac, 1);
         assert_eq!(lat, 150);
+    }
+
+    fn make_log_risk(seq: i64, model: &str, risk_level: &str, risk_score: i64) -> RequestLog {
+        RequestLog {
+            id: format!("l{}", seq), seq, trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()), key_name: Some("alice".into()),
+            channel_id: Some("ch1".into()), channel_name: Some("ch".into()),
+            role: Some("coder".into()), request_model: Some(model.into()),
+            upstream_model: Some(model.into()), protocol: "openai".into(),
+            status_code: Some(200), input_tokens: 10, output_tokens: 10,
+            latency_ms: 100, is_stream: false, error: None, fallback: false,
+            tool_calls: None, request_body: None, response_body: None,
+            risk_level: risk_level.into(), risk_score,
+            risk_summary: Some("summary".into()),
+            security_action: "block".into(),
+            sanitized: true,
+            blocked_reason: Some("reason".into()),
+            created_at: 1,
+        }
+    }
+
+    #[test]
+    fn request_log_risk_columns_roundtrip() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+
+        repo.insert_log(&make_log_risk(1, "gpt-4o", "high", 85)).unwrap();
+        let logs = repo.list_logs(None, 10, 0).unwrap();
+        assert_eq!(logs.len(), 1);
+        let got = &logs[0];
+        assert_eq!(got.risk_level, "high");
+        assert_eq!(got.risk_score, 85);
+        assert_eq!(got.risk_summary, Some("summary".into()));
+        assert_eq!(got.security_action, "block");
+        assert!(got.sanitized);
+        assert_eq!(got.blocked_reason, Some("reason".into()));
+    }
+
+    #[test]
+    fn finding_roundtrip() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1)).unwrap();
+
+        let finding = crate::db::models::RequestSecurityFinding {
+            id: "f1".into(), log_id: "l1".into(), phase: "request".into(),
+            category: "prompt_injection".into(), rule_id: "rule-1".into(),
+            severity: "high".into(), title: "Detected".into(),
+            description: Some("desc".into()), location: Some("messages[0]".into()),
+            evidence_masked: Some("***".into()), evidence_hash: Some("hash".into()),
+            action: Some("block".into()), created_at: 1,
+        };
+        repo.insert_finding(&finding).unwrap();
+
+        let findings = repo.get_findings("l1").unwrap();
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].id, "f1");
+        assert_eq!(findings[0].evidence_masked, Some("***".into()));
+    }
+
+    #[test]
+    fn builtin_rule_seed_idempotent() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let rules = vec![crate::db::models::BuiltinRule {
+            id: "b1".into(), rule_id: "PI-001".into(), category: "prompt_injection".into(),
+            severity: "high".into(), title: "PI".into(), description: Some("d".into()),
+            toggle_key: Some("pi".into()), enabled: true, created_at: 1,
+        }];
+        repo.seed_builtin_rules(&rules).unwrap();
+        let listed = repo.list_builtin_rules().unwrap();
+        assert_eq!(listed.len(), 1);
+
+        repo.seed_builtin_rules(&rules).unwrap();
+        let listed2 = repo.list_builtin_rules().unwrap();
+        assert_eq!(listed2.len(), 1);
+    }
+
+    #[test]
+    fn custom_rule_crud_and_toggle() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let rule = crate::db::models::CustomRule {
+            id: "c1".into(), rule_type: "keyword".into(), category: "secret".into(),
+            pattern: "password".into(), severity: "medium".into(), action: "warn".into(),
+            enabled: true, description: Some("d".into()), created_at: 1,
+        };
+        repo.create_custom_rule(&rule).unwrap();
+        let listed = repo.list_custom_rules().unwrap();
+        assert_eq!(listed.len(), 1);
+        assert!(listed[0].enabled);
+
+        repo.set_custom_rule_enabled("c1", false).unwrap();
+        let listed = repo.list_custom_rules().unwrap();
+        assert!(!listed[0].enabled);
+
+        repo.delete_custom_rule("c1").unwrap();
+        assert!(repo.list_custom_rules().unwrap().is_empty());
     }
 }
