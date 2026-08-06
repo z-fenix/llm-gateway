@@ -160,6 +160,24 @@ pub fn decide_action(result: &mut SecurityScanResult, settings: &SecuritySetting
     result.action = action;
 }
 
+pub fn scan_request(body: &serde_json::Value, s: &SecuritySettings) -> SecurityScanResult {
+    if !s.enabled || !s.scan_request {
+        return SecurityScanResult::default();
+    }
+    let mut result = scanner::scan_json(body, "request", s);
+    decide_action(&mut result, s);
+    result
+}
+
+pub fn scan_response(body: &serde_json::Value, s: &SecuritySettings) -> SecurityScanResult {
+    if !s.enabled || !s.scan_response {
+        return SecurityScanResult::default();
+    }
+    let mut result = scanner::scan_json(body, "response", s);
+    decide_action(&mut result, s);
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
