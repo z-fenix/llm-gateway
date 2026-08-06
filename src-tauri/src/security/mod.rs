@@ -178,6 +178,14 @@ pub fn scan_response(body: &serde_json::Value, s: &SecuritySettings) -> Security
     result
 }
 
+/// 转发前脱敏入口。返回（可能已脱敏的 body，是否发生了脱敏）。
+/// 仅当 `enabled && redact_secrets` 时才会修改 body。
+pub fn redact_request_body(body: &serde_json::Value, s: &SecuritySettings) -> (serde_json::Value, bool) {
+    let redacted = redact::redact_json(body, s);
+    let changed = redacted != *body;
+    (redacted, changed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
