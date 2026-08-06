@@ -37,6 +37,10 @@ pub fn run() {
                 }
             }
 
+            // 从 tauri-plugin-store 加载安全设置并同步到 AppState
+            let sec = security::get_security_settings(&app.handle());
+            *state.security.write().unwrap() = sec;
+
             app.manage(state.clone());
 
             // 系统托盘：退出 + 点击显示窗口

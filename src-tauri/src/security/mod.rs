@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tauri_plugin_store::StoreExt;
 
 pub mod redact;
 pub mod rules;
@@ -114,6 +115,75 @@ impl Default for SecuritySettings {
             max_scan_bytes: 1024 * 1024,
         }
     }
+}
+
+/// Merge store values (a `serde_json::Object` map) into a `SecuritySettings`,
+/// keeping defaults for any missing/invalid keys. This is a pure helper so it
+/// can be unit-tested without a running Tauri app.
+pub fn merge_from_store(mut settings: SecuritySettings, values: &serde_json::Map<String, serde_json::Value>) -> SecuritySettings {
+    if let Some(v) = values.get("security.enabled").and_then(|v| v.as_bool()) {
+        settings.enabled = v;
+    }
+    if let Some(v) = values.get("security.mode").and_then(|v| v.as_str()) {
+        settings.mode = v.to_string();
+    }
+    if let Some(v) = values.get("security.scan_request").and_then(|v| v.as_bool()) {
+        settings.scan_request = v;
+    }
+    if let Some(v) = values.get("security.scan_response").and_then(|v| v.as_bool()) {
+        settings.scan_response = v;
+    }
+    if let Some(v) = values.get("security.scan_unicode").and_then(|v| v.as_bool()) {
+        settings.scan_unicode = v;
+    }
+    if let Some(v) = values.get("security.scan_tools").and_then(|v| v.as_bool()) {
+        settings.scan_tools = v;
+    }
+    if let Some(v) = values.get("security.scan_network").and_then(|v| v.as_bool()) {
+        settings.scan_network = v;
+    }
+    if let Some(v) = values.get("security.redact_secrets").and_then(|v| v.as_bool()) {
+        settings.redact_secrets = v;
+    }
+    if let Some(v) = values.get("security.block_on_critical").and_then(|v| v.as_bool()) {
+        settings.block_on_critical = v;
+    }
+    if let Some(v) = values.get("security.max_scan_bytes").and_then(|v| v.as_u64()) {
+        settings.max_scan_bytes = v as usize;
+    }
+    settings
+}
+
+/// Read `SecuritySettings` from the tauri-plugin-store file `store.bin`.
+/// Missing keys fall back to `SecuritySettings::default()`.
+pub fn get_security_settings(app: &tauri::AppHandle) -> SecuritySettings {
+    let mut settings = SecuritySettings::default();
+    if let Ok(store) = app.store("store.bin") {
+        let mut values = serde_json::Map::new();
+        for key in [
+            "security.enabled",
+            "security.mode",
+            "security.scan_request",
+            "security.scan_response",
+            "security.scan_unicode",
+            "security.scan_tools",
+            "security.scan_network",
+            "security.redact_secrets",
+            "security.block_on_critical",
+            "security.max_scan_bytes",
+        ] {
+            if let Some(value) = store.get(key) {
+                values.insert(key.to_string(), value);
+            }
+        }
+        settings = merge_from_store(settings, &values);
+    }
+    settings
+}
+
+/// Apply `SecuritySettings` to the `AppState` security lock.
+pub fn apply_settings(state: &crate::proxy::state::AppState, s: &SecuritySettings) {
+    *state.security.write().unwrap() = s.clone();
 }
 
 pub fn decide_action(result: &mut SecurityScanResult, settings: &SecuritySettings) {
@@ -250,5 +320,29 @@ mod tests {
         s.enabled = false;
         decide_action(&mut r, &s);
         assert_eq!(r.action, SecurityAction::Allow);
+    }
+
+    #[test]
+    fn merge_store_overrides_defaults() {
+        let mut values = serde_json::Map::new();
+        values.insert("security.enabled".into(), serde_json::Value::Bool(false));
+        values.insert("security.mode".into(), serde_json::Value::String("block".into()));
+        values.insert("security.scan_response".into(), serde_json::Value::Bool(true));
+        values.insert("security.max_scan_bytes".into(), serde_json::Value::Number(2048.into()));
+
+        let merged = merge_from_store(SecuritySettings::default(), &values);
+        assert!(!merged.enabled);
+        assert_eq!(merged.mode, "block");
+        assert!(merged.scan_response);
+        assert_eq!(merged.max_scan_bytes, 2048);
+        // Missing keys keep defaults.
+        assert!(merged.scan_request);
+    }
+
+    #[test]
+    fn merge_store_keeps_defaults_on_missing_keys() {
+        let values = serde_json::Map::new();
+        let merged = merge_from_store(SecuritySettings::default(), &values);
+        assert_eq!(merged, SecuritySettings::default());
     }
 }

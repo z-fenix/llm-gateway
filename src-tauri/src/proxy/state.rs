@@ -1,5 +1,6 @@
 use crate::db::repository::Repository;
 use crate::db::Db;
+use crate::security::SecuritySettings;
 use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
@@ -10,6 +11,7 @@ pub struct AppState {
     /// 全局兜底：(channel_id, model)
     pub fallback: Arc<RwLock<Option<(String, String)>>>,
     pub retry_count: usize,
+    pub security: Arc<RwLock<SecuritySettings>>,
 }
 
 impl AppState {
@@ -21,6 +23,7 @@ impl AppState {
             http: reqwest::Client::new(),
             fallback: Arc::new(RwLock::new(None)),
             retry_count: 2,
+            security: Arc::new(RwLock::new(SecuritySettings::default())),
         }
     }
 }
