@@ -6,6 +6,7 @@ pub mod provider;
 pub mod protocol;
 pub mod proxy;
 pub mod router;
+pub mod security;
 
 use db::Db;
 use proxy::state::AppState;
