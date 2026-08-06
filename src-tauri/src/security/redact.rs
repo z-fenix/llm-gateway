@@ -28,7 +28,7 @@ fn redact_value(value: &Value) -> Value {
                 let redacted_v = if is_secret_field(k) {
                     match v {
                         Value::String(s) => Value::String(mask_string(s)),
-                        other => redact_value(other),
+                        other => Value::String(mask_string(&other.to_string())),
                     }
                 } else {
                     redact_value(v)
@@ -78,6 +78,10 @@ fn is_token_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '-' || c == '_'
 }
 
+fn is_bearer_token_char(c: char) -> bool {
+    c.is_ascii_alphanumeric() || matches!(c, '-' | '.' | '_' | '~' | '+' | '/' | '=')
+}
+
 fn is_jwt_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '='
 }
@@ -110,18 +114,26 @@ fn redact_prefix_token(s: &str, prefix: &str, replacement: &str) -> String {
 fn redact_bearer(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let chars: Vec<char> = s.chars().collect();
-    let prefix: Vec<char> = "Bearer ".chars().collect();
+    let prefix: Vec<char> = "bearer ".chars().collect();
     let mut i = 0;
     while i < chars.len() {
-        if i + prefix.len() <= chars.len() && chars[i..i + prefix.len()] == prefix[..] {
+        if i + prefix.len() <= chars.len()
+            && chars[i..i + prefix.len()]
+                .iter()
+                .zip(&prefix)
+                .all(|(a, b)| a.to_ascii_lowercase() == *b)
+        {
             let start = i + prefix.len();
             let mut j = start;
-            while j < chars.len() && is_token_char(chars[j]) {
+            while j < chars.len() && is_bearer_token_char(chars[j]) {
                 j += 1;
             }
             let kept_len = (start + 2).min(j) - start;
             let kept: String = chars[start..start + kept_len].iter().collect();
-            result.push_str("Bearer ");
+            // 保留原始大小写 scheme
+            for c in &chars[i..i + prefix.len()] {
+                result.push(*c);
+            }
             result.push_str(&kept);
             result.push_str("****");
             i = j;
@@ -173,16 +185,20 @@ fn redact_pem(s: &str) -> String {
                 }
                 j += 1;
             }
-            if found_end {
-                let placeholder = if lines[j].ends_with('\n') {
+            let placeholder = if found_end {
+                if lines[j].ends_with('\n') {
                     "[REDACTED PRIVATE KEY]\n"
                 } else {
                     "[REDACTED PRIVATE KEY]"
-                };
-                result.push(placeholder);
-                i = j + 1;
-                continue;
-            }
+                }
+            } else if lines[i].ends_with('\n') {
+                "[REDACTED PRIVATE KEY]\n"
+            } else {
+                "[REDACTED PRIVATE KEY]"
+            };
+            result.push(placeholder);
+            i = if found_end { j + 1 } else { lines.len() };
+            continue;
         }
         result.push(lines[i]);
         i += 1;
@@ -346,5 +362,51 @@ mod tests {
         let out = redact_json_for_logging(&v);
         let s = serde_json::to_string(&out).unwrap();
         assert!(!s.contains("topsecret"));
+    }
+
+    #[test]
+    fn redact_string_bearer_token_with_equals_is_fully_masked() {
+        let raw = "Authorization: Bearer abc=def";
+        let out = redact_string(raw);
+        assert_eq!(out, "Authorization: Bearer ab****");
+        assert!(!out.contains("abc=def"));
+        assert!(!out.contains("=def"));
+    }
+
+    #[test]
+    fn redact_string_bearer_jwt_style_is_fully_masked() {
+        let raw = "Authorization: Bearer aaa.bbb.ccc";
+        let out = redact_string(raw);
+        assert_eq!(out, "Authorization: Bearer aa****");
+        assert!(!out.contains("aaa.bbb.ccc"));
+        assert!(!out.contains(".bbb"));
+    }
+
+    #[test]
+    fn redact_string_bearer_lowercase_is_masked() {
+        let raw = "Authorization: bearer abcdef";
+        let out = redact_string(raw);
+        assert_eq!(out, "Authorization: bearer ab****");
+        assert!(!out.contains("abcdef"));
+    }
+
+    #[test]
+    fn redact_string_pem_truncated_is_fully_redacted() {
+        let raw = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAAB\nYWJjZGVmZw==\n";
+        let out = redact_string(raw);
+        assert_eq!(out, "[REDACTED PRIVATE KEY]\n");
+        assert!(!out.contains("b3BlbnNzaC1rZXk"));
+        assert!(!out.contains("YWJjZGVmZw"));
+    }
+
+    #[test]
+    fn redact_json_secret_field_non_string_is_masked_string() {
+        let v = json!({"Authorization": {"token": "secret123"}});
+        let out = redact_json(&v, &enabled_redact());
+        let auth = &out["Authorization"];
+        assert!(auth.is_string());
+        let s = auth.as_str().unwrap();
+        assert!(s.contains("****"));
+        assert!(!s.contains("secret123"));
     }
 }
