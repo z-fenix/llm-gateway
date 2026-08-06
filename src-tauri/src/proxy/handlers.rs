@@ -4,7 +4,7 @@ use crate::protocol::{anthropic, openai, types::ChatRequest};
 use crate::proxy::forwarder::{self, ForwardError};
 use crate::proxy::security_hook::{self, RequestVerdict};
 use crate::proxy::state::AppState;
-use crate::security::SecurityScanResult;
+use crate::security::{SecurityAction, SecurityScanResult};
 use axum::{
     body::Body,
     extract::State,
@@ -84,7 +84,7 @@ fn log_failure(
     request_model: Option<&str>,
     req_body: &serde_json::Value,
 ) -> Response {
-    write_log(
+    let _ = write_log(
         state,
         trace_id,
         api_key,
@@ -188,7 +188,7 @@ async fn handle(
                 match serde_json::from_value::<ChatRequest>(scanned_unified) {
                     Ok(c) => chat = c,
                     Err(_) => {
-                        write_log(
+                        let _ = write_log(
                             &state, &trace_id, Some(&api_key), None, None, Some(&request_model),
                             proto, Some(StatusCode::UNPROCESSABLE_ENTITY.as_u16() as i64),
                             Some("redact_reparse_failed".to_string()), 0, &body, Some(&scan),
@@ -235,19 +235,63 @@ async fn handle(
             let o = &fr.outcome;
             let usage_total = (o.usage.input_tokens + o.usage.output_tokens) as i64;
             let _ = state.repo.consume_quota(&api_key.id, usage_total);
-            write_log(
+
+            let resp_scan = security_hook::inspect_response(&state, &o.body);
+            let settings = state.security.read().unwrap().clone();
+
+            let log_id = write_log(
                 &state, &trace_id, Some(&api_key), Some(o), Some(&role), Some(&request_model),
                 proto, None, None, latency, &body, Some(&scan),
             );
-            let resp_body = match proto {
-                Protocol::OpenAI => {
-                    openai::chat_to_response(&to_chat_response(o, &request_model))
+
+            for f in &resp_scan.findings {
+                if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "response", f) {
+                    log::error!("failed to insert response security finding: {}", e);
                 }
-                Protocol::Anthropic => {
-                    anthropic::chat_to_response(&to_chat_response(o, &request_model))
+            }
+
+            match resp_scan.action {
+                SecurityAction::Block => {
+                    (
+                        StatusCode::from_u16(451).unwrap(),
+                        Json(json!({
+                            "error": {
+                                "code": "blocked_by_security",
+                                "trace_id": trace_id,
+                                "summary": resp_scan.summary,
+                                "phase": "response"
+                            }
+                        })),
+                    ).into_response()
                 }
-            };
-            (StatusCode::OK, Json(resp_body)).into_response()
+                SecurityAction::Redact => {
+                    let redacted = crate::security::redact::redact_json(&o.body, &settings);
+                    let redacted_outcome = forwarder::Outcome {
+                        body: redacted,
+                        ..o.clone()
+                    };
+                    let resp_body = match proto {
+                        Protocol::OpenAI => {
+                            openai::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
+                        }
+                        Protocol::Anthropic => {
+                            anthropic::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
+                        }
+                    };
+                    (StatusCode::OK, Json(resp_body)).into_response()
+                }
+                _ => {
+                    let resp_body = match proto {
+                        Protocol::OpenAI => {
+                            openai::chat_to_response(&to_chat_response(o, &request_model))
+                        }
+                        Protocol::Anthropic => {
+                            anthropic::chat_to_response(&to_chat_response(o, &request_model))
+                        }
+                    };
+                    (StatusCode::OK, Json(resp_body)).into_response()
+                }
+            }
         }
         Err(e) => {
             let (status, code) = match &e {
@@ -259,7 +303,7 @@ async fn handle(
                 }
                 ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
             };
-            write_log(
+            let _ = write_log(
                 &state, &trace_id, Some(&api_key), None, Some(&role), Some(&request_model),
                 proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body, Some(&scan),
             );
@@ -465,7 +509,7 @@ fn write_log(
     latency: i64,
     req_body: &serde_json::Value,
     scan: Option<&SecurityScanResult>,
-) {
+) -> String {
     let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) =
         match scan {
             Some(s) => (
@@ -485,8 +529,9 @@ fn write_log(
                 None,
             ),
         };
+    let log_id = uuid::Uuid::new_v4().to_string();
     let log = RequestLog {
-        id: uuid::Uuid::new_v4().to_string(),
+        id: log_id.clone(),
         seq: 0,
         trace_id: trace_id.to_string(),
         api_key_id: api_key.map(|k| k.id.clone()),
@@ -519,4 +564,5 @@ fn write_log(
         created_at: chrono::Utc::now().timestamp(),
     };
     let _ = state.repo.insert_log(&log);
+    log_id
 }

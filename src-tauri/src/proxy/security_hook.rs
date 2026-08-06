@@ -3,7 +3,7 @@ use crate::db::repository::Repository;
 use crate::proxy::state::AppState;
 use crate::security::{
     decide_action, redact::redact_json_for_logging, redact_request_body, rules,
-    SecurityAction, SecurityFinding, SecurityScanResult,
+    SecurityAction, SecurityFinding, SecurityScanResult, SecuritySettings,
 };
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde_json::json;
@@ -13,6 +13,51 @@ pub enum RequestVerdict {
     Proceed { body: serde_json::Value, scan: SecurityScanResult },
     /// 阻断；已写好 request_log + findings，直接返回该 451 响应
     Blocked(axum::response::Response),
+}
+
+/// 执行一次扫描（请求或响应侧），合并自定义黑白名单、白名单抑制后重新评分决策。
+fn run_scan_with_custom(
+    body: &serde_json::Value,
+    phase: &str,
+    settings: &SecuritySettings,
+    repo: &Repository,
+) -> SecurityScanResult {
+    let mut scan = match phase {
+        "request" => crate::security::scan_request(body, settings),
+        "response" => crate::security::scan_response(body, settings),
+        _ => crate::security::scan_request(body, settings),
+    };
+
+    let custom = match repo.list_custom_rules() {
+        Ok(rules) => rules,
+        Err(e) => {
+            log::error!("failed to list custom security rules: {}", e);
+            Vec::new()
+        }
+    };
+
+    // 合并自定义黑名单规则：按 JSON 字符串叶子逐条匹配，并带上 JSON-path 位置
+    walk_and_apply_custom(body, "$", phase, &custom, &mut scan.findings);
+
+    // 白名单抑制：在值层面判断该 finding 是否应被放行
+    let mut filtered = Vec::with_capacity(scan.findings.len());
+    for f in scan.findings {
+        let value_str = value_at_path(body, &f.location)
+            .map(|v| match v {
+                serde_json::Value::String(s) => s.clone(),
+                other => other.to_string(),
+            })
+            .unwrap_or_default();
+        if rules::is_whitelisted(&f.category, &value_str, &custom) {
+            continue;
+        }
+        filtered.push(f);
+    }
+
+    // 自定义规则或白名单可能改变风险等级，重新评分并决策
+    scan = crate::security::scanner::compute_result(filtered);
+    decide_action(&mut scan, settings);
+    scan
 }
 
 pub async fn inspect_request(
@@ -31,36 +76,7 @@ pub async fn inspect_request(
         };
     }
 
-    let mut scan = crate::security::scan_request(chat_body, &settings);
-    let custom = match state.repo.list_custom_rules() {
-        Ok(rules) => rules,
-        Err(e) => {
-            log::error!("failed to list custom security rules: {}", e);
-            Vec::new()
-        }
-    };
-
-    // 合并自定义黑名单规则：按 JSON 字符串叶子逐条匹配，并带上 JSON-path 位置
-    walk_and_apply_custom(chat_body, "$", &custom, &mut scan.findings);
-
-    // 白名单抑制：在值层面判断该 finding 是否应被放行
-    let mut filtered = Vec::with_capacity(scan.findings.len());
-    for f in scan.findings {
-        let value_str = value_at_path(chat_body, &f.location)
-            .map(|v| match v {
-                serde_json::Value::String(s) => s.clone(),
-                other => other.to_string(),
-            })
-            .unwrap_or_default();
-        if rules::is_whitelisted(&f.category, &value_str, &custom) {
-            continue;
-        }
-        filtered.push(f);
-    }
-
-    // 自定义规则或白名单可能改变风险等级，重新评分并决策
-    scan = crate::security::scanner::compute_result(filtered);
-    decide_action(&mut scan, &settings);
+    let mut scan = run_scan_with_custom(chat_body, "request", &settings, &state.repo);
 
     match scan.action {
         SecurityAction::Block => {
@@ -127,9 +143,16 @@ pub async fn inspect_request(
     }
 }
 
+/// 非流式响应侧检测：扫描上游响应体并按四模式决策。
+pub fn inspect_response(state: &AppState, resp_body: &serde_json::Value) -> SecurityScanResult {
+    let settings = state.security.read().unwrap().clone();
+    run_scan_with_custom(resp_body, "response", &settings, &state.repo)
+}
+
 fn walk_and_apply_custom(
     value: &serde_json::Value,
     path: &str,
+    phase: &str,
     custom_rules: &[crate::db::models::CustomRule],
     findings: &mut Vec<SecurityFinding>,
 ) {
@@ -141,17 +164,17 @@ fn walk_and_apply_custom(
                 } else {
                     format!("{}.{}", path, k)
                 };
-                walk_and_apply_custom(v, &child, custom_rules, findings);
+                walk_and_apply_custom(v, &child, phase, custom_rules, findings);
             }
         }
         serde_json::Value::Array(arr) => {
             for (i, v) in arr.iter().enumerate() {
                 let child = format!("{}[{}]", path, i);
-                walk_and_apply_custom(v, &child, custom_rules, findings);
+                walk_and_apply_custom(v, &child, phase, custom_rules, findings);
             }
         }
         serde_json::Value::String(text) => {
-            rules::apply_custom_rules(text, "request", path, custom_rules, findings);
+            rules::apply_custom_rules(text, phase, path, custom_rules, findings);
         }
         _ => {}
     }
@@ -205,7 +228,7 @@ fn risk_level_to_string(level: &crate::security::RiskLevel) -> String {
         .to_string()
 }
 
-fn insert_finding(
+pub(crate) fn insert_finding(
     repo: &Repository,
     log_id: &str,
     phase: &str,
