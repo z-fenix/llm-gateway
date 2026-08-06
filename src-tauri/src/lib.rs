@@ -39,7 +39,7 @@ pub fn run() {
 
             // 从 tauri-plugin-store 加载安全设置并同步到 AppState
             let sec = security::get_security_settings(&app.handle());
-            *state.security.write().unwrap() = sec;
+            security::apply_settings(&state, &sec);
 
             app.manage(state.clone());
 

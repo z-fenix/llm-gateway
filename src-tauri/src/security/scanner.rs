@@ -485,7 +485,7 @@ fn scan_local_path(text: &str, location: &str, findings: &mut Vec<SecurityFindin
 
 // ── 评分与摘要 ─────────────────────────────────────────────────────────────
 
-fn compute_result(findings: Vec<SecurityFinding>) -> SecurityScanResult {
+pub(crate) fn compute_result(findings: Vec<SecurityFinding>) -> SecurityScanResult {
     let max_rank = findings.iter().map(|f| f.severity.rank()).max().unwrap_or(0);
     let base_score = match max_rank {
         0 => 0,

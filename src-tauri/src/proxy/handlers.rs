@@ -2,7 +2,9 @@ use crate::auth::{self, AuthError};
 use crate::db::models::RequestLog;
 use crate::protocol::{anthropic, openai, types::ChatRequest};
 use crate::proxy::forwarder::{self, ForwardError};
+use crate::proxy::security_hook::{self, RequestVerdict};
 use crate::proxy::state::AppState;
+use crate::security::SecurityScanResult;
 use axum::{
     body::Body,
     extract::State,
@@ -94,6 +96,7 @@ fn log_failure(
         Some(code.to_string()),
         0,
         req_body,
+        None,
     );
     err_response(status, code, trace_id)
 }
@@ -146,7 +149,7 @@ async fn handle(
     };
 
     // 2. parse to unified format
-    let chat: ChatRequest = match proto {
+    let mut chat: ChatRequest = match proto {
         Protocol::OpenAI => match openai::request_to_chat(&body) {
             Ok(c) => c,
             Err(e) => {
@@ -168,7 +171,29 @@ async fn handle(
     };
     let request_model = chat.model.clone();
 
-    // 3. role detection
+    // 3. request-side security inspection
+    let unified = serde_json::to_value(&chat).unwrap_or_else(|_| body.clone());
+    let proto_str = match proto {
+        Protocol::OpenAI => "openai",
+        Protocol::Anthropic => "anthropic",
+    };
+    let scan = match security_hook::inspect_request(
+        &state, &trace_id, &api_key, proto_str, &request_model, &unified,
+    )
+    .await
+    {
+        RequestVerdict::Blocked(resp) => return resp,
+        RequestVerdict::Proceed { body: scanned_unified, scan } => {
+            if scan.sanitized {
+                if let Ok(c) = serde_json::from_value::<ChatRequest>(scanned_unified) {
+                    chat = c;
+                }
+            }
+            scan
+        }
+    };
+
+    // 4. role detection
     let role = {
         let conn = state.db.conn();
         let conn = conn.lock().unwrap();
@@ -187,7 +212,7 @@ async fn handle(
     };
 
     if chat.stream {
-        return handle_stream(state, &trace_id, &api_key, chat, role_route, role.clone(), proto, &request_model, &body, started).await;
+        return handle_stream(state, &trace_id, &api_key, chat, role_route, role.clone(), proto, &request_model, &unified, started).await;
     }
 
     // 5. forward
@@ -204,7 +229,7 @@ async fn handle(
             let _ = state.repo.consume_quota(&api_key.id, usage_total);
             write_log(
                 &state, &trace_id, Some(&api_key), Some(o), Some(&role), Some(&request_model),
-                proto, None, None, latency, &body,
+                proto, None, None, latency, &body, Some(&scan),
             );
             let resp_body = match proto {
                 Protocol::OpenAI => {
@@ -228,7 +253,7 @@ async fn handle(
             };
             write_log(
                 &state, &trace_id, Some(&api_key), None, Some(&role), Some(&request_model),
-                proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body,
+                proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body, Some(&scan),
             );
             err_response(status, code, &trace_id)
         }
@@ -431,7 +456,27 @@ fn write_log(
     error: Option<String>,
     latency: i64,
     req_body: &serde_json::Value,
+    scan: Option<&SecurityScanResult>,
 ) {
+    let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) =
+        match scan {
+            Some(s) => (
+                serde_json::to_string(&s.risk_level).unwrap().trim_matches('"').to_string(),
+                s.risk_score,
+                Some(s.summary.clone()),
+                s.action.as_str().to_string(),
+                s.sanitized,
+                s.blocked_reason.clone(),
+            ),
+            None => (
+                "clean".to_string(),
+                0,
+                None,
+                "allow".to_string(),
+                false,
+                None,
+            ),
+        };
     let log = RequestLog {
         id: uuid::Uuid::new_v4().to_string(),
         seq: 0,
@@ -455,14 +500,14 @@ fn write_log(
         error,
         fallback: o.map(|x| x.via_fallback).unwrap_or(false),
         tool_calls: None,
-        request_body: Some(req_body.to_string()),
+        request_body: Some(crate::security::redact::redact_json_for_logging(req_body).to_string()),
         response_body: o.map(|x| x.body.to_string()),
-        risk_level: "clean".into(),
-        risk_score: 0,
-        risk_summary: None,
-        security_action: "allow".into(),
-        sanitized: false,
-        blocked_reason: None,
+        risk_level,
+        risk_score,
+        risk_summary,
+        security_action,
+        sanitized,
+        blocked_reason,
         created_at: chrono::Utc::now().timestamp(),
     };
     let _ = state.repo.insert_log(&log);
