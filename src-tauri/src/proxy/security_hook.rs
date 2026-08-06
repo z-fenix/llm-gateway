@@ -32,7 +32,13 @@ pub async fn inspect_request(
     }
 
     let mut scan = crate::security::scan_request(chat_body, &settings);
-    let custom = state.repo.list_custom_rules().unwrap_or_default();
+    let custom = match state.repo.list_custom_rules() {
+        Ok(rules) => rules,
+        Err(e) => {
+            log::error!("failed to list custom security rules: {}", e);
+            Vec::new()
+        }
+    };
 
     // 合并自定义黑名单规则：按 JSON 字符串叶子逐条匹配，并带上 JSON-path 位置
     walk_and_apply_custom(chat_body, "$", &custom, &mut scan.findings);
@@ -88,9 +94,13 @@ pub async fn inspect_request(
                 blocked_reason: scan.blocked_reason.clone(),
                 created_at: chrono::Utc::now().timestamp(),
             };
-            let _ = state.repo.insert_log(&log);
+            if let Err(e) = state.repo.insert_log(&log) {
+                log::error!("failed to insert block request log: {}", e);
+            }
             for f in &scan.findings {
-                let _ = insert_finding(&state.repo, &log.id, "request", f);
+                if let Err(e) = insert_finding(&state.repo, &log.id, "request", f) {
+                    log::error!("failed to insert security finding: {}", e);
+                }
             }
             let resp = (
                 StatusCode::from_u16(451).unwrap(),

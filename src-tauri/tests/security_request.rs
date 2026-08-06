@@ -1,5 +1,7 @@
 mod common;
 
+use axum::{routing::post, Router};
+use futures::stream;
 use llm_gateway_lib::db::models::{ApiKey, Channel};
 use llm_gateway_lib::db::repository::Repository;
 use llm_gateway_lib::db::Db;
@@ -212,3 +214,62 @@ async fn request_audit_records_risk_but_forwards_original() {
         persisted
     );
 }
+
+async fn spawn_sse_upstream() -> String {
+    let app = Router::new().route("/v1/chat/completions", post(|| async {
+        let chunks = vec![
+            Ok::<_, std::convert::Infallible>(r#"data: {"choices":[{"delta":{"content":"ok"}}],"usage":{"prompt_tokens":10,"completion_tokens":1,"total_tokens":11}}"#.to_string() + "\n\n"),
+            Ok("data: [DONE]".to_string() + "\n\n"),
+        ];
+        axum::response::Response::builder()
+            .header("content-type", "text/event-stream")
+            .body(axum::body::Body::from_stream(stream::iter(chunks)))
+            .unwrap()
+    }));
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0))).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{}", addr)
+}
+
+#[tokio::test]
+async fn stream_audit_masks_persisted_body_even_when_forwarding_original() {
+    let base = spawn_sse_upstream().await;
+
+    let (state, repo) = setup_state().await;
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+
+    {
+        let mut sec = state.security.write().unwrap();
+        sec.enabled = true;
+        sec.mode = "audit".into();
+        sec.scan_request = true;
+    }
+
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let client = reqwest::Client::new();
+    let mut body = secret_body();
+    body["stream"] = serde_json::json!(true);
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&body)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let _ = resp.text().await;
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert!(log.is_stream);
+    // risk columns are not yet threaded into stream logs (Task 9); here we only
+    // verify the trust boundary: persisted request body is masked.
+    let persisted = log.request_body.unwrap();
+    assert!(
+        !persisted.contains("sk-123456789012345678901234"),
+        "stream persisted request body must be masked: {}",
+        persisted
+    );
+}
+

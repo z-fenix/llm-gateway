@@ -185,8 +185,16 @@ async fn handle(
         RequestVerdict::Blocked(resp) => return resp,
         RequestVerdict::Proceed { body: scanned_unified, scan } => {
             if scan.sanitized {
-                if let Ok(c) = serde_json::from_value::<ChatRequest>(scanned_unified) {
-                    chat = c;
+                match serde_json::from_value::<ChatRequest>(scanned_unified) {
+                    Ok(c) => chat = c,
+                    Err(_) => {
+                        write_log(
+                            &state, &trace_id, Some(&api_key), None, None, Some(&request_model),
+                            proto, Some(StatusCode::UNPROCESSABLE_ENTITY.as_u16() as i64),
+                            Some("redact_reparse_failed".to_string()), 0, &body, Some(&scan),
+                        );
+                        return err_response(StatusCode::UNPROCESSABLE_ENTITY, "redact_reparse_failed", &trace_id);
+                    }
                 }
             }
             scan
@@ -283,7 +291,7 @@ async fn handle_stream(
             let trace = trace_id.to_string();
             let api_key2 = api_key.clone();
             let req_model = request_model.to_string();
-            let req_body_s = req_body.to_string();
+            let req_body_masked = crate::security::redact::redact_json_for_logging(req_body).to_string();
 
             let acc = Arc::new(std::sync::Mutex::new(
                 crate::proxy::sse::SseAccumulator::new(usage_protocol),
@@ -345,7 +353,7 @@ async fn handle_stream(
                     error,
                     fallback: via_fallback,
                     tool_calls: None,
-                    request_body: Some(req_body_s),
+                    request_body: Some(req_body_masked),
                     response_body: None,
                     risk_level: "clean".into(),
                     risk_score: 0,
@@ -397,7 +405,7 @@ async fn handle_stream(
                 error: Some(e.to_string()),
                 fallback: false,
                 tool_calls: None,
-                request_body: Some(req_body.to_string()),
+                request_body: Some(crate::security::redact::redact_json_for_logging(req_body).to_string()),
                 response_body: None,
                 risk_level: "clean".into(),
                 risk_score: 0,
