@@ -154,6 +154,98 @@ async fn stream_audit_chunks_untouched_and_response_findings_logged() {
 }
 
 #[tokio::test]
+async fn stream_audit_persists_request_phase_findings() {
+    let chunks = vec![
+        r#"data: {"choices":[{"index":0,"delta":{"content":"hello"}}]}"#.to_string() + "\n\n",
+        "data: [DONE]\n\n".to_string(),
+    ];
+    let secret_body = serde_json::json!({
+        "model": "gpt-4o",
+        "stream": true,
+        "messages": [{"role": "user", "content": "my key is sk-123456789012345678901234"}]
+    });
+    let (base, mock) = common::spawn_mock_stream(chunks).await;
+
+    let (state, repo) = setup_state().await;
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+
+    {
+        let mut sec = state.security.write().unwrap();
+        sec.enabled = true;
+        sec.mode = "audit".into();
+        sec.scan_request = true;
+    }
+
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&secret_body)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let _ = resp.bytes().await;
+    assert_eq!(mock.hits.lock().unwrap().len(), 1);
+
+    let log = wait_for_stream_log(&repo).await;
+    let findings = repo.get_findings(&log.id).unwrap();
+    assert!(
+        findings.iter().any(|f| f.phase == "request"),
+        "expected a request-phase finding: {:?}",
+        findings
+    );
+    assert!(
+        findings.iter().any(|f| f.rule_id == "credential.secret_token"),
+        "expected credential.secret_token finding: {:?}",
+        findings
+    );
+}
+
+#[tokio::test]
+async fn stream_response_redact_does_not_set_sanitized_flag() {
+    let chunks = vec![
+        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#.to_string() + "\n\n",
+        r#"data: {"choices":[{"index":0,"delta":{"content":"678901234"}}]}"#.to_string() + "\n\n",
+        "data: [DONE]\n\n".to_string(),
+    ];
+    let (base, mock) = common::spawn_mock_stream(chunks).await;
+
+    let (state, repo) = setup_state().await;
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+
+    {
+        let mut sec = state.security.write().unwrap();
+        sec.enabled = true;
+        sec.mode = "redact".into();
+        sec.scan_response = true;
+        sec.redact_secrets = true;
+    }
+
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&clean_body())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let _ = resp.bytes().await;
+    assert_eq!(mock.hits.lock().unwrap().len(), 1);
+
+    let log = wait_for_stream_log(&repo).await;
+    assert!(
+        !log.sanitized,
+        "stream response redact should not set sanitized flag"
+    );
+}
+
+#[tokio::test]
 async fn stream_scan_disabled_leaves_clean_log() {
     let chunks = vec![
         r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#.to_string() + "\n\n",

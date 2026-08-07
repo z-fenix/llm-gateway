@@ -67,15 +67,53 @@ pub fn mask_string(s: &str) -> String {
 pub fn redact_string(s: &str) -> String {
     let s = redact_pem(s);
     let s = redact_bearer(&s);
-    let s = redact_prefix_token(&s, "sk-", "sk-****");
+    let s = redact_prefix_token(&s, "gho_", "gho_****");
+    let s = redact_prefix_token(&s, "xoxb-", "xoxb-****");
+    let s = redact_sk_family(&s);
     let s = redact_prefix_token(&s, "ghp_", "ghp_****");
     let s = redact_prefix_token(&s, "AKIA", "AKIA****");
+    let s = redact_prefix_token(&s, "akia", "akia****");
     let s = redact_prefix_token(&s, "AIza", "AIza****");
+    let s = redact_prefix_token(&s, "aiza", "aiza****");
     redact_jwt(&s)
 }
 
 fn is_token_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '-' || c == '_'
+}
+
+/// 同时处理 `sk-ant-` 与通用 `sk-` token，避免通用规则部分掩码 `sk-ant-****`。
+fn redact_sk_family(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let chars: Vec<char> = s.chars().collect();
+    let sk_ant: Vec<char> = "sk-ant-".chars().collect();
+    let sk: Vec<char> = "sk-".chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if i + sk_ant.len() <= chars.len()
+            && chars[i..i + sk_ant.len()] == sk_ant[..]
+        {
+            let mut j = i + sk_ant.len();
+            while j < chars.len() && is_token_char(chars[j]) {
+                j += 1;
+            }
+            result.push_str("sk-ant-****");
+            i = j;
+        } else if i + sk.len() <= chars.len()
+            && chars[i..i + sk.len()] == sk[..]
+        {
+            let mut j = i + sk.len();
+            while j < chars.len() && is_token_char(chars[j]) {
+                j += 1;
+            }
+            result.push_str("sk-****");
+            i = j;
+        } else {
+            result.push(chars[i]);
+            i += 1;
+        }
+    }
+    result
 }
 
 fn is_bearer_token_char(c: char) -> bool {
@@ -302,6 +340,56 @@ mod tests {
         assert!(!out.contains("123456789012345678901234"));
         assert!(!out.contains("abcdef"));
         assert!(!out.contains("xxx123"));
+    }
+
+    #[test]
+    fn redact_string_gho_token_is_masked() {
+        let raw = "gho_abcdefghijklmnopqrstuvwxyz12";
+        assert_eq!(redact_string(raw), "gho_****");
+    }
+
+    #[test]
+    fn redact_string_xoxb_token_is_masked() {
+        let raw = "xoxb-1234567890123456789012345678";
+        assert_eq!(redact_string(raw), "xoxb-****");
+    }
+
+    #[test]
+    fn redact_string_sk_ant_token_is_masked_and_not_mangled() {
+        let raw = "token sk-ant-api03-abc123 end";
+        let out = redact_string(raw);
+        assert!(out.contains("sk-ant-****"));
+        assert!(!out.contains("api03"));
+        assert!(!out.contains("abc123"));
+    }
+
+    #[test]
+    fn redact_string_lowercase_akia_aiza_are_masked() {
+        assert_eq!(redact_string("akiaiosfodnn7example"), "akia****");
+        assert_eq!(redact_string("aizasya-1234567890abcdef"), "aiza****");
+    }
+
+    #[test]
+    fn redact_json_for_logging_masks_all_detected_secret_prefixes() {
+        let v = json!({
+            "a": "gho_xxx123",
+            "b": "xoxb-yyy456",
+            "c": "sk-ant-api03-zzz789",
+            "d": "akiaiosfodnn7example",
+            "e": "aizasya-1234567890abcdef"
+        });
+        let out = redact_json_for_logging(&v);
+        let s = serde_json::to_string(&out).unwrap();
+        assert!(!s.contains("xxx123"));
+        assert!(!s.contains("yyy456"));
+        assert!(!s.contains("zzz789"));
+        assert!(!s.contains("iosfodnn7example"));
+        assert!(!s.contains("1234567890abcdef"));
+        assert!(s.contains("gho_****"));
+        assert!(s.contains("xoxb-****"));
+        assert!(s.contains("sk-ant-****"));
+        assert!(s.contains("akia****"));
+        assert!(s.contains("aiza****"));
     }
 
     #[test]

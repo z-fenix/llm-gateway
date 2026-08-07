@@ -37,7 +37,7 @@ fn run_scan_with_custom(
     };
 
     // 合并自定义黑名单规则：按 JSON 字符串叶子逐条匹配，并带上 JSON-path 位置
-    walk_and_apply_custom(body, "$", phase, &custom, &mut scan.findings);
+    walk_and_apply_custom(body, "$", phase, settings, &custom, &mut scan.findings);
 
     // 白名单抑制：在值层面判断该 finding 是否应被放行
     let mut filtered = Vec::with_capacity(scan.findings.len());
@@ -156,6 +156,7 @@ fn walk_and_apply_custom(
     value: &serde_json::Value,
     path: &str,
     phase: &str,
+    settings: &SecuritySettings,
     custom_rules: &[crate::db::models::CustomRule],
     findings: &mut Vec<SecurityFinding>,
 ) {
@@ -167,16 +168,17 @@ fn walk_and_apply_custom(
                 } else {
                     format!("{}.{}", path, k)
                 };
-                walk_and_apply_custom(v, &child, phase, custom_rules, findings);
+                walk_and_apply_custom(v, &child, phase, settings, custom_rules, findings);
             }
         }
         serde_json::Value::Array(arr) => {
             for (i, v) in arr.iter().enumerate() {
                 let child = format!("{}[{}]", path, i);
-                walk_and_apply_custom(v, &child, phase, custom_rules, findings);
+                walk_and_apply_custom(v, &child, phase, settings, custom_rules, findings);
             }
         }
         serde_json::Value::String(text) => {
+            let text = crate::security::scanner::truncate_to_bytes(text, settings.max_scan_bytes);
             rules::apply_custom_rules(text, phase, path, custom_rules, findings);
         }
         _ => {}

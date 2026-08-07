@@ -60,7 +60,19 @@ fn walk_json(value: &Value, path: &str, s: &SecuritySettings, findings: &mut Vec
     }
 }
 
+/// 将字符串按 `max_scan_bytes` 截断到字符边界，避免扫描超大字符串。
+pub(crate) fn truncate_to_bytes(text: &str, max_bytes: usize) -> &str {
+    if text.len() <= max_bytes {
+        return text;
+    }
+    match text.char_indices().take_while(|(i, _)| *i < max_bytes).last() {
+        Some((idx, c)) => &text[..idx + c.len_utf8()],
+        None => "",
+    }
+}
+
 fn scan_string(text: &str, location: &str, s: &SecuritySettings, findings: &mut Vec<SecurityFinding>) {
+    let text = truncate_to_bytes(text, s.max_scan_bytes);
     scan_credentials(text, location, findings);
     scan_paths(text, location, findings);
     if s.scan_tools {
@@ -829,5 +841,35 @@ mod tests {
         let v = Value::Object(map);
         let r = scan_json(&v, "request", &settings());
         assert_eq!(r.findings.len(), MAX_FINDINGS);
+    }
+
+    #[test]
+    fn max_scan_bytes_skips_secret_beyond_cap() {
+        let mut s = settings();
+        s.max_scan_bytes = 20;
+        let prefix = "a".repeat(20);
+        let secret = format!("{}sk-123456789012345678901234", prefix);
+        let v = json!({"key": secret});
+        let r = scan_json(&v, "request", &s);
+        assert!(find(&r, "credential.secret_token").is_none());
+    }
+
+    #[test]
+    fn max_scan_bytes_detects_secret_within_cap() {
+        let mut s = settings();
+        s.max_scan_bytes = 100;
+        let v = json!({"key": "sk-123456789012345678901234"});
+        let r = scan_json(&v, "request", &s);
+        assert!(find(&r, "credential.secret_token").is_some());
+    }
+
+    #[test]
+    fn max_scan_bytes_truncates_on_char_boundary() {
+        let mut s = settings();
+        s.max_scan_bytes = 5;
+        // "你" is 3 bytes, "好" is 3 bytes; cap falls mid-character.
+        let v = json!({"key": "你好吗 sk-123456789012345678901234"});
+        let r = scan_json(&v, "request", &s);
+        assert!(find(&r, "credential.secret_token").is_none());
     }
 }

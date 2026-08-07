@@ -213,6 +213,58 @@ async fn request_audit_records_risk_but_forwards_original() {
         "persisted request body must still be masked: {}",
         persisted
     );
+
+    let findings = repo.get_findings(&log.id).unwrap();
+    assert!(
+        findings.iter().any(|f| f.phase == "request"),
+        "audit-mode request finding should be persisted: {:?}",
+        findings
+    );
+}
+
+#[tokio::test]
+async fn request_audit_persists_request_phase_findings() {
+    let (base, mock) = common::spawn_mock(200, serde_json::json!({
+        "id": "c1", "object": "chat.completion", "model": "m",
+        "choices": [{"index": 0, "message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}
+    })).await;
+
+    let (state, repo) = setup_state().await;
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+
+    {
+        let mut sec = state.security.write().unwrap();
+        sec.enabled = true;
+        sec.mode = "audit".into();
+        sec.scan_request = true;
+    }
+
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&secret_body())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    assert_eq!(mock.hits.lock().unwrap().len(), 1);
+
+    let log = repo.latest_log().unwrap().unwrap();
+    let findings = repo.get_findings(&log.id).unwrap();
+    assert!(
+        findings.iter().any(|f| f.phase == "request"),
+        "expected a request-phase finding: {:?}",
+        findings
+    );
+    assert!(
+        findings.iter().any(|f| f.rule_id == "credential.secret_token"),
+        "expected credential.secret_token finding: {:?}",
+        findings
+    );
 }
 
 async fn spawn_sse_upstream() -> String {

@@ -253,6 +253,11 @@ async fn handle(
                 proto, log_status, log_error, latency, &body, Some(&merged_scan),
             ) {
                 Ok(log_id) => {
+                    for f in &scan.findings {
+                        if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "request", f) {
+                            log::error!("failed to insert request security finding: {}", e);
+                        }
+                    }
                     for f in &resp_scan.findings {
                         if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "response", f) {
                             log::error!("failed to insert response security finding: {}", e);
@@ -440,6 +445,12 @@ async fn handle_stream(
                     log::error!("failed to insert stream request log: {}", e);
                 }
 
+                for f in &req_scan.findings {
+                    if let Err(e) = security_hook::insert_finding(&state2.repo, &log_id, "request", f) {
+                        log::error!("failed to insert request security finding: {}", e);
+                    }
+                }
+
                 for f in &resp_scan.findings {
                     if let Err(e) = security_hook::insert_finding(&state2.repo, &log_id, "response", f) {
                         log::error!("failed to insert response security finding: {}", e);
@@ -564,7 +575,7 @@ fn merge_scan_for_log(req: &SecurityScanResult, resp: &SecurityScanResult) -> Se
     } else {
         req.action.clone()
     };
-    merged.sanitized = req.sanitized || resp.action == SecurityAction::Redact;
+    merged.sanitized = req.sanitized;
     merged.blocked_reason = if merged.action == SecurityAction::Block {
         if resp.action == SecurityAction::Block {
             resp.blocked_reason.clone()

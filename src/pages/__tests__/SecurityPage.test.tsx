@@ -74,6 +74,32 @@ describe("SecurityPage", () => {
     );
   });
 
+  it("shows redact mode hint when mode is redact", async () => {
+    vi.mocked(api.getSecuritySettings).mockResolvedValueOnce({
+      enabled: true,
+      mode: "redact",
+      scan_request: true,
+      scan_response: true,
+      scan_unicode: false,
+      scan_tools: true,
+      scan_network: true,
+      redact_secrets: false,
+      block_on_critical: true,
+      max_scan_bytes: 65536,
+    });
+    render(<SecurityPage />);
+    await waitFor(() =>
+      expect(screen.getByText(/脱敏模式需同时开启/)).toBeInTheDocument()
+    );
+  });
+
+  it("uses substring wording for custom rule pattern placeholder", async () => {
+    render(<SecurityPage />);
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("匹配规则（子串）")).toBeInTheDocument()
+    );
+  });
+
   it("renders a builtin rule enable toggle", async () => {
     render(<SecurityPage />);
     await waitFor(() =>

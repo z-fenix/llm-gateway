@@ -157,6 +157,11 @@ export default function SecurityPage() {
                 </label>
               ))}
             </div>
+            {settings.mode === "redact" && (
+              <p className="mt-1 text-xs text-amber-600">
+                提示：脱敏模式需同时开启「自动脱敏密钥」才会生效。
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -299,7 +304,7 @@ export default function SecurityPage() {
           </select>
           <input
             className="border rounded px-2 py-1"
-            placeholder="匹配规则（正则）"
+            placeholder="匹配规则（子串）"
             value={form.pattern}
             onChange={(e) => setForm({ ...form, pattern: e.target.value })}
           />
