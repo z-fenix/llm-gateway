@@ -220,7 +220,7 @@ async fn handle(
     };
 
     if chat.stream {
-        return handle_stream(state, &trace_id, &api_key, chat, role_route, role.clone(), proto, &request_model, &unified, started).await;
+        return handle_stream(state, &trace_id, &api_key, chat, role_route, role.clone(), proto, &request_model, &unified, &scan, started).await;
     }
 
     // 5. forward
@@ -336,6 +336,7 @@ async fn handle_stream(
     proto: Protocol,
     request_model: &str,
     req_body: &serde_json::Value,
+    scan: &SecurityScanResult,
     started: std::time::Instant,
 ) -> Response {
     match forwarder::forward_stream(&state, &chat, role_route).await {
@@ -376,8 +377,10 @@ async fn handle_stream(
                 }
             });
 
+            let req_scan = scan.clone();
             let wrapped = stream.chain(futures::stream::once(async move {
                 let usage = acc_log.lock().unwrap().usage();
+                let text = acc_log.lock().unwrap().text().to_string();
                 let failed = stream_error_log.load(Ordering::SeqCst);
                 let (status_code, error) = if failed {
                     (Some(502), Some("upstream_stream_error".into()))
@@ -387,8 +390,22 @@ async fn handle_stream(
                         .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64);
                     (Some(200), None)
                 };
+
+                let resp_body = serde_json::json!({"content": text});
+                let resp_scan = security_hook::inspect_response(&state2, &resp_body);
+                let merged_scan = merge_scan_for_log(&req_scan, &resp_scan);
+                let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) = (
+                    serde_json::to_string(&merged_scan.risk_level).unwrap().trim_matches('"').to_string(),
+                    merged_scan.risk_score,
+                    Some(merged_scan.summary.clone()),
+                    merged_scan.action.as_str().to_string(),
+                    merged_scan.sanitized,
+                    merged_scan.blocked_reason.clone(),
+                );
+
+                let log_id = uuid::Uuid::new_v4().to_string();
                 let _ = state2.repo.insert_log(&RequestLog {
-                    id: uuid::Uuid::new_v4().to_string(),
+                    id: log_id.clone(),
                     seq: 0,
                     trace_id: trace,
                     api_key_id: Some(api_key2.id.clone()),
@@ -412,14 +429,21 @@ async fn handle_stream(
                     tool_calls: None,
                     request_body: Some(req_body_masked),
                     response_body: None,
-                    risk_level: "clean".into(),
-                    risk_score: 0,
-                    risk_summary: None,
-                    security_action: "allow".into(),
-                    sanitized: false,
-                    blocked_reason: None,
+                    risk_level,
+                    risk_score,
+                    risk_summary,
+                    security_action,
+                    sanitized,
+                    blocked_reason,
                     created_at: chrono::Utc::now().timestamp(),
                 });
+
+                for f in &resp_scan.findings {
+                    if let Err(e) = security_hook::insert_finding(&state2.repo, &log_id, "response", f) {
+                        log::error!("failed to insert response security finding: {}", e);
+                    }
+                }
+
                 Ok(bytes::Bytes::new())
             }));
 
@@ -439,6 +463,14 @@ async fn handle_stream(
                 ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
             };
             let latency = started.elapsed().as_millis() as i64;
+            let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) = (
+                serde_json::to_string(&scan.risk_level).unwrap().trim_matches('"').to_string(),
+                scan.risk_score,
+                Some(scan.summary.clone()),
+                scan.action.as_str().to_string(),
+                scan.sanitized,
+                scan.blocked_reason.clone(),
+            );
             let _ = state.repo.insert_log(&RequestLog {
                 id: uuid::Uuid::new_v4().to_string(),
                 seq: 0,
@@ -464,12 +496,12 @@ async fn handle_stream(
                 tool_calls: None,
                 request_body: Some(crate::security::redact::redact_json_for_logging(req_body).to_string()),
                 response_body: None,
-                risk_level: "clean".into(),
-                risk_score: 0,
-                risk_summary: None,
-                security_action: "allow".into(),
-                sanitized: false,
-                blocked_reason: None,
+                risk_level,
+                risk_score,
+                risk_summary,
+                security_action,
+                sanitized,
+                blocked_reason,
                 created_at: chrono::Utc::now().timestamp(),
             });
             err_response(status, code, trace_id)

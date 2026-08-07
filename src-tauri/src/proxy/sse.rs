@@ -42,10 +42,11 @@ pub fn apply_anthropic_event(acc: &mut Usage, v: &serde_json::Value) {
     }
 }
 
-/// 逐行解析 SSE，按协议累积 usage。
+/// 逐行解析 SSE，按协议累积 usage 与文本内容。
 pub struct SseAccumulator {
     usage: Usage,
     protocol: Protocol,
+    text: String,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -56,7 +57,7 @@ pub enum Protocol {
 
 impl SseAccumulator {
     pub fn new(protocol: Protocol) -> Self {
-        Self { usage: Usage::default(), protocol }
+        Self { usage: Usage::default(), protocol, text: String::new() }
     }
 
     /// 喂入一行原始 SSE 文本（可能是 "data: {...}" 或空行/event 行）。
@@ -78,13 +79,36 @@ impl SseAccumulator {
                 if let Some(u) = extract_openai_usage(&v) {
                     self.usage = u;
                 }
+                if let Some(content) = v
+                    .get("choices")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c| c.get("delta"))
+                    .and_then(|d| d.get("content"))
+                    .and_then(|c| c.as_str())
+                {
+                    self.text.push_str(content);
+                }
             }
-            Protocol::Anthropic => apply_anthropic_event(&mut self.usage, &v),
+            Protocol::Anthropic => {
+                apply_anthropic_event(&mut self.usage, &v);
+                if let Some(text) = v
+                    .get("content_block_delta")
+                    .and_then(|d| d.get("delta"))
+                    .and_then(|d| d.get("text"))
+                    .and_then(|t| t.as_str())
+                {
+                    self.text.push_str(text);
+                }
+            }
         }
     }
 
     pub fn usage(&self) -> Usage {
         self.usage
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
     }
 }
 
