@@ -71,10 +71,8 @@ pub fn redact_string(s: &str) -> String {
     let s = redact_prefix_token(&s, "xoxb-", "xoxb-****");
     let s = redact_sk_family(&s);
     let s = redact_prefix_token(&s, "ghp_", "ghp_****");
-    let s = redact_prefix_token(&s, "AKIA", "AKIA****");
-    let s = redact_prefix_token(&s, "akia", "akia****");
-    let s = redact_prefix_token(&s, "AIza", "AIza****");
-    let s = redact_prefix_token(&s, "aiza", "aiza****");
+    let s = redact_prefix_token(&s, "akia", "AKIA****");
+    let s = redact_prefix_token(&s, "aiza", "AIza****");
     redact_jwt(&s)
 }
 
@@ -83,6 +81,7 @@ fn is_token_char(c: char) -> bool {
 }
 
 /// 同时处理 `sk-ant-` 与通用 `sk-` token，避免通用规则部分掩码 `sk-ant-****`。
+/// 大小写不敏感匹配前缀（掩码统一为标准小写形式）。
 fn redact_sk_family(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let chars: Vec<char> = s.chars().collect();
@@ -91,7 +90,10 @@ fn redact_sk_family(s: &str) -> String {
     let mut i = 0;
     while i < chars.len() {
         if i + sk_ant.len() <= chars.len()
-            && chars[i..i + sk_ant.len()] == sk_ant[..]
+            && chars[i..i + sk_ant.len()]
+                .iter()
+                .zip(&sk_ant)
+                .all(|(a, b)| a.to_ascii_lowercase() == *b)
         {
             let mut j = i + sk_ant.len();
             while j < chars.len() && is_token_char(chars[j]) {
@@ -100,7 +102,10 @@ fn redact_sk_family(s: &str) -> String {
             result.push_str("sk-ant-****");
             i = j;
         } else if i + sk.len() <= chars.len()
-            && chars[i..i + sk.len()] == sk[..]
+            && chars[i..i + sk.len()]
+                .iter()
+                .zip(&sk)
+                .all(|(a, b)| a.to_ascii_lowercase() == *b)
         {
             let mut j = i + sk.len();
             while j < chars.len() && is_token_char(chars[j]) {
@@ -124,7 +129,8 @@ fn is_jwt_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '='
 }
 
-/// 按固定前缀识别 token 并替换为保留前缀的掩码形式。
+/// 按固定前缀识别 token 并替换为保留前缀的掩码形式（大小写不敏感匹配 `prefix`，
+/// `prefix` 须为小写；掩码保留 `replacement` 给定形式）。
 fn redact_prefix_token(s: &str, prefix: &str, replacement: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let chars: Vec<char> = s.chars().collect();
@@ -132,7 +138,10 @@ fn redact_prefix_token(s: &str, prefix: &str, replacement: &str) -> String {
     let mut i = 0;
     while i < chars.len() {
         if i + prefix_chars.len() <= chars.len()
-            && chars[i..i + prefix_chars.len()] == prefix_chars[..]
+            && chars[i..i + prefix_chars.len()]
+                .iter()
+                .zip(&prefix_chars)
+                .all(|(a, b)| a.to_ascii_lowercase() == *b)
         {
             let mut j = i + prefix_chars.len();
             while j < chars.len() && is_token_char(chars[j]) {
@@ -282,6 +291,38 @@ mod tests {
     }
 
     #[test]
+    fn redact_string_case_insensitive_prefixes() {
+        // 大写变体也应被掩码（scanner 对 lowercase 文本检测，redact 需一致覆盖）。
+        // (raw, 不应残留的 token 主体)
+        let cases = [
+            ("GHO_abcdefghij123456", "abcdefghij123456"),
+            ("gHo_Abcdef123456", "Abcdef123456"),
+            ("XOXB-1234567890-abcdef", "1234567890-abcdef"),
+            ("Sk-AnT-abcdefghij123456", "abcdefghij123456"),
+            ("AKIAIOSFODNN7EXAMPLE", "IOSFODNN7EXAMPLE"),
+            ("akiaiosfodnn7example", "iosfodnn7example"),
+        ];
+        for (raw, body) in cases {
+            let out = redact_string(raw);
+            assert!(
+                !out.contains(body),
+                "expected token body {:?} masked in {:?}, got {:?}",
+                body, raw, out
+            );
+            assert!(out.contains("****"), "expected mask in {:?} -> {:?}", raw, out);
+        }
+    }
+
+    #[test]
+    fn redact_string_uppercase_sk_ant_not_double_masked() {
+        // SK-ANT- 须按 sk-ant- 整体掩码，不被通用 sk- 规则部分掩码。
+        let out = redact_string("token SK-ANT-abcdefghij123456 end");
+        assert!(out.contains("sk-ant-****"), "got {:?}", out);
+        assert!(!out.contains("SK-ANT-"), "got {:?}", out);
+        assert!(!out.contains("abcdefghij123456"), "got {:?}", out);
+    }
+
+    #[test]
     fn redact_string_sk_token() {
         let raw = "my key is sk-123456789012345678901234 and done";
         let out = redact_string(raw);
@@ -365,8 +406,9 @@ mod tests {
 
     #[test]
     fn redact_string_lowercase_akia_aiza_are_masked() {
-        assert_eq!(redact_string("akiaiosfodnn7example"), "akia****");
-        assert_eq!(redact_string("aizasya-1234567890abcdef"), "aiza****");
+        // 统一掩码为规范形式（大小写不敏感匹配）。
+        assert_eq!(redact_string("akiaiosfodnn7example"), "AKIA****");
+        assert_eq!(redact_string("aizasya-1234567890abcdef"), "AIza****");
     }
 
     #[test]
@@ -388,8 +430,8 @@ mod tests {
         assert!(s.contains("gho_****"));
         assert!(s.contains("xoxb-****"));
         assert!(s.contains("sk-ant-****"));
-        assert!(s.contains("akia****"));
-        assert!(s.contains("aiza****"));
+        assert!(s.contains("AKIA****"));
+        assert!(s.contains("AIza****"));
     }
 
     #[test]

@@ -153,6 +153,7 @@ fn scan_credentials(text: &str, location: &str, findings: &mut Vec<SecurityFindi
 
 fn detect_secret_token(s: &str) -> bool {
     let lower = s.to_lowercase();
+    // 前缀均为小写，对 lowercase 后的文本做大小写不敏感匹配。
     let prefixes = [
         "sk-ant-", "ghp_", "gho_", "xoxb-", "akia", "aiza",
     ];
