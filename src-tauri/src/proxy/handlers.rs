@@ -404,7 +404,7 @@ async fn handle_stream(
                 );
 
                 let log_id = uuid::Uuid::new_v4().to_string();
-                let _ = state2.repo.insert_log(&RequestLog {
+                if let Err(e) = state2.repo.insert_log(&RequestLog {
                     id: log_id.clone(),
                     seq: 0,
                     trace_id: trace,
@@ -436,7 +436,9 @@ async fn handle_stream(
                     sanitized,
                     blocked_reason,
                     created_at: chrono::Utc::now().timestamp(),
-                });
+                }) {
+                    log::error!("failed to insert stream request log: {}", e);
+                }
 
                 for f in &resp_scan.findings {
                     if let Err(e) = security_hook::insert_finding(&state2.repo, &log_id, "response", f) {
