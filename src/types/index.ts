@@ -65,6 +65,12 @@ export interface RequestLog {
   tool_calls: string | null;
   request_body: string | null;
   response_body: string | null;
+  risk_level: string;
+  risk_score: number;
+  risk_summary: string | null;
+  security_action: string;
+  sanitized: boolean;
+  blocked_reason: string | null;
   created_at: number;
 }
 export interface Stats {

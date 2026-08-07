@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Server, KeyRound, Route, ScrollText } from "lucide-react";
+import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText } from "lucide-react";
 
 const nav = [
   { to: "/", label: "概览", icon: LayoutDashboard },
   { to: "/channels", label: "渠道", icon: Server },
   { to: "/keys", label: "密钥", icon: KeyRound },
   { to: "/roles", label: "角色路由", icon: Route },
+  { to: "/security", label: "安全审计", icon: ShieldCheck },
   { to: "/logs", label: "日志", icon: ScrollText },
 ];
 
