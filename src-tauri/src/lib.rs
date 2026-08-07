@@ -106,6 +106,16 @@ pub fn run() {
             commands::role_route::clear_fallback,
             commands::log::list_logs,
             commands::stats::get_stats,
+            commands::security::get_security_settings,
+            commands::security::set_security_setting,
+            commands::security::get_builtin_security_rules,
+            commands::security::update_builtin_security_rule,
+            commands::security::reset_builtin_security_rules,
+            commands::security::get_custom_security_rules,
+            commands::security::create_custom_security_rule,
+            commands::security::toggle_custom_security_rule,
+            commands::security::delete_custom_security_rule,
+            commands::security::get_security_findings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

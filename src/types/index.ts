@@ -84,3 +84,56 @@ export interface TestResult {
   latency_ms: number;
   error: string | null;
 }
+
+export interface SecuritySettings {
+  enabled: boolean;
+  mode: string;
+  scan_request: boolean;
+  scan_response: boolean;
+  scan_unicode: boolean;
+  scan_tools: boolean;
+  scan_network: boolean;
+  redact_secrets: boolean;
+  block_on_critical: boolean;
+  max_scan_bytes: number;
+}
+
+export interface BuiltinRule {
+  id: string;
+  rule_id: string;
+  category: string;
+  severity: string;
+  title: string;
+  description: string | null;
+  toggle_key: string | null;
+  enabled: boolean;
+  created_at: number;
+}
+
+export interface CustomRule {
+  id: string;
+  rule_type: string;
+  category: string;
+  pattern: string;
+  severity: string;
+  action: string;
+  enabled: boolean;
+  description: string | null;
+  created_at: number;
+}
+
+export interface SecurityFinding {
+  id: string;
+  log_id: string;
+  phase: string;
+  category: string;
+  rule_id: string;
+  severity: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  evidence_masked: string | null;
+  evidence_hash: string | null;
+  action: string | null;
+  created_at: number;
+}

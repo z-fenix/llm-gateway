@@ -1,11 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   ApiKey,
+  BuiltinRule,
   Channel,
+  CustomRule,
   LogPage,
   RequestLog,
   RolePattern,
   RoleRoute,
+  SecurityFinding,
+  SecuritySettings,
   Stats,
   TestResult,
 } from "../types";
@@ -42,5 +46,41 @@ export const api = {
   listLogs: (keyword: string | null, limit: number, offset: number) =>
     invoke<LogPage>("list_logs", { filter: { keyword, limit, offset } }),
   getStats: () => invoke<Stats>("get_stats"),
+
+  getSecuritySettings: () => invoke<SecuritySettings>("get_security_settings"),
+  setSecuritySetting: (key: string, value: unknown) =>
+    invoke<void>("set_security_setting", { key, value }),
+  getBuiltinSecurityRules: () =>
+    invoke<BuiltinRule[]>("get_builtin_security_rules"),
+  updateBuiltinSecurityRule: (
+    id: string,
+    enabled: boolean,
+    severity: string
+  ) => invoke<void>("update_builtin_security_rule", { id, enabled, severity }),
+  resetBuiltinSecurityRules: () =>
+    invoke<void>("reset_builtin_security_rules"),
+  getCustomSecurityRules: () => invoke<CustomRule[]>("get_custom_security_rules"),
+  createCustomSecurityRule: (
+    rule_type: string,
+    category: string,
+    pattern: string,
+    severity: string,
+    action: string,
+    description: string | null
+  ) =>
+    invoke<void>("create_custom_security_rule", {
+      rule_type,
+      category,
+      pattern,
+      severity,
+      action,
+      description,
+    }),
+  toggleCustomSecurityRule: (id: string, enabled: boolean) =>
+    invoke<void>("toggle_custom_security_rule", { id, enabled }),
+  deleteCustomSecurityRule: (id: string) =>
+    invoke<void>("delete_custom_security_rule", { id }),
+  getSecurityFindings: (log_id: string) =>
+    invoke<SecurityFinding[]>("get_security_findings", { log_id }),
 };
 export type { RequestLog };
