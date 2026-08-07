@@ -97,9 +97,10 @@ async fn response_block_returns_451_and_no_secret_to_client() {
     assert_eq!(resp.status(), 451);
     let v: serde_json::Value = resp.json().await.unwrap();
     assert_eq!(v["error"]["code"], "blocked_by_security");
-    assert_eq!(v["error"]["phase"], "response");
     assert!(!v["error"]["trace_id"].as_str().unwrap().is_empty());
-    assert!(v["error"]["summary"].as_str().unwrap().contains("风险"));
+    let summary = v["error"]["summary"].as_str().unwrap();
+    assert!(summary.starts_with("响应侧："), "summary should fold phase: {}", summary);
+    assert!(summary.contains("风险"));
 
     // 上游响应中的敏感内容不能到达调用方
     let body_text = serde_json::to_string(&v).unwrap();
@@ -109,6 +110,22 @@ async fn response_block_returns_451_and_no_secret_to_client() {
     assert_eq!(mock.hits.lock().unwrap().len(), 1);
 
     let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(451));
+    assert_eq!(log.security_action, "block");
+    assert!(log.blocked_reason.is_some(), "blocked_reason should be set");
+
+    let response_body = log.response_body.as_ref().expect("response_body should be logged");
+    assert!(
+        response_body.contains("sk-****"),
+        "response_body in log should be masked: {}",
+        response_body
+    );
+    assert!(
+        !response_body.contains("sk-123456789012345678901234"),
+        "response_body must not contain raw secret: {}",
+        response_body
+    );
+
     let findings = repo.get_findings(&log.id).unwrap();
     assert!(!findings.is_empty(), "response findings should be persisted");
     assert!(findings.iter().any(|f| f.phase == "response"), "expected a response-phase finding");
@@ -198,3 +215,90 @@ async fn response_redact_masks_secret_before_client() {
     let findings = repo.get_findings(&log.id).unwrap();
     assert!(findings.iter().any(|f| f.phase == "response"));
 }
+
+#[tokio::test]
+async fn response_scan_disabled_passes_through_and_leaves_no_findings() {
+    let (base, mock) = common::spawn_mock(200, secret_response()).await;
+
+    let (state, repo) = setup_state().await;
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+
+    {
+        let mut sec = state.security.write().unwrap();
+        sec.enabled = true;
+        sec.mode = "block".into();
+        sec.scan_response = false;
+    }
+
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&clean_body())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    let content = v["choices"][0]["message"]["content"].as_str().unwrap();
+    assert!(
+        content.contains("sk-123456789012345678901234"),
+        "scan_response=false must passthrough original content: {}",
+        content
+    );
+
+    assert_eq!(mock.hits.lock().unwrap().len(), 1);
+
+    let log = repo.latest_log().unwrap().unwrap();
+    let findings = repo.get_findings(&log.id).unwrap();
+    assert!(
+        findings.iter().all(|f| f.phase != "response"),
+        "no response findings should be persisted when scan_response=false"
+    );
+}
+
+#[tokio::test]
+async fn security_disabled_passes_through_and_leaves_no_findings() {
+    let (base, mock) = common::spawn_mock(200, secret_response()).await;
+
+    let (state, repo) = setup_state().await;
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+
+    {
+        let mut sec = state.security.write().unwrap();
+        sec.enabled = false;
+        sec.mode = "block".into();
+        sec.scan_response = true;
+    }
+
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&clean_body())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    let content = v["choices"][0]["message"]["content"].as_str().unwrap();
+    assert!(
+        content.contains("sk-123456789012345678901234"),
+        "security disabled must passthrough original content: {}",
+        content
+    );
+
+    assert_eq!(mock.hits.lock().unwrap().len(), 1);
+
+    let log = repo.latest_log().unwrap().unwrap();
+    let findings = repo.get_findings(&log.id).unwrap();
+    assert!(
+        findings.iter().all(|f| f.phase != "response"),
+        "no response findings should be persisted when security disabled"
+    );
+}
+

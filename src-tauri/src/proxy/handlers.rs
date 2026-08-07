@@ -239,14 +239,28 @@ async fn handle(
             let resp_scan = security_hook::inspect_response(&state, &o.body);
             let settings = state.security.read().unwrap().clone();
 
-            let log_id = write_log(
-                &state, &trace_id, Some(&api_key), Some(o), Some(&role), Some(&request_model),
-                proto, None, None, latency, &body, Some(&scan),
-            );
+            let merged_scan = merge_scan_for_log(&scan, &resp_scan);
+            let is_resp_block = resp_scan.action == SecurityAction::Block;
+            let log_status = if is_resp_block { Some(451i64) } else { None };
+            let log_error = if is_resp_block {
+                Some("blocked_by_security".to_string())
+            } else {
+                None
+            };
 
-            for f in &resp_scan.findings {
-                if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "response", f) {
-                    log::error!("failed to insert response security finding: {}", e);
+            match write_log(
+                &state, &trace_id, Some(&api_key), Some(o), Some(&role), Some(&request_model),
+                proto, log_status, log_error, latency, &body, Some(&merged_scan),
+            ) {
+                Ok(log_id) => {
+                    for f in &resp_scan.findings {
+                        if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "response", f) {
+                            log::error!("failed to insert response security finding: {}", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!("failed to insert request log: {}", e);
                 }
             }
 
@@ -258,8 +272,7 @@ async fn handle(
                             "error": {
                                 "code": "blocked_by_security",
                                 "trace_id": trace_id,
-                                "summary": resp_scan.summary,
-                                "phase": "response"
+                                "summary": format!("响应侧：{}", resp_scan.summary)
                             }
                         })),
                     ).into_response()
@@ -495,6 +508,46 @@ fn to_chat_response(
     }
 }
 
+fn merge_scan_for_log(req: &SecurityScanResult, resp: &SecurityScanResult) -> SecurityScanResult {
+    fn action_rank(a: &SecurityAction) -> u8 {
+        match a {
+            SecurityAction::Allow => 0,
+            SecurityAction::Warn => 1,
+            SecurityAction::Redact => 2,
+            SecurityAction::Block => 3,
+        }
+    }
+
+    let mut merged = SecurityScanResult::default();
+    merged.risk_level = if resp.risk_level.rank() > req.risk_level.rank() {
+        resp.risk_level.clone()
+    } else {
+        req.risk_level.clone()
+    };
+    merged.risk_score = resp.risk_score.max(req.risk_score);
+    merged.action = if action_rank(&resp.action) > action_rank(&req.action) {
+        resp.action.clone()
+    } else {
+        req.action.clone()
+    };
+    merged.sanitized = req.sanitized || resp.action == SecurityAction::Redact;
+    merged.blocked_reason = if merged.action == SecurityAction::Block {
+        if resp.action == SecurityAction::Block {
+            resp.blocked_reason.clone()
+        } else {
+            req.blocked_reason.clone()
+        }
+    } else {
+        None
+    };
+    merged.summary = if resp.risk_level.rank() > req.risk_level.rank() {
+        resp.summary.clone()
+    } else {
+        req.summary.clone()
+    };
+    merged
+}
+
 #[allow(clippy::too_many_arguments)]
 fn write_log(
     state: &AppState,
@@ -509,7 +562,7 @@ fn write_log(
     latency: i64,
     req_body: &serde_json::Value,
     scan: Option<&SecurityScanResult>,
-) -> String {
+) -> crate::error::AppResult<String> {
     let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) =
         match scan {
             Some(s) => (
@@ -554,7 +607,7 @@ fn write_log(
         fallback: o.map(|x| x.via_fallback).unwrap_or(false),
         tool_calls: None,
         request_body: Some(crate::security::redact::redact_json_for_logging(req_body).to_string()),
-        response_body: o.map(|x| x.body.to_string()),
+        response_body: o.map(|x| crate::security::redact::redact_json_for_logging(&x.body).to_string()),
         risk_level,
         risk_score,
         risk_summary,
@@ -563,6 +616,6 @@ fn write_log(
         blocked_reason,
         created_at: chrono::Utc::now().timestamp(),
     };
-    let _ = state.repo.insert_log(&log);
-    log_id
+    state.repo.insert_log(&log)?;
+    Ok(log_id)
 }
