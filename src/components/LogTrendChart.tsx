@@ -24,22 +24,24 @@ export function formatBucketLabel(bucketSecs: number, ts: number): string {
   return `${month}-${day} ${hour}:00`;
 }
 
-export function computeTicks(buckets: TimeBucket[]): {
+export function computeTicks(
+  buckets: TimeBucket[],
+  bucketSecs: number
+): {
   xLabels: { i: number; label: string }[];
 } {
   if (buckets.length === 0) {
     return { xLabels: [] };
   }
-  const interval = buckets.length > 1 ? buckets[1].bucket - buckets[0].bucket : 3600;
   const target = 6;
   const step = Math.max(1, Math.floor(buckets.length / target));
   const xLabels: { i: number; label: string }[] = [];
   for (let i = 0; i < buckets.length; i += step) {
-    xLabels.push({ i, label: formatBucketLabel(interval, buckets[i].bucket * 1000) });
+    xLabels.push({ i, label: formatBucketLabel(bucketSecs, buckets[i].bucket * 1000) });
   }
   const last = buckets.length - 1;
   if (last % step !== 0) {
-    xLabels.push({ i: last, label: formatBucketLabel(interval, buckets[last].bucket * 1000) });
+    xLabels.push({ i: last, label: formatBucketLabel(bucketSecs, buckets[last].bucket * 1000) });
   }
   return { xLabels };
 }
@@ -70,9 +72,11 @@ function formatNumber(n: number): string {
 export default function LogTrendChart({
   buckets,
   dimension,
+  bucketSecs,
 }: {
   buckets: TimeBucket[];
   dimension: Dimension;
+  bucketSecs: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -143,7 +147,7 @@ export default function LogTrendChart({
         }
 
         // x-axis labels
-        const { xLabels } = computeTicks(buckets);
+        const { xLabels } = computeTicks(buckets, bucketSecs);
         ctx.fillStyle = "#6b7280";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
@@ -272,8 +276,6 @@ export default function LogTrendChart({
     );
   }
 
-  const interval = buckets.length > 1 ? buckets[1].bucket - buckets[0].bucket : 3600;
-
   return (
     <div ref={containerRef} className="relative w-full">
       <canvas
@@ -288,7 +290,7 @@ export default function LogTrendChart({
           className="pointer-events-none absolute z-10 rounded border border-gray-200 bg-white px-2 py-1 text-xs shadow"
           style={{ left: hover.x, top: hover.y }}
         >
-          <div className="font-medium text-gray-700">{formatBucketLabel(interval, hover.bucket.bucket * 1000)}</div>
+          <div className="font-medium text-gray-700">{formatBucketLabel(bucketSecs, hover.bucket.bucket * 1000)}</div>
           {dimension === "calls" && <div className="text-blue-600">calls: {hover.bucket.calls}</div>}
           {dimension === "tokens" && (
             <>

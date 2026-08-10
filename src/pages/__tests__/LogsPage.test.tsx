@@ -4,8 +4,8 @@ import LogsPage from "../LogsPage";
 import { api } from "../../lib/api";
 
 vi.mock("../../components/LogTrendChart", () => ({
-  default: function LogTrendChartMock(props: { dimension: string }) {
-    return <div data-testid="trend-chart" data-dimension={props.dimension}>chart</div>;
+  default: function LogTrendChartMock(props: { dimension: string; bucketSecs: number }) {
+    return <div data-testid="trend-chart" data-dimension={props.dimension} data-bucket-secs={props.bucketSecs}>chart</div>;
   },
 }));
 
@@ -102,6 +102,7 @@ describe("LogsPage", () => {
     render(<LogsPage />);
     await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "calls");
+    expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
 
     fireEvent.click(screen.getByRole("tab", { name: "Token" }));
     await waitFor(() =>
@@ -116,6 +117,41 @@ describe("LogsPage", () => {
     fireEvent.click(screen.getByRole("tab", { name: "风险分布" }));
     await waitFor(() =>
       expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "risk")
+    );
+  });
+
+  it("挂载时仅请求一次 listLogs，不重复请求", async () => {
+    render(<LogsPage />);
+    await waitFor(() => expect(mockedApi.listChannels).toHaveBeenCalled());
+    expect(mockedApi.listLogs).toHaveBeenCalledTimes(1);
+    expect(mockedApi.getLogStats).toHaveBeenCalledTimes(1);
+    expect(mockedApi.getLogTimeseries).toHaveBeenCalledTimes(1);
+  });
+
+  it("时间跨度 ≤48h 时 bucketSecs 为 3600，否则为 86400", async () => {
+    const { container } = render(<LogsPage />);
+    await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
+    // 默认无时间范围，按天
+    expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
+
+    const dateInputs = container.querySelectorAll('input[type="date"]:not(#cleanup-date)');
+    expect(dateInputs.length).toBe(2);
+    const [afterInput, beforeInput] = Array.from(dateInputs);
+
+    fireEvent.change(afterInput, { target: { value: "2024-01-01" } });
+    fireEvent.change(beforeInput, { target: { value: "2024-01-01" } });
+    fireEvent.click(screen.getByText("查询"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "3600")
+    );
+
+    fireEvent.change(afterInput, { target: { value: "2024-01-01" } });
+    fireEvent.change(beforeInput, { target: { value: "2024-01-03" } });
+    fireEvent.click(screen.getByText("查询"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400")
     );
   });
 

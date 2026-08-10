@@ -109,6 +109,7 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
 export default function LogsPage() {
   const [filter, setFilter] = useState<LogFilter>({});
   const [page, setPage] = useState(0);
+  const [searchNonce, setSearchNonce] = useState(0);
   const [data, setData] = useState<{ items: RequestLog[]; total: number }>({ items: [], total: 0 });
   const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -143,21 +144,21 @@ export default function LogsPage() {
       .catch(handleError);
   };
 
-  const loadAll = () => {
+  const loadStatsTrend = () => {
     Promise.all([
-      api.listLogs({ ...filter, limit, offset: page * limit }),
       api.getLogStats(filter),
       api.getLogTimeseries(filter, bucketSize),
-    ]).then(([pageData, statsData, bucketsData]) => {
-      setData(pageData);
+    ]).then(([statsData, bucketsData]) => {
       setStats(statsData);
       setBuckets(bucketsData);
       setError(null);
     }).catch(handleError);
   };
 
-  useEffect(() => { loadList(); }, [page]);
+  // page effect 负责列表请求：初始挂载、分页、查询都会通过 page/searchNonce 触发
+  useEffect(() => { loadList(); }, [page, searchNonce]);
 
+  // 挂载时加载元数据、统计与趋势；不重复请求列表（由 page effect 负责）
   useEffect(() => {
     api.listChannels().then(setChannels).catch(handleError);
     api.listApiKeys().then(setApiKeys).catch(handleError);
@@ -165,7 +166,7 @@ export default function LogsPage() {
       setRetentionDays(days);
       setRetentionInput(String(days));
     }).catch(handleError);
-    loadAll();
+    loadStatsTrend();
   }, []);
 
   const updateFilter = (patch: Partial<LogFilter>) => {
@@ -174,7 +175,8 @@ export default function LogsPage() {
 
   const onSearch = () => {
     setPage(0);
-    loadAll();
+    setSearchNonce((n) => n + 1);
+    loadStatsTrend();
   };
 
   const successRate = useMemo(() => {
@@ -195,7 +197,8 @@ export default function LogsPage() {
     if (!window.confirm(msg)) return;
     api.deleteLogsBefore(before).then(() => {
       setCleanupDate("");
-      loadAll();
+      loadList();
+      loadStatsTrend();
     }).catch(handleError);
   };
 
@@ -205,7 +208,8 @@ export default function LogsPage() {
     if (!window.confirm(msg1)) return;
     if (!window.confirm(msg2)) return;
     api.clearLogs().then(() => {
-      loadAll();
+      loadList();
+      loadStatsTrend();
     }).catch(handleError);
   };
 
@@ -281,7 +285,7 @@ export default function LogsPage() {
             </div>
             <div className="rounded border p-2">
               <div className="text-xs text-gray-500">成功率</div>
-              <div className="text-lg font-semibold">{successRate !== null ? `${successRate}%` : (stats.total_calls === 0 ? "—" : "0%")}</div>
+              <div className="text-lg font-semibold">{successRate !== null ? `${successRate}%` : "—"}</div>
             </div>
             <div className="rounded border p-2">
               <div className="text-xs text-gray-500">风险分布</div>
@@ -329,7 +333,7 @@ export default function LogsPage() {
               </button>
             ))}
           </div>
-          <LogTrendChart buckets={buckets} dimension={dimension} />
+          <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={bucketSize} />
         </div>
       </div>
 

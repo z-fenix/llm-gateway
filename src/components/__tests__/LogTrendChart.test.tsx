@@ -26,17 +26,31 @@ describe("LogTrendChart pure functions", () => {
     expect(niceCeil(1000)).toBe(1000);
   });
 
-  it("computeTicks 稀疏取刻度", () => {
-    const buckets: TimeBucket[] = Array.from({ length: 12 }, (_, i) => ({
+  it("computeTicks 按 bucketSecs 格式化刻度", () => {
+    const hourBuckets: TimeBucket[] = Array.from({ length: 12 }, (_, i) => ({
       ...baseBucket,
       bucket: baseBucket.bucket + i * 3600,
       calls: i + 1,
     }));
-    const { xLabels } = computeTicks(buckets);
-    expect(xLabels.length).toBeLessThanOrEqual(7);
-    expect(xLabels.length).toBeGreaterThanOrEqual(2);
-    expect(xLabels[0].label).toMatch(/^\d{2}-\d{2} \d{2}:00$/);
-    expect(xLabels[xLabels.length - 1].i).toBe(11);
+    const { xLabels: hourLabels } = computeTicks(hourBuckets, 3600);
+    expect(hourLabels.length).toBeLessThanOrEqual(7);
+    expect(hourLabels.length).toBeGreaterThanOrEqual(2);
+    expect(hourLabels[0].label).toMatch(/^\d{2}-\d{2} \d{2}:00$/);
+    expect(hourLabels[hourLabels.length - 1].i).toBe(11);
+
+    const dayBuckets: TimeBucket[] = Array.from({ length: 7 }, (_, i) => ({
+      ...baseBucket,
+      bucket: baseBucket.bucket + i * 86400,
+      calls: i + 1,
+    }));
+    const { xLabels: dayLabels } = computeTicks(dayBuckets, 86400);
+    expect(dayLabels[0].label).toMatch(/^\d{2}-\d{2}$/);
+    expect(dayLabels[dayLabels.length - 1].i).toBe(6);
+
+    // 单个 bucket 也应按 bucketSecs 决定格式，而非退化为小时格式
+    const singleBucket: TimeBucket[] = [{ ...baseBucket, bucket: baseBucket.bucket }];
+    expect(computeTicks(singleBucket, 86400).xLabels[0].label).toMatch(/^\d{2}-\d{2}$/);
+    expect(computeTicks(singleBucket, 3600).xLabels[0].label).toMatch(/^\d{2}-\d{2} \d{2}:00$/);
   });
 
   it("formatBucketLabel 区分小时与天", () => {
@@ -60,27 +74,27 @@ describe("LogTrendChart component", () => {
   });
 
   it("renders without crashing and shows empty state", () => {
-    render(<LogTrendChart buckets={[]} dimension="calls" />);
+    render(<LogTrendChart buckets={[]} dimension="calls" bucketSecs={3600} />);
     expect(screen.getByText("暂无数据")).toBeInTheDocument();
   });
 
   it("renders canvas when buckets present", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="calls" />);
+    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="calls" bucketSecs={3600} />);
     expect(container.querySelector("canvas")).toBeInTheDocument();
   });
 
   it("renders canvas for tokens dimension", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="tokens" />);
+    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="tokens" bucketSecs={3600} />);
     expect(container.querySelector("canvas")).toBeInTheDocument();
   });
 
   it("renders canvas for success dimension", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="success" />);
+    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="success" bucketSecs={3600} />);
     expect(container.querySelector("canvas")).toBeInTheDocument();
   });
 
   it("renders canvas for risk dimension", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="risk" />);
+    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="risk" bucketSecs={3600} />);
     expect(container.querySelector("canvas")).toBeInTheDocument();
   });
 });
