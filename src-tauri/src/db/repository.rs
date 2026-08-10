@@ -2,6 +2,7 @@ use super::models::{ApiKey, BuiltinRule, Channel, CustomRule, RequestLog, Reques
 use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
+use std::collections::BTreeMap;
 
 #[derive(Clone)]
 pub struct Repository {
@@ -47,6 +48,16 @@ pub struct LogStats {
     pub risk_distribution: Vec<(String, i64)>,
     pub top_channels: Vec<(String, i64)>,
     pub top_api_keys: Vec<(String, i64)>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TimeBucket {
+    pub bucket: i64,
+    pub calls: i64,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub error_count: i64,
+    pub risk_counts: BTreeMap<String, i64>,
 }
 
 fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
@@ -482,6 +493,71 @@ impl Repository {
             top_channels,
             top_api_keys,
         })
+    }
+
+    pub fn log_timeseries(
+        &self,
+        filter: &LogFilter,
+        bucket_secs: i64,
+    ) -> AppResult<Vec<TimeBucket>> {
+        if bucket_secs <= 0 {
+            return Ok(Vec::new());
+        }
+
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let (where_sql, where_values) = build_where(filter);
+
+        let sql = format!(
+            "SELECT (created_at / ?) * ? AS bucket, \
+             COUNT(*), \
+             COALESCE(SUM(input_tokens), 0), \
+             COALESCE(SUM(output_tokens), 0), \
+             COALESCE(SUM(CASE WHEN status_code NOT BETWEEN 200 AND 299 THEN 1 ELSE 0 END), 0), \
+             COALESCE(SUM(CASE WHEN risk_level = 'clean' THEN 1 ELSE 0 END), 0), \
+             COALESCE(SUM(CASE WHEN risk_level = 'info' THEN 1 ELSE 0 END), 0), \
+             COALESCE(SUM(CASE WHEN risk_level = 'low' THEN 1 ELSE 0 END), 0), \
+             COALESCE(SUM(CASE WHEN risk_level = 'medium' THEN 1 ELSE 0 END), 0), \
+             COALESCE(SUM(CASE WHEN risk_level = 'high' THEN 1 ELSE 0 END), 0), \
+             COALESCE(SUM(CASE WHEN risk_level = 'critical' THEN 1 ELSE 0 END), 0) \
+             FROM request_logs {} \
+             GROUP BY bucket \
+             ORDER BY bucket ASC",
+            where_sql
+        );
+
+        let risk_levels = ["clean", "info", "low", "medium", "high", "critical"];
+        let mut params: Vec<rusqlite::types::Value> = Vec::with_capacity(2 + where_values.len());
+        params.push(bucket_secs.into());
+        params.push(bucket_secs.into());
+        params.extend(where_values);
+
+        let mut stmt = conn.prepare(&sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(params.iter()), |r| {
+            let bucket: i64 = r.get(0)?;
+            let calls: i64 = r.get(1)?;
+            let input_tokens: i64 = r.get(2)?;
+            let output_tokens: i64 = r.get(3)?;
+            let error_count: i64 = r.get(4)?;
+            let mut risk_counts = BTreeMap::<String, i64>::new();
+            for (idx, level) in risk_levels.iter().enumerate() {
+                risk_counts.insert(level.to_string(), r.get::<_, i64>(5 + idx)?);
+            }
+            Ok(TimeBucket {
+                bucket,
+                calls,
+                input_tokens,
+                output_tokens,
+                error_count,
+                risk_counts,
+            })
+        })?;
+
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
     }
     pub fn list_logs(&self, filter: &LogFilter, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
         let conn = self.db.conn();
@@ -1284,5 +1360,101 @@ mod tests {
             ("alice".to_string(), 1),
             ("bob".to_string(), 1),
         ]);
+    }
+
+    #[test]
+    fn log_timeseries_buckets_correctly() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        // Bucket 0: two calls
+        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 5))
+            .unwrap();
+        repo.insert_log(&make_log_stats(2, 200, "ch1", "prod-channel", "alice", "low", 20, 10, 10))
+            .unwrap();
+        // Bucket 60: one error + one high risk
+        repo.insert_log(&make_log_stats(3, 500, "ch1", "prod-channel", "bob", "high", 30, 15, 65))
+            .unwrap();
+        // Bucket 120: one critical
+        repo.insert_log(&make_log_stats(4, 200, "ch1", "prod-channel", "alice", "critical", 40, 20, 120))
+            .unwrap();
+
+        let series = repo.log_timeseries(&LogFilter::default(), 60).unwrap();
+        assert_eq!(series.len(), 3);
+
+        assert_eq!(series[0].bucket, 0);
+        assert_eq!(series[0].calls, 2);
+        assert_eq!(series[0].input_tokens, 30);
+        assert_eq!(series[0].output_tokens, 15);
+        assert_eq!(series[0].error_count, 0);
+        assert_eq!(series[0].risk_counts.get("clean"), Some(&1));
+        assert_eq!(series[0].risk_counts.get("low"), Some(&1));
+        assert_eq!(series[0].risk_counts.get("high"), Some(&0));
+
+        assert_eq!(series[1].bucket, 60);
+        assert_eq!(series[1].calls, 1);
+        assert_eq!(series[1].input_tokens, 30);
+        assert_eq!(series[1].output_tokens, 15);
+        assert_eq!(series[1].error_count, 1);
+        assert_eq!(series[1].risk_counts.get("high"), Some(&1));
+        assert_eq!(series[1].risk_counts.get("clean"), Some(&0));
+
+        assert_eq!(series[2].bucket, 120);
+        assert_eq!(series[2].calls, 1);
+        assert_eq!(series[2].input_tokens, 40);
+        assert_eq!(series[2].output_tokens, 20);
+        assert_eq!(series[2].error_count, 0);
+        assert_eq!(series[2].risk_counts.get("critical"), Some(&1));
+
+        // Verify all six fixed risk levels are present in every bucket.
+        let expected_levels = ["clean", "info", "low", "medium", "high", "critical"];
+        for bucket in &series {
+            assert_eq!(bucket.risk_counts.len(), 6);
+            for level in &expected_levels {
+                assert!(bucket.risk_counts.contains_key(*level));
+            }
+        }
+    }
+
+    #[test]
+    fn log_timeseries_empty_when_no_match() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 5))
+            .unwrap();
+
+        let filter = LogFilter {
+            api_key_id: Some("non-existent".into()),
+            ..Default::default()
+        };
+        let series = repo.log_timeseries(&filter, 60).unwrap();
+        assert!(series.is_empty());
     }
 }
