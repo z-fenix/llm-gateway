@@ -13,6 +13,7 @@ use axum::{
     Json,
 };
 use futures::StreamExt;
+use parking_lot::Mutex;
 use serde_json::json;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -366,7 +367,7 @@ async fn handle_stream(
             let req_model = request_model.to_string();
             let req_body_masked = crate::security::redact::redact_json_for_logging(req_body).to_string();
 
-            let acc = Arc::new(std::sync::Mutex::new(
+            let acc = Arc::new(Mutex::new(
                 crate::proxy::sse::SseAccumulator::new(usage_protocol),
             ));
             let acc_log = acc.clone();
@@ -391,13 +392,13 @@ async fn handle_stream(
                         while let Some(pos) = buffer.iter().position(|&b| b == b'\n') {
                             let line_bytes: Vec<u8> = buffer.drain(..=pos).collect();
                             let line = String::from_utf8_lossy(&line_bytes);
-                            acc.lock().unwrap().feed_line(&line);
+                            acc.lock().feed_line(&line);
                         }
                         Ok(bytes)
                     }
-                    Err(e) => {
+                    Err(_e) => {
                         stream_error.store(true, Ordering::SeqCst);
-                        log::error!("upstream stream error: {}", e);
+                        log::error!("upstream stream error");
                         let err_chunk =
                             "data: {\"error\": {\"message\": \"upstream stream error\"}}\n\n";
                         Ok::<_, std::io::Error>(bytes::Bytes::from(err_chunk))
@@ -407,8 +408,8 @@ async fn handle_stream(
 
             let req_scan = scan.clone();
             let wrapped = stream.chain(futures::stream::once(async move {
-                let usage = acc_log.lock().unwrap().usage();
-                let text = acc_log.lock().unwrap().text().to_string();
+                let usage = acc_log.lock().usage();
+                let text = acc_log.lock().text().to_string();
                 let failed = stream_error_log.load(Ordering::SeqCst);
                 let (status_code, error) = if failed {
                     (Some(502), Some("upstream_stream_error".into()))
