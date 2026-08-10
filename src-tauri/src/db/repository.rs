@@ -2,6 +2,7 @@ use super::models::{ApiKey, BuiltinRule, Channel, CustomRule, RequestLog, Reques
 use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
+use serde::Serialize;
 use std::collections::BTreeMap;
 
 #[derive(Clone)]
@@ -39,7 +40,7 @@ pub struct LogFilter {
     pub before: Option<i64>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct LogStats {
     pub total_calls: i64,
     pub total_input_tokens: i64,
@@ -50,7 +51,7 @@ pub struct LogStats {
     pub top_api_keys: Vec<(String, i64)>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct TimeBucket {
     pub bucket: i64,
     pub calls: i64,

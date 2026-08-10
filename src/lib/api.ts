@@ -4,7 +4,9 @@ import type {
   BuiltinRule,
   Channel,
   CustomRule,
+  LogFilter,
   LogPage,
+  LogStats,
   RequestLog,
   RolePattern,
   RoleRoute,
@@ -12,6 +14,7 @@ import type {
   SecuritySettings,
   Stats,
   TestResult,
+  TimeBucket,
 } from "../types";
 
 export const api = {
@@ -43,8 +46,18 @@ export const api = {
     invoke<void>("set_fallback", { channel_id, model }),
   clearFallback: () => invoke<void>("clear_fallback"),
 
-  listLogs: (keyword: string | null, limit: number, offset: number) =>
-    invoke<LogPage>("list_logs", { filter: { keyword, limit, offset } }),
+  listLogs: (filter: LogFilter) => invoke<LogPage>("list_logs", { filter }),
+  getLogStats: (filter: LogFilter) =>
+    invoke<LogStats>("get_log_stats", { filter }),
+  getLogTimeseries: (filter: LogFilter, bucket: number) =>
+    invoke<TimeBucket[]>("get_log_timeseries", { filter, bucket }),
+  deleteLogsBefore: (before: number) =>
+    invoke<number>("delete_logs_before", { before }),
+  clearLogs: () => invoke<number>("clear_logs"),
+  getLogRetentionDays: () => invoke<number>("get_log_retention_days"),
+  setLogRetentionDays: (days: number) =>
+    invoke<void>("set_log_retention_days", { days }),
+
   getStats: () => invoke<Stats>("get_stats"),
 
   getSecuritySettings: () => invoke<SecuritySettings>("get_security_settings"),

@@ -1,5 +1,5 @@
 use crate::db::models::RequestLog;
-use crate::db::repository::{LogFilter, StatusClass};
+use crate::db::repository::{LogFilter, LogStats, StatusClass, TimeBucket};
 use crate::proxy::state::AppState;
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -58,6 +58,26 @@ pub fn list_logs(state: State<AppState>, filter: CommandLogFilter) -> Result<Log
         .map_err(|e| e.to_string())?;
     let total = state.repo.count_logs(&domain_filter).map_err(|e| e.to_string())?;
     Ok(LogPage { items, total })
+}
+
+#[tauri::command]
+pub fn get_log_stats(state: State<AppState>, filter: CommandLogFilter) -> Result<LogStats, String> {
+    state
+        .repo
+        .log_stats(&filter.to_filter())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_log_timeseries(
+    state: State<AppState>,
+    filter: CommandLogFilter,
+    bucket: i64,
+) -> Result<Vec<TimeBucket>, String> {
+    state
+        .repo
+        .log_timeseries(&filter.to_filter(), bucket)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

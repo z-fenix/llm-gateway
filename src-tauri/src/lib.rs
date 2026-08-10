@@ -117,6 +117,8 @@ pub fn run() {
             commands::role_route::set_fallback,
             commands::role_route::clear_fallback,
             commands::log::list_logs,
+            commands::log::get_log_stats,
+            commands::log::get_log_timeseries,
             commands::log::delete_logs_before,
             commands::log::clear_logs,
             commands::log::set_log_retention_days,

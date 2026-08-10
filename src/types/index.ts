@@ -85,6 +85,37 @@ export interface LogPage {
   items: RequestLog[];
   total: number;
 }
+export type StatusClass = "2xx" | "4xx" | "5xx";
+export interface LogFilter {
+  keyword?: string;
+  api_key_id?: string;
+  channel_id?: string;
+  role?: string;
+  risk_level?: string;
+  status?: StatusClass;
+  is_stream?: boolean;
+  after?: number;
+  before?: number;
+  limit?: number;
+  offset?: number;
+}
+export interface LogStats {
+  total_calls: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  success_count: number;
+  risk_distribution: [string, number][];
+  top_channels: [string, number][];
+  top_api_keys: [string, number][];
+}
+export interface TimeBucket {
+  bucket: number;
+  calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  error_count: number;
+  risk_counts: Record<string, number>;
+}
 export interface TestResult {
   ok: boolean;
   latency_ms: number;
