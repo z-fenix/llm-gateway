@@ -3,6 +3,7 @@ use crate::db::repository::{LogFilter, StatusClass};
 use crate::proxy::state::AppState;
 use serde::{Deserialize, Serialize};
 use tauri::State;
+use tauri_plugin_store::StoreExt;
 
 #[derive(Deserialize)]
 pub struct CommandLogFilter {
@@ -57,4 +58,35 @@ pub fn list_logs(state: State<AppState>, filter: CommandLogFilter) -> Result<Log
         .map_err(|e| e.to_string())?;
     let total = state.repo.count_logs(&domain_filter).map_err(|e| e.to_string())?;
     Ok(LogPage { items, total })
+}
+
+#[tauri::command]
+pub fn delete_logs_before(state: State<AppState>, before: i64) -> Result<usize, String> {
+    state.repo.delete_logs_before(before).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn clear_logs(state: State<AppState>) -> Result<usize, String> {
+    state.repo.clear_logs().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_log_retention_days(app: tauri::AppHandle, days: i64) -> Result<(), String> {
+    if days < 0 {
+        return Err("days must be >= 0".into());
+    }
+    let store = app.store("store.bin").map_err(|e| e.to_string())?;
+    store.set("log_retention_days", serde_json::json!(days));
+    store.save().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_log_retention_days(app: tauri::AppHandle) -> Result<i64, String> {
+    let store = app.store("store.bin").map_err(|e| e.to_string())?;
+    let days = store
+        .get("log_retention_days")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(0);
+    Ok(days)
 }

@@ -41,6 +41,18 @@ pub fn run() {
             let sec = security::get_security_settings(&app.handle());
             security::apply_settings(&state, &sec);
 
+            // 启动时按保留天数清理日志（失败仅记录，不阻断启动）
+            if let Ok(store) = app.store("store.bin") {
+                if let Some(days) = store.get("log_retention_days").and_then(|v| v.as_i64()) {
+                    if days > 0 {
+                        let cutoff = chrono::Utc::now().timestamp() - days * 86400;
+                        if let Err(e) = state.repo.delete_logs_before(cutoff) {
+                            log::error!("log retention cleanup failed: {}", e);
+                        }
+                    }
+                }
+            }
+
             app.manage(state.clone());
 
             // 系统托盘：退出 + 点击显示窗口
@@ -105,6 +117,10 @@ pub fn run() {
             commands::role_route::set_fallback,
             commands::role_route::clear_fallback,
             commands::log::list_logs,
+            commands::log::delete_logs_before,
+            commands::log::clear_logs,
+            commands::log::set_log_retention_days,
+            commands::log::get_log_retention_days,
             commands::stats::get_stats,
             commands::security::get_security_settings,
             commands::security::set_security_setting,

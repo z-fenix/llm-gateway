@@ -272,6 +272,29 @@ impl Repository {
         Ok(())
     }
 
+    pub fn delete_logs_before(&self, ts: i64) -> AppResult<usize> {
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        tx.execute(
+            "DELETE FROM request_security_findings WHERE log_id IN (SELECT id FROM request_logs WHERE created_at < ?1)",
+            params![ts],
+        )?;
+        let deleted = tx.execute("DELETE FROM request_logs WHERE created_at < ?1", params![ts])?;
+        tx.commit()?;
+        Ok(deleted)
+    }
+
+    pub fn clear_logs(&self) -> AppResult<usize> {
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        tx.execute("DELETE FROM request_security_findings", [])?;
+        let deleted = tx.execute("DELETE FROM request_logs", [])?;
+        tx.commit()?;
+        Ok(deleted)
+    }
+
     pub fn get_role_route(&self, role: &str) -> AppResult<Option<RoleRoute>> {
         let conn = self.db.conn();
         let conn = conn.lock();
@@ -1176,6 +1199,83 @@ mod tests {
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].id, "f1");
         assert_eq!(findings[0].evidence_masked, Some("***".into()));
+    }
+
+    fn insert_raw_finding(repo: &Repository, id: &str, log_id: &str, created_at: i64) {
+        let conn = repo.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO request_security_findings (id, log_id, phase, category, rule_id, severity, title, description, location, evidence_masked, evidence_hash, action, created_at) VALUES (?1, ?2, 'request', 'secret', 'rule-1', 'high', 't', NULL, NULL, NULL, NULL, NULL, ?3)",
+            params![id, log_id, created_at],
+        ).unwrap();
+    }
+
+    fn count_table(repo: &Repository, table: &str) -> i64 {
+        let conn = repo.db.conn();
+        let conn = conn.lock();
+        conn.query_row(&format!("SELECT COUNT(*) FROM {}", table), [], |r| r.get(0)).unwrap()
+    }
+
+    #[test]
+    fn delete_logs_before_cascades_findings() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+        // log at 100 and 200; only 100 is before cutoff 150
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 100)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-4o", 10, 100, 200)).unwrap();
+        insert_raw_finding(&repo, "f1", "l1", 100);
+        insert_raw_finding(&repo, "f2", "l2", 200);
+
+        let deleted = repo.delete_logs_before(150).unwrap();
+        assert_eq!(deleted, 1);
+        assert_eq!(count_table(&repo, "request_logs"), 1);
+        assert_eq!(count_table(&repo, "request_security_findings"), 1);
+        assert!(repo.get_findings("l1").unwrap().is_empty());
+        assert_eq!(repo.get_findings("l2").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn delete_logs_before_boundary_exclusive() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1000)).unwrap();
+        insert_raw_finding(&repo, "f1", "l1", 1000);
+
+        // created_at == ts must be kept (strict less-than)
+        let deleted = repo.delete_logs_before(1000).unwrap();
+        assert_eq!(deleted, 0);
+        assert_eq!(count_table(&repo, "request_logs"), 1);
+        assert_eq!(count_table(&repo, "request_security_findings"), 1);
+    }
+
+    #[test]
+    fn clear_logs_empties_both_tables() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 100)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-4o", 10, 100, 200)).unwrap();
+        insert_raw_finding(&repo, "f1", "l1", 100);
+        insert_raw_finding(&repo, "f2", "l2", 200);
+
+        let deleted = repo.clear_logs().unwrap();
+        assert_eq!(deleted, 2);
+        assert_eq!(count_table(&repo, "request_logs"), 0);
+        assert_eq!(count_table(&repo, "request_security_findings"), 0);
     }
 
     #[test]
