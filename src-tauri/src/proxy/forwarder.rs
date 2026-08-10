@@ -94,7 +94,9 @@ pub async fn forward(
         match try_channel(state, &ch, &model, chat).await {
             Ok((status, body, usage)) => {
                 let latency = start.elapsed().as_millis() as i64;
-                let _ = state.repo.record_channel_stats(&ch.id, (usage.input_tokens + usage.output_tokens) as i64, latency, true);
+                if let Err(e) = state.repo.record_channel_stats(&ch.id, (usage.input_tokens + usage.output_tokens) as i64, latency, true) {
+                    log::error!("failed to record channel stats: {}", e);
+                }
                 return Ok(ForwardResult {
                     outcome: Outcome { status, body, usage, channel: ch, model, via_fallback, latency_ms: latency },
                     role: None,
@@ -102,7 +104,9 @@ pub async fn forward(
             }
             Err(e) => {
                 let latency = start.elapsed().as_millis() as i64;
-                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, false);
+                if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
+                    log::error!("failed to record channel stats: {}", e);
+                }
                 // 4xx 非 failover：直接返回，不继续
                 if let ForwardError::Upstream { status, .. } = &e {
                     if !is_failover_status(*status) {
@@ -156,7 +160,9 @@ pub async fn forward_stream(
         match resp {
             Ok(r) if r.status().is_success() => {
                 let latency = start.elapsed().as_millis() as i64;
-                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, true);
+                if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, true) {
+                    log::error!("failed to record channel stats: {}", e);
+                }
                 let usage_protocol = if ch.provider_type == "claude" || ch.provider_type == "anthropic" {
                     crate::proxy::sse::Protocol::Anthropic
                 } else {
@@ -171,14 +177,18 @@ pub async fn forward_stream(
                 let latency = start.elapsed().as_millis() as i64;
                 let status = r.status().as_u16();
                 let text = r.text().await.unwrap_or_default();
-                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, false);
+                if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
+                    log::error!("failed to record channel stats: {}", e);
+                }
                 let e = ForwardError::Upstream { status, body: text };
                 if !is_failover_status(status) { return Err(e); }
                 last_err = Some(e);
             }
             Err(e) => {
                 let latency = start.elapsed().as_millis() as i64;
-                let _ = state.repo.record_channel_stats(&ch.id, 0, latency, false);
+                if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
+                    log::error!("failed to record channel stats: {}", e);
+                }
                 last_err = Some(ForwardError::Http(e.to_string()));
             }
         }

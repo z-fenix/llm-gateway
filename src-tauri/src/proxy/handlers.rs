@@ -84,7 +84,7 @@ fn log_failure(
     request_model: Option<&str>,
     req_body: &serde_json::Value,
 ) -> Response {
-    let _ = write_log(
+    if let Err(e) = write_log(
         state,
         trace_id,
         api_key,
@@ -97,7 +97,9 @@ fn log_failure(
         0,
         req_body,
         None,
-    );
+    ) {
+        log::error!("failed to write request log: {}", e);
+    }
     err_response(status, code, trace_id)
 }
 
@@ -188,11 +190,13 @@ async fn handle(
                 match serde_json::from_value::<ChatRequest>(scanned_unified) {
                     Ok(c) => chat = c,
                     Err(_) => {
-                        let _ = write_log(
+                        if let Err(e) = write_log(
                             &state, &trace_id, Some(&api_key), None, None, Some(&request_model),
                             proto, Some(StatusCode::UNPROCESSABLE_ENTITY.as_u16() as i64),
                             Some("redact_reparse_failed".to_string()), 0, &body, Some(&scan),
-                        );
+                        ) {
+                            log::error!("failed to write request log: {}", e);
+                        }
                         return err_response(StatusCode::UNPROCESSABLE_ENTITY, "redact_reparse_failed", &trace_id);
                     }
                 }
@@ -234,7 +238,9 @@ async fn handle(
         Ok(fr) => {
             let o = &fr.outcome;
             let usage_total = (o.usage.input_tokens + o.usage.output_tokens) as i64;
-            let _ = state.repo.consume_quota(&api_key.id, usage_total);
+            if let Err(e) = state.repo.consume_quota(&api_key.id, usage_total) {
+                log::error!("failed to consume quota: {}", e);
+            }
 
             let resp_scan = security_hook::inspect_response(&state, &o.body);
             let settings = state.security.read().clone();
@@ -321,10 +327,12 @@ async fn handle(
                 }
                 ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
             };
-            let _ = write_log(
+            if let Err(e) = write_log(
                 &state, &trace_id, Some(&api_key), None, Some(&role), Some(&request_model),
                 proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body, Some(&scan),
-            );
+            ) {
+                log::error!("failed to write request log: {}", e);
+            }
             err_response(status, code, &trace_id)
         }
     }
@@ -390,9 +398,12 @@ async fn handle_stream(
                 let (status_code, error) = if failed {
                     (Some(502), Some("upstream_stream_error".into()))
                 } else {
-                    let _ = state2
+                    if let Err(e) = state2
                         .repo
-                        .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64);
+                        .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64)
+                    {
+                        log::error!("failed to consume quota: {}", e);
+                    }
                     (Some(200), None)
                 };
 
@@ -484,7 +495,7 @@ async fn handle_stream(
                 scan.sanitized,
                 scan.blocked_reason.clone(),
             );
-            let _ = state.repo.insert_log(&RequestLog {
+            if let Err(e) = state.repo.insert_log(&RequestLog {
                 id: uuid::Uuid::new_v4().to_string(),
                 seq: 0,
                 trace_id: trace_id.to_string(),
@@ -516,7 +527,9 @@ async fn handle_stream(
                 sanitized,
                 blocked_reason,
                 created_at: chrono::Utc::now().timestamp(),
-            });
+            }) {
+                log::error!("failed to insert stream request log: {}", e);
+            }
             err_response(status, code, trace_id)
         }
     }

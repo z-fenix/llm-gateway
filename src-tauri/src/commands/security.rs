@@ -76,7 +76,9 @@ pub fn set_security_setting(
 
     if let Ok(store) = app.store("store.bin") {
         let _ = store.set(store_key, value);
-        let _ = store.save();
+        if let Err(e) = store.save() {
+            log::error!("failed to save security store: {}", e);
+        }
     }
     Ok(())
 }

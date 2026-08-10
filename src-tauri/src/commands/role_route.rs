@@ -76,7 +76,9 @@ pub fn set_fallback(
     });
     if let Ok(store) = app.store("store.bin") {
         let _ = store.set("fallback", value.unwrap_or(serde_json::Value::Null));
-        let _ = store.save();
+        if let Err(e) = store.save() {
+            log::error!("failed to save fallback store: {}", e);
+        }
     }
 }
 
@@ -86,6 +88,8 @@ pub fn clear_fallback(app: tauri::AppHandle, state: State<AppState>) {
 
     if let Ok(store) = app.store("store.bin") {
         let _ = store.set("fallback", serde_json::Value::Null);
-        let _ = store.save();
+        if let Err(e) = store.save() {
+            log::error!("failed to save fallback store: {}", e);
+        }
     }
 }
