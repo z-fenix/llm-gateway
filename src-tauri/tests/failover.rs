@@ -5,6 +5,7 @@ use llm_gateway_lib::db::repository::Repository;
 use llm_gateway_lib::db::Db;
 use llm_gateway_lib::protocol::openai;
 use llm_gateway_lib::proxy::forwarder::{forward, ForwardError};
+use llm_gateway_lib::proxy::server;
 use llm_gateway_lib::proxy::state::AppState;
 
 fn channel(id: &str, base: &str, ptype: &str, priority: i64) -> Channel {
@@ -118,11 +119,26 @@ async fn dispatch_all_candidates_fail_returns_5xx() {
     let secondary = channel("secondary", &secondary_base, "openai", 5);
     let (state, repo) = setup_state(primary, secondary);
 
-    let err = forward(&state, &chat(), None, &api_key(&repo)).await.unwrap_err();
-    match err {
-        ForwardError::Upstream { status, .. } => assert!(status >= 500, "expected 5xx, got {}", status),
-        other => panic!("expected Upstream 5xx, got {:?}", other),
-    }
+    // 走完整 HTTP 处理链路，验证错误响应带 trace_id（forwarder::forward 本身不携带 trace_id）
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-k1")
+        .json(&serde_json::json!({
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .send().await.unwrap();
+
+    // 全部候选失败后返回最后一个候选的确定性状态码（secondary 的 503）
+    assert_eq!(resp.status(), 503);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    let trace_id = v["error"]["trace_id"].as_str().unwrap();
+    assert!(!trace_id.is_empty(), "response must include a non-empty trace_id");
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(503));
+    assert_eq!(log.trace_id, trace_id, "request log trace_id must match response trace_id");
 
     let primary_after = repo.get_channel("primary").unwrap().unwrap();
     let secondary_after = repo.get_channel("secondary").unwrap().unwrap();
