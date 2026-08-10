@@ -243,3 +243,85 @@ async fn stream_split_utf8_usage_accumulated() {
     let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
     assert_eq!(k.quota_used, 7);
 }
+
+async fn spawn_midstream_error_upstream() -> String {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0))).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut buf = [0u8; 1024];
+        let _ = socket.read(&mut buf).await;
+        let body = r#"data: {"choices":[{"delta":{"content":"he"}}]}"#;
+        let chunk = format!("{:X}\r\n{}\r\n", body.len(), body);
+        let response = format!(
+            "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ntransfer-encoding: chunked\r\n\r\n{}",
+            chunk
+        );
+        let _ = socket.write_all(response.as_bytes()).await;
+        // Close without the terminating 0-length chunk, forcing a mid-stream reqwest body error.
+        let _ = socket.shutdown().await;
+    });
+    format!("http://{}", addr)
+}
+
+#[tokio::test]
+async fn stream_oversize_line_does_not_hang() {
+    let marker = "OVERSIZE_MARKER";
+    let big = marker.to_string() + &"x".repeat(1024 * 1024 + 100);
+    let chunks = vec![
+        big,
+        "data: {\"choices\":[{\"delta\":{\"content\":\"after\"}}]}\n\n".to_string(),
+    ];
+    let (base, _mock) = common::spawn_mock_stream(chunks).await;
+    let state = make_state(base);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let text = resp.text().await.unwrap();
+    // The oversized partial line is dropped from the accumulator buffer to bound memory,
+    // but normal complete lines are still forwarded.
+    assert!(text.contains("after"));
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert!(log.is_stream);
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 0);
+}
+
+#[tokio::test]
+async fn stream_mid_error_emits_error_chunk() {
+    let base = spawn_midstream_error_upstream().await;
+    let state = make_state(base);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let text = resp.text().await.unwrap();
+    // Gateway should emit an OpenAI-style error event chunk instead of silently producing empty output.
+    assert!(text.contains(r#"data: {"error": {"message": "upstream stream error"}}"#));
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert!(log.is_stream);
+    assert_ne!(log.status_code, Some(200));
+    assert!(log.error.is_some());
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 0);
+}

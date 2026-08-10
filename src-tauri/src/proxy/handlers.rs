@@ -373,11 +373,21 @@ async fn handle_stream(
             let stream_error = Arc::new(AtomicBool::new(false));
             let stream_error_log = stream_error.clone();
 
+            const MAX_SSE_LINE_BYTES: usize = 1024 * 1024;
             let mut buffer: Vec<u8> = Vec::new();
             let stream = handle.byte_stream.map(move |chunk| {
                 match chunk {
                     Ok(bytes) => {
                         buffer.extend_from_slice(&bytes);
+                        if buffer.iter().position(|&b| b == b'\n').is_none()
+                            && buffer.len() > MAX_SSE_LINE_BYTES
+                        {
+                            log::error!(
+                                "SSE line exceeded {} bytes without newline; dropping",
+                                MAX_SSE_LINE_BYTES
+                            );
+                            buffer.clear();
+                        }
                         while let Some(pos) = buffer.iter().position(|&b| b == b'\n') {
                             let line_bytes: Vec<u8> = buffer.drain(..=pos).collect();
                             let line = String::from_utf8_lossy(&line_bytes);
@@ -385,9 +395,12 @@ async fn handle_stream(
                         }
                         Ok(bytes)
                     }
-                    Err(_e) => {
+                    Err(e) => {
                         stream_error.store(true, Ordering::SeqCst);
-                        Ok::<_, std::io::Error>(bytes::Bytes::new())
+                        log::error!("upstream stream error: {}", e);
+                        let err_chunk =
+                            "data: {\"error\": {\"message\": \"upstream stream error\"}}\n\n";
+                        Ok::<_, std::io::Error>(bytes::Bytes::from(err_chunk))
                     }
                 }
             });
