@@ -232,6 +232,41 @@ mod tests {
         }
     }
 
+    fn existing_finding() -> super::super::SecurityFinding {
+        super::super::SecurityFinding {
+            rule_id: "existing".into(),
+            category: "keyword".into(),
+            severity: super::RiskLevel::Low,
+            title: "existing".into(),
+            description: None,
+            location: "$.text".into(),
+            evidence_masked: Some("***".into()),
+            evidence_hash: None,
+        }
+    }
+
+    #[test]
+    fn custom_blacklist_case_insensitive_and_evidence_masked() {
+        let rules = vec![custom_rule("blacklist", "keyword", "Secret", "high", true)];
+        let mut findings = vec![];
+        apply_custom_rules("this has sEcReT inside", "request", "$.msg", &rules, &mut findings);
+        assert_eq!(findings.len(), 1);
+        let ev = findings[0].evidence_masked.as_ref().unwrap();
+        assert!(ev.contains("****"), "evidence should be masked: {}", ev);
+        assert!(!ev.contains("sEcReT inside"), "evidence should not contain raw match");
+    }
+
+    #[test]
+    fn custom_rules_append_not_replace() {
+        let rules = vec![custom_rule("blacklist", "keyword", "aaa", "high", true)];
+        let mut findings = vec![existing_finding()];
+        let before = findings.len();
+        apply_custom_rules("aaa", "request", "$", &rules, &mut findings);
+        assert_eq!(findings.len(), before + 1, "should append rather than replace");
+        assert_eq!(findings[0].rule_id, "existing");
+        assert_eq!(findings[1].rule_id, "custom.blacklist.keyword");
+    }
+
     #[test]
     fn blacklist_domain_substring_hit() {
         let rules = vec![custom_rule("blacklist", "domain", "evil.com", "high", true)];

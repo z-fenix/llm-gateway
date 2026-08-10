@@ -607,6 +607,82 @@ mod tests {
     }
 
     #[test]
+    fn consume_quota_zero_tokens_increments_calls_without_changing_used() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let k = ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: Some(100), quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        };
+        repo.insert_api_key(&k).unwrap();
+        assert!(repo.consume_quota("k1", 0).unwrap());
+        let got = repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap();
+        assert_eq!(got.quota_used, 0);
+        assert_eq!(got.total_calls, 1);
+        assert_eq!(got.total_tokens, 0);
+    }
+
+    #[test]
+    fn consume_quota_large_value_and_over_cap_is_atomic() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let k = ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: Some(100), quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        };
+        repo.insert_api_key(&k).unwrap();
+        assert!(repo.consume_quota("k1", 99).unwrap());   // 0+99<=100 -> true, used=99
+        assert!(!repo.consume_quota("k1", 100).unwrap()); // 99+100>100 -> false, used stays 99
+        let got = repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap();
+        assert_eq!(got.quota_used, 99);
+        assert_eq!(got.total_calls, 1);
+        assert_eq!(got.total_tokens, 99);
+    }
+
+    #[test]
+    fn consume_quota_over_cap_does_not_decrement() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let k = ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: Some(50), quota_used: 40,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        };
+        repo.insert_api_key(&k).unwrap();
+        assert!(!repo.consume_quota("k1", 20).unwrap()); // 40+20>50 -> false
+        let got = repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap();
+        assert_eq!(got.quota_used, 40, "over-cap must not decrement quota");
+        assert_eq!(got.total_calls, 0, "over-cap must not increment calls");
+        assert_eq!(got.total_tokens, 0, "over-cap must not increment tokens");
+    }
+
+    #[test]
+    fn record_channel_stats_sliding_window_updates_avg_and_success_rate() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let mut c = ch("c1");
+        c.success_rate = 1.0;
+        c.avg_latency_ms = 0;
+        repo.insert_channel(&c).unwrap();
+
+        repo.record_channel_stats("c1", 10, 100, true).unwrap();
+        let got = repo.get_channel("c1").unwrap().unwrap();
+        assert_eq!(got.total_calls, 1);
+        assert_eq!(got.avg_latency_ms, 100);
+        assert!((got.success_rate - 1.0).abs() < f64::EPSILON);
+
+        repo.record_channel_stats("c1", 10, 200, false).unwrap();
+        let got = repo.get_channel("c1").unwrap().unwrap();
+        assert_eq!(got.total_calls, 2);
+        assert_eq!(got.avg_latency_ms, 150);
+        assert!((got.success_rate - 0.9).abs() < f64::EPSILON, "success_rate={}", got.success_rate);
+
+        repo.record_channel_stats("c1", 10, 300, true).unwrap();
+        let got = repo.get_channel("c1").unwrap().unwrap();
+        assert_eq!(got.total_calls, 3);
+        assert_eq!(got.avg_latency_ms, 200);
+        assert!((got.success_rate - 0.91).abs() < f64::EPSILON, "success_rate={}", got.success_rate);
+    }
+
+    #[test]
     fn role_route_crud() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();

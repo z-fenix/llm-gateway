@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use axum::{extract::State, routing::post, Json, Router};
 use serde_json::Value;
 use std::net::SocketAddr;
