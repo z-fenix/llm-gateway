@@ -113,7 +113,7 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         {
             let conn = repo.db.conn();
-            let conn = conn.lock().unwrap();
+            let conn = conn.lock();
             conn.execute("DROP TABLE api_keys", []).unwrap();
         }
         let result = authorize(&repo, "sk-lgw-x");

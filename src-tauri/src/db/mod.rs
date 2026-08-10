@@ -4,7 +4,8 @@ pub mod repository;
 use crate::error::AppResult;
 use rusqlite::Connection;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 
 const MIGRATIONS: &[&str] = &[
     include_str!("../../migrations/001_init.sql"),
@@ -32,7 +33,7 @@ impl Db {
     }
 
     fn migrate(&self) -> AppResult<()> {
-        let conn = self.conn.lock().unwrap();
+        let conn = self.conn.lock();
         conn.execute_batch("PRAGMA foreign_keys = ON;")?;
         // 记录已应用版本
         conn.execute_batch(

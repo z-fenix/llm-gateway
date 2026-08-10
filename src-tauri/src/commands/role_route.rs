@@ -54,7 +54,7 @@ pub fn delete_role_pattern(state: State<AppState>, id: String) -> Result<(), Str
 
 #[tauri::command]
 pub fn get_fallback(state: State<AppState>) -> Option<(String, String)> {
-    state.fallback.read().unwrap().clone()
+    state.fallback.read().clone()
 }
 
 #[tauri::command]
@@ -65,7 +65,7 @@ pub fn set_fallback(
     model: String,
 ) {
     let pair = Some((channel_id.clone(), model.clone()));
-    *state.fallback.write().unwrap() = pair.clone();
+    *state.fallback.write() = pair.clone();
 
     // 同步持久化到 tauri-plugin-store
     let value = pair.map(|(c, m)| {
@@ -82,7 +82,7 @@ pub fn set_fallback(
 
 #[tauri::command]
 pub fn clear_fallback(app: tauri::AppHandle, state: State<AppState>) {
-    *state.fallback.write().unwrap() = None;
+    *state.fallback.write() = None;
 
     if let Ok(store) = app.store("store.bin") {
         let _ = store.set("fallback", serde_json::Value::Null);

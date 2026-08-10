@@ -65,7 +65,7 @@ mod tests {
     fn detect_role_from_seed_rules() {
         let db = Db::new_in_memory().unwrap();
         let conn = db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         assert_eq!(
             detect_role(&conn, "claude-sonnet-4-20250514"),
             Some("sonnet".to_string())
@@ -81,7 +81,7 @@ mod tests {
         let db = Db::new_in_memory().unwrap();
         let conn = db.conn();
         {
-            let conn = conn.lock().unwrap();
+            let conn = conn.lock();
             conn.execute(
                 "INSERT INTO role_patterns (id,pattern,role,priority,enabled) VALUES ('px','*sonnet-4*','custom-sonnet',200,1)",
                 [],

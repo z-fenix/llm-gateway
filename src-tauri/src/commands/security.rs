@@ -5,7 +5,7 @@ use tauri_plugin_store::StoreExt;
 
 #[tauri::command]
 pub fn get_security_settings(state: State<AppState>) -> Result<crate::security::SecuritySettings, String> {
-    Ok(state.security.read().unwrap().clone())
+    Ok(state.security.read().clone())
 }
 
 #[tauri::command]
@@ -17,7 +17,7 @@ pub fn set_security_setting(
 ) -> Result<(), String> {
     let store_key = format!("security.{}", key);
     {
-        let mut settings = state.security.write().map_err(|e| e.to_string())?;
+        let mut settings = state.security.write();
         match key.as_str() {
             "enabled" => {
                 settings.enabled = value

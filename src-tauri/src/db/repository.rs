@@ -15,7 +15,7 @@ impl Repository {
 
     pub fn insert_channel(&self, c: &Channel) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO channels (id,name,provider_type,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
@@ -32,7 +32,7 @@ impl Repository {
 
     pub fn get_channel(&self, id: &str) -> AppResult<Option<Channel>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id,name,provider_type,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels WHERE id=?1",
         )?;
@@ -46,7 +46,7 @@ impl Repository {
 
     pub fn list_channels(&self) -> AppResult<Vec<Channel>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id,name,provider_type,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels ORDER BY priority DESC, created_at ASC",
         )?;
@@ -60,7 +60,7 @@ impl Repository {
 
     pub fn insert_api_key(&self, k: &ApiKey) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO api_keys (id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
@@ -74,7 +74,7 @@ impl Repository {
 
     pub fn get_api_key_by_key(&self, key: &str) -> AppResult<Option<ApiKey>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at FROM api_keys WHERE key=?1",
         )?;
@@ -99,7 +99,7 @@ impl Repository {
 
     pub fn consume_quota(&self, key_id: &str, tokens: i64) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "UPDATE api_keys SET quota_used=quota_used+?1, total_tokens=total_tokens+?1,
              total_calls=total_calls+1, last_used_at=?2 WHERE id=?3",
@@ -110,7 +110,7 @@ impl Repository {
 
     pub fn record_channel_stats(&self, channel_id: &str, tokens: i64, latency_ms: i64, success: bool) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         // 简化：累计调用与 token，平均延迟用滑动近似，success_rate 用指数滑动
         conn.execute(
             "UPDATE channels SET total_calls=total_calls+1, total_tokens=total_tokens+?1,
@@ -124,7 +124,7 @@ impl Repository {
 
     pub fn set_model_map(&self, channel_id: &str, source: &str, target: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO channel_model_maps (id,channel_id,source_model,target_model) VALUES (?1,?2,?3,?4)
              ON CONFLICT(channel_id,source_model) DO UPDATE SET target_model=excluded.target_model",
@@ -135,7 +135,7 @@ impl Repository {
 
     pub fn get_model_map(&self, channel_id: &str) -> AppResult<Vec<(String, String)>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT source_model, target_model FROM channel_model_maps WHERE channel_id=?1",
         )?;
@@ -151,7 +151,7 @@ impl Repository {
 
     pub fn insert_log(&self, l: &RequestLog) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let seq: i64 = conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| r.get(0))?;
         conn.execute(
             "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at)
@@ -170,7 +170,7 @@ impl Repository {
 
     pub fn get_role_route(&self, role: &str) -> AppResult<Option<RoleRoute>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes WHERE role=?1 AND enabled=1",
         )?;
@@ -187,7 +187,7 @@ impl Repository {
 
     pub fn list_role_patterns(&self) -> AppResult<Vec<RolePattern>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id,pattern,role,priority,enabled FROM role_patterns ORDER BY priority DESC",
         )?;
@@ -204,7 +204,7 @@ impl Repository {
 
     pub fn upsert_role_route(&self, r: &RoleRoute) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO role_routes (id,role,channel_id,target_model,enabled,updated_at) VALUES (?1,?2,?3,?4,?5,?6)
              ON CONFLICT(role) DO UPDATE SET channel_id=excluded.channel_id, target_model=excluded.target_model, enabled=excluded.enabled, updated_at=excluded.updated_at",
@@ -215,7 +215,7 @@ impl Repository {
 
     pub fn latest_log(&self) -> AppResult<Option<RequestLog>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare(
             "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
         )?;
@@ -241,7 +241,7 @@ impl Repository {
 
     pub fn update_channel(&self, c: &Channel) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "UPDATE channels SET name=?2,provider_type=?3,base_url=?4,api_key=?5,models=?6,priority=?7,weight=?8,enabled=?9,timeout_secs=?10,updated_at=?11 WHERE id=?1",
             rusqlite::params![c.id,c.name,c.provider_type,c.base_url,c.api_key,serde_json::to_string(&c.models).unwrap(),c.priority,c.weight,c.enabled as i64,c.timeout_secs,c.updated_at],
@@ -250,31 +250,31 @@ impl Repository {
     }
     pub fn delete_channel(&self, id: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("DELETE FROM channels WHERE id=?1", [id])?;
         Ok(())
     }
     pub fn set_api_key_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("UPDATE api_keys SET enabled=?2 WHERE id=?1", rusqlite::params![id, enabled as i64])?;
         Ok(())
     }
     pub fn delete_api_key(&self, id: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("DELETE FROM api_keys WHERE id=?1", [id])?;
         Ok(())
     }
     pub fn update_quota(&self, id: &str, quota_total: Option<i64>) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("UPDATE api_keys SET quota_total=?2 WHERE id=?1", rusqlite::params![id, quota_total])?;
         Ok(())
     }
     pub fn list_api_keys(&self) -> AppResult<Vec<ApiKey>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at FROM api_keys ORDER BY created_at DESC")?;
         let rows = stmt.query_map([], |r| Ok(ApiKey {
             id: r.get(0)?, key: r.get(1)?, name: r.get(2)?, enabled: r.get::<_,i64>(3)? != 0,
@@ -287,13 +287,13 @@ impl Repository {
     }
     pub fn delete_role_route(&self, role: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("DELETE FROM role_routes WHERE role=?1", [role])?;
         Ok(())
     }
     pub fn list_role_routes(&self) -> AppResult<Vec<crate::db::models::RoleRoute>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes")?;
         let rows = stmt.query_map([], |r| Ok(crate::db::models::RoleRoute {
             id: r.get(0)?, role: r.get(1)?, channel_id: r.get(2)?, target_model: r.get(3)?,
@@ -305,7 +305,7 @@ impl Repository {
     }
     pub fn upsert_role_pattern(&self, p: &crate::db::models::RolePattern) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO role_patterns (id,pattern,role,priority,enabled) VALUES (?1,?2,?3,?4,?5)
              ON CONFLICT(id) DO UPDATE SET pattern=excluded.pattern, role=excluded.role, priority=excluded.priority, enabled=excluded.enabled",
@@ -315,13 +315,13 @@ impl Repository {
     }
     pub fn delete_role_pattern(&self, id: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("DELETE FROM role_patterns WHERE id=?1", [id])?;
         Ok(())
     }
     pub fn count_logs(&self, keyword: Option<&str>) -> AppResult<i64> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let n: i64 = match keyword {
             Some(k) => conn.query_row(
                 "SELECT COUNT(*) FROM request_logs WHERE request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1",
@@ -332,7 +332,7 @@ impl Repository {
     }
     pub fn list_logs(&self, keyword: Option<&str>, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let like = keyword.map(|k| format!("%{}%", k));
         let sql = "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs
                    WHERE (?1 IS NULL OR request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1)
@@ -356,7 +356,7 @@ impl Repository {
 
     pub fn insert_finding(&self, f: &RequestSecurityFinding) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO request_security_findings (id,log_id,phase,category,rule_id,severity,title,description,location,evidence_masked,evidence_hash,action,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
             params![f.id, f.log_id, f.phase, f.category, f.rule_id, f.severity, f.title, f.description, f.location, f.evidence_masked, f.evidence_hash, f.action, f.created_at],
@@ -366,7 +366,7 @@ impl Repository {
 
     pub fn get_findings(&self, log_id: &str) -> AppResult<Vec<RequestSecurityFinding>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,log_id,phase,category,rule_id,severity,title,description,location,evidence_masked,evidence_hash,action,created_at FROM request_security_findings WHERE log_id=?1 ORDER BY created_at ASC")?;
         let rows = stmt.query_map(params![log_id], |r| Ok(RequestSecurityFinding{
             id:r.get(0)?, log_id:r.get(1)?, phase:r.get(2)?, category:r.get(3)?, rule_id:r.get(4)?,
@@ -378,7 +378,7 @@ impl Repository {
 
     pub fn seed_builtin_rules(&self, rules: &[BuiltinRule]) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         for r in rules {
             conn.execute(
                 "INSERT OR IGNORE INTO security_builtin_rules (id,rule_id,category,severity,title,description,toggle_key,enabled,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
@@ -390,7 +390,7 @@ impl Repository {
 
     pub fn list_builtin_rules(&self) -> AppResult<Vec<BuiltinRule>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,rule_id,category,severity,title,description,toggle_key,enabled,created_at FROM security_builtin_rules ORDER BY created_at ASC")?;
         let rows = stmt.query_map([], |r| Ok(BuiltinRule {
             id: r.get(0)?, rule_id: r.get(1)?, category: r.get(2)?, severity: r.get(3)?,
@@ -404,7 +404,7 @@ impl Repository {
 
     pub fn update_builtin_rule(&self, id: &str, enabled: bool, severity: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "UPDATE security_builtin_rules SET enabled=?2, severity=?3 WHERE id=?1",
             params![id, enabled as i64, severity],
@@ -414,7 +414,7 @@ impl Repository {
 
     pub fn reset_builtin_rules(&self, rules: &[BuiltinRule]) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("DELETE FROM security_builtin_rules", [])?;
         drop(conn);
         self.seed_builtin_rules(rules)
@@ -422,7 +422,7 @@ impl Repository {
 
     pub fn create_custom_rule(&self, r: &CustomRule) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "INSERT INTO security_custom_rules (id,rule_type,category,pattern,severity,action,enabled,description,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
             params![r.id, r.rule_type, r.category, r.pattern, r.severity, r.action, r.enabled as i64, r.description, r.created_at],
@@ -432,7 +432,7 @@ impl Repository {
 
     pub fn list_custom_rules(&self) -> AppResult<Vec<CustomRule>> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,rule_type,category,pattern,severity,action,enabled,description,created_at FROM security_custom_rules ORDER BY created_at DESC")?;
         let rows = stmt.query_map([], |r| Ok(CustomRule {
             id: r.get(0)?, rule_type: r.get(1)?, category: r.get(2)?, pattern: r.get(3)?,
@@ -446,7 +446,7 @@ impl Repository {
 
     pub fn set_custom_rule_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute(
             "UPDATE security_custom_rules SET enabled=?2 WHERE id=?1",
             params![id, enabled as i64],
@@ -456,14 +456,14 @@ impl Repository {
 
     pub fn delete_custom_rule(&self, id: &str) -> AppResult<()> {
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         conn.execute("DELETE FROM security_custom_rules WHERE id=?1", [id])?;
         Ok(())
     }
     pub fn stats(&self) -> AppResult<(i64,i64,i64,i64,i64,i64)> {
         // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms)
         let conn = self.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let today_start = chrono::Local::now().date_naive().and_hms_opt(0,0,0).unwrap().and_utc().timestamp();
         let (tr, tt): (i64,i64) = conn.query_row(
             "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs WHERE created_at>=?1",
@@ -541,7 +541,7 @@ mod tests {
     fn default_role_patterns_seeded() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let conn = repo.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         let n: i64 = conn
             .query_row("SELECT COUNT(*) FROM role_patterns", [], |r| r.get(0))
             .unwrap();

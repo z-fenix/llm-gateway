@@ -78,7 +78,7 @@ async fn response_block_returns_451_and_no_secret_to_client() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "block".into();
         sec.scan_response = true;
@@ -140,7 +140,7 @@ async fn response_audit_records_findings_but_passes_through() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_response = true;
@@ -182,7 +182,7 @@ async fn response_redact_masks_secret_before_client() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "redact".into();
         sec.scan_response = true;
@@ -224,7 +224,7 @@ async fn response_scan_disabled_passes_through_and_leaves_no_findings() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "block".into();
         sec.scan_response = false;
@@ -267,7 +267,7 @@ async fn security_disabled_passes_through_and_leaves_no_findings() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = false;
         sec.mode = "block".into();
         sec.scan_response = true;

@@ -183,7 +183,7 @@ pub fn get_security_settings(app: &tauri::AppHandle) -> SecuritySettings {
 
 /// Apply `SecuritySettings` to the `AppState` security lock.
 pub fn apply_settings(state: &crate::proxy::state::AppState, s: &SecuritySettings) {
-    *state.security.write().unwrap() = s.clone();
+    *state.security.write() = s.clone();
 }
 
 pub fn decide_action(result: &mut SecurityScanResult, settings: &SecuritySettings) {

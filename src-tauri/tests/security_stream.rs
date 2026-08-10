@@ -98,7 +98,7 @@ async fn stream_audit_chunks_untouched_and_response_findings_logged() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_response = true;
@@ -170,7 +170,7 @@ async fn stream_audit_persists_request_phase_findings() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_request = true;
@@ -217,7 +217,7 @@ async fn stream_response_redact_does_not_set_sanitized_flag() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "redact".into();
         sec.scan_response = true;
@@ -259,7 +259,7 @@ async fn stream_scan_disabled_leaves_clean_log() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_response = false;

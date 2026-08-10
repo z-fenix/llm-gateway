@@ -70,7 +70,7 @@ async fn request_block_returns_451_and_no_upstream_hit() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "block".into();
         sec.scan_request = true;
@@ -122,7 +122,7 @@ async fn request_redact_masks_secret_before_upstream() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "redact".into();
         sec.scan_request = true;
@@ -175,7 +175,7 @@ async fn request_audit_records_risk_but_forwards_original() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_request = true;
@@ -234,7 +234,7 @@ async fn request_audit_persists_request_phase_findings() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_request = true;
@@ -292,7 +292,7 @@ async fn stream_audit_masks_persisted_body_even_when_forwarding_original() {
     repo.insert_channel(&channel("c1", &base)).unwrap();
 
     {
-        let mut sec = state.security.write().unwrap();
+        let mut sec = state.security.write();
         sec.enabled = true;
         sec.mode = "audit".into();
         sec.scan_request = true;

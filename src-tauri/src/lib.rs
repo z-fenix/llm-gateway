@@ -31,7 +31,7 @@ pub fn run() {
                         let channel_id = obj.get("channel_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
                         let model = obj.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
                         if !channel_id.is_empty() && !model.is_empty() {
-                            *state.fallback.write().unwrap() = Some((channel_id, model));
+                            *state.fallback.write() = Some((channel_id, model));
                         }
                     }
                 }

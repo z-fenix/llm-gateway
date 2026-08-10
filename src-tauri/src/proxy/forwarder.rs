@@ -64,7 +64,7 @@ pub async fn forward(
         if let Some(ch) = by_id(cid) {
             candidates.push((ch, model.clone(), false));
         }
-        if let Some((fid, fmodel)) = state.fallback.read().unwrap().clone() {
+        if let Some((fid, fmodel)) = state.fallback.read().clone() {
             if let Some(fch) = by_id(&fid) {
                 candidates.push((fch, fmodel, true));
             }
@@ -126,7 +126,7 @@ pub async fn forward_stream(
     let mut candidates: Vec<(Channel, String, bool)> = Vec::new();
     if let Some((cid, model)) = &role_route {
         if let Some(ch) = by_id(cid) { candidates.push((ch, model.clone(), false)); }
-        if let Some((fid, fmodel)) = state.fallback.read().unwrap().clone() {
+        if let Some((fid, fmodel)) = state.fallback.read().clone() {
             if let Some(fch) = by_id(&fid) { candidates.push((fch, fmodel, true)); }
         }
     } else {

@@ -68,7 +68,7 @@ pub async fn inspect_request(
     request_model: &str,
     chat_body: &serde_json::Value,
 ) -> RequestVerdict {
-    let settings = state.security.read().unwrap().clone();
+    let settings = state.security.read().clone();
     if !settings.enabled || !settings.scan_request {
         return RequestVerdict::Proceed {
             body: chat_body.clone(),
@@ -145,7 +145,7 @@ pub async fn inspect_request(
 
 /// 非流式响应侧检测：扫描上游响应体并按四模式决策。
 pub fn inspect_response(state: &AppState, resp_body: &serde_json::Value) -> SecurityScanResult {
-    let settings = state.security.read().unwrap().clone();
+    let settings = state.security.read().clone();
     if !settings.enabled || !settings.scan_response {
         return SecurityScanResult::default();
     }

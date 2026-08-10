@@ -204,7 +204,7 @@ async fn handle(
     // 4. role detection
     let role = {
         let conn = state.db.conn();
-        let conn = conn.lock().unwrap();
+        let conn = conn.lock();
         crate::router::role::detect_role(&conn, &request_model)
     };
 
@@ -237,7 +237,7 @@ async fn handle(
             let _ = state.repo.consume_quota(&api_key.id, usage_total);
 
             let resp_scan = security_hook::inspect_response(&state, &o.body);
-            let settings = state.security.read().unwrap().clone();
+            let settings = state.security.read().clone();
 
             let merged_scan = merge_scan_for_log(&scan, &resp_scan);
             let is_resp_block = resp_scan.action == SecurityAction::Block;

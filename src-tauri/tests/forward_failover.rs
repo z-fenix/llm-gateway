@@ -67,7 +67,7 @@ async fn role_channel_5xx_falls_back() {
     repo.insert_channel(&channel("fb-ch", &good, "openai")).unwrap();
     repo.insert_api_key(&key("k1")).unwrap();
     let state = AppState::new(db);
-    *state.fallback.write().unwrap() = Some(("fb-ch".into(), "kimi-k3".into()));
+    *state.fallback.write() = Some(("fb-ch".into(), "kimi-k3".into()));
     let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
     let res = forward(&state, &chat(), Some(("role-ch".into(), "m1".into())), &ak).await.unwrap();
     assert_eq!(res.outcome.channel.id, "fb-ch");
@@ -85,7 +85,7 @@ async fn role_4xx_does_not_fallback() {
     repo.insert_channel(&channel("fb-ch", &good, "openai")).unwrap();
     repo.insert_api_key(&key("k1")).unwrap();
     let state = AppState::new(db);
-    *state.fallback.write().unwrap() = Some(("fb-ch".into(), "kimi-k3".into()));
+    *state.fallback.write() = Some(("fb-ch".into(), "kimi-k3".into()));
     let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
     let err = forward(&state, &chat(), Some(("role-ch".into(), "m1".into())), &ak).await.unwrap_err();
     match err {
