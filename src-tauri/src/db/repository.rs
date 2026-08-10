@@ -38,6 +38,17 @@ pub struct LogFilter {
     pub before: Option<i64>,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct LogStats {
+    pub total_calls: i64,
+    pub total_input_tokens: i64,
+    pub total_output_tokens: i64,
+    pub success_count: i64,
+    pub risk_distribution: Vec<(String, i64)>,
+    pub top_channels: Vec<(String, i64)>,
+    pub top_api_keys: Vec<(String, i64)>,
+}
+
 fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
     let mut sql = String::from("WHERE 1=1");
     let mut values: Vec<rusqlite::types::Value> = Vec::new();
@@ -408,6 +419,69 @@ impl Repository {
         let sql = format!("SELECT COUNT(*) FROM request_logs {}", where_sql);
         let n: i64 = conn.query_row(&sql, rusqlite::params_from_iter(values), |r| r.get(0))?;
         Ok(n)
+    }
+    pub fn log_stats(&self, filter: &LogFilter) -> AppResult<LogStats> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let (where_sql, values) = build_where(filter);
+
+        let agg_sql = format!(
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), COALESCE(SUM(CASE WHEN status_code BETWEEN 200 AND 299 THEN 1 ELSE 0 END),0) FROM request_logs {}",
+            where_sql
+        );
+        let (total_calls, total_input_tokens, total_output_tokens, success_count): (i64, i64, i64, i64) =
+            conn.query_row(&agg_sql, rusqlite::params_from_iter(values.iter()), |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            })?;
+
+        let risk_sql = format!(
+            "SELECT risk_level, COUNT(*) FROM request_logs {} GROUP BY risk_level ORDER BY COUNT(*) DESC, risk_level ASC",
+            where_sql
+        );
+        let mut stmt = conn.prepare(&risk_sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(values.iter()), |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        let mut risk_distribution = Vec::new();
+        for r in rows {
+            risk_distribution.push(r?);
+        }
+
+        let channel_sql = format!(
+            "SELECT channel_name, COUNT(*) FROM request_logs {} AND channel_name IS NOT NULL GROUP BY channel_name ORDER BY COUNT(*) DESC, channel_name ASC LIMIT 5",
+            where_sql
+        );
+        let mut stmt = conn.prepare(&channel_sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(values.iter()), |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        let mut top_channels = Vec::new();
+        for r in rows {
+            top_channels.push(r?);
+        }
+
+        let key_sql = format!(
+            "SELECT key_name, COUNT(*) FROM request_logs {} AND key_name IS NOT NULL GROUP BY key_name ORDER BY COUNT(*) DESC, key_name ASC LIMIT 5",
+            where_sql
+        );
+        let mut stmt = conn.prepare(&key_sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(values.iter()), |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        let mut top_api_keys = Vec::new();
+        for r in rows {
+            top_api_keys.push(r?);
+        }
+
+        Ok(LogStats {
+            total_calls,
+            total_input_tokens,
+            total_output_tokens,
+            success_count,
+            risk_distribution,
+            top_channels,
+            top_api_keys,
+        })
     }
     pub fn list_logs(&self, filter: &LogFilter, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
         let conn = self.db.conn();
@@ -1064,5 +1138,151 @@ mod tests {
 
         repo.delete_custom_rule("c1").unwrap();
         assert!(repo.list_custom_rules().unwrap().is_empty());
+    }
+
+    fn make_log_stats(
+        seq: i64,
+        status: i64,
+        channel_id: &str,
+        channel_name: &str,
+        key_name: &str,
+        risk_level: &str,
+        input_tokens: i64,
+        output_tokens: i64,
+        created_at: i64,
+    ) -> RequestLog {
+        RequestLog {
+            id: format!("l{}", seq),
+            seq,
+            trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()),
+            key_name: Some(key_name.into()),
+            channel_id: Some(channel_id.into()),
+            channel_name: Some(channel_name.into()),
+            role: Some("coder".into()),
+            request_model: Some("gpt-4o".into()),
+            upstream_model: Some("gpt-4o".into()),
+            protocol: "openai".into(),
+            status_code: Some(status),
+            input_tokens,
+            output_tokens,
+            latency_ms: 100,
+            is_stream: false,
+            error: None,
+            fallback: false,
+            tool_calls: None,
+            request_body: None,
+            response_body: None,
+            risk_level: risk_level.into(),
+            risk_score: 0,
+            risk_summary: None,
+            security_action: "allow".into(),
+            sanitized: false,
+            blocked_reason: None,
+            created_at,
+        }
+    }
+
+    #[test]
+    fn log_stats_aggregates_correctly() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_channel(&ch("ch2")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 1))
+            .unwrap();
+        repo.insert_log(&make_log_stats(2, 200, "ch1", "prod-channel", "alice", "low", 20, 10, 2))
+            .unwrap();
+        repo.insert_log(&make_log_stats(3, 400, "ch1", "prod-channel", "bob", "high", 30, 15, 3))
+            .unwrap();
+        repo.insert_log(&make_log_stats(4, 500, "ch2", "dev-channel", "bob", "high", 40, 20, 4))
+            .unwrap();
+        repo.insert_log(&make_log_stats(5, 200, "ch2", "dev-channel", "alice", "clean", 50, 25, 5))
+            .unwrap();
+
+        let stats = repo.log_stats(&LogFilter::default()).unwrap();
+        assert_eq!(stats.total_calls, 5);
+        assert_eq!(stats.total_input_tokens, 150);
+        assert_eq!(stats.total_output_tokens, 75);
+        assert_eq!(stats.success_count, 3);
+
+        assert_eq!(stats.risk_distribution, vec![
+            ("clean".to_string(), 2),
+            ("high".to_string(), 2),
+            ("low".to_string(), 1),
+        ]);
+        assert_eq!(stats.top_channels, vec![
+            ("prod-channel".to_string(), 3),
+            ("dev-channel".to_string(), 2),
+        ]);
+        assert_eq!(stats.top_api_keys, vec![
+            ("alice".to_string(), 3),
+            ("bob".to_string(), 2),
+        ]);
+    }
+
+    #[test]
+    fn log_stats_respects_filter() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_channel(&ch("ch2")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 1))
+            .unwrap();
+        repo.insert_log(&make_log_stats(2, 200, "ch1", "prod-channel", "alice", "low", 20, 10, 2))
+            .unwrap();
+        repo.insert_log(&make_log_stats(3, 400, "ch1", "prod-channel", "bob", "high", 30, 15, 3))
+            .unwrap();
+        repo.insert_log(&make_log_stats(4, 500, "ch2", "dev-channel", "bob", "high", 40, 20, 4))
+            .unwrap();
+        repo.insert_log(&make_log_stats(5, 200, "ch2", "dev-channel", "alice", "clean", 50, 25, 5))
+            .unwrap();
+
+        let stats = repo
+            .log_stats(&LogFilter {
+                channel_id: Some("ch2".into()),
+                ..Default::default()
+            })
+            .unwrap();
+        assert_eq!(stats.total_calls, 2);
+        assert_eq!(stats.total_input_tokens, 90);
+        assert_eq!(stats.total_output_tokens, 45);
+        assert_eq!(stats.success_count, 1);
+
+        assert_eq!(stats.risk_distribution, vec![
+            ("clean".to_string(), 1),
+            ("high".to_string(), 1),
+        ]);
+        assert_eq!(stats.top_channels, vec![("dev-channel".to_string(), 2)]);
+        assert_eq!(stats.top_api_keys, vec![
+            ("alice".to_string(), 1),
+            ("bob".to_string(), 1),
+        ]);
     }
 }
