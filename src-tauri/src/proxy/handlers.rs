@@ -238,8 +238,10 @@ async fn handle(
         Ok(fr) => {
             let o = &fr.outcome;
             let usage_total = (o.usage.input_tokens + o.usage.output_tokens) as i64;
-            if let Err(e) = state.repo.consume_quota(&api_key.id, usage_total) {
-                log::error!("failed to consume quota: {}", e);
+            match state.repo.consume_quota(&api_key.id, usage_total) {
+                Ok(true) => {}
+                Ok(false) => log::error!("quota exceeded for key {}: consume skipped", api_key.id),
+                Err(e) => log::error!("failed to consume quota: {}", e),
             }
 
             let resp_scan = security_hook::inspect_response(&state, &o.body);
@@ -398,11 +400,13 @@ async fn handle_stream(
                 let (status_code, error) = if failed {
                     (Some(502), Some("upstream_stream_error".into()))
                 } else {
-                    if let Err(e) = state2
+                    match state2
                         .repo
                         .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64)
                     {
-                        log::error!("failed to consume quota: {}", e);
+                        Ok(true) => {}
+                        Ok(false) => log::error!("quota exceeded for key {}: consume skipped", api_key2.id),
+                        Err(e) => log::error!("failed to consume quota: {}", e),
                     }
                     (Some(200), None)
                 };

@@ -97,15 +97,16 @@ impl Repository {
         }
     }
 
-    pub fn consume_quota(&self, key_id: &str, tokens: i64) -> AppResult<()> {
+    pub fn consume_quota(&self, key_id: &str, tokens: i64) -> AppResult<bool> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        conn.execute(
+        let n = conn.execute(
             "UPDATE api_keys SET quota_used=quota_used+?1, total_tokens=total_tokens+?1,
-             total_calls=total_calls+1, last_used_at=?2 WHERE id=?3",
+             total_calls=total_calls+1, last_used_at=?2
+             WHERE id=?3 AND (quota_total IS NULL OR quota_used+?1<=quota_total)",
             rusqlite::params![tokens, chrono::Utc::now().timestamp(), key_id],
         )?;
-        Ok(())
+        Ok(n > 0)
     }
 
     pub fn record_channel_stats(&self, channel_id: &str, tokens: i64, latency_ms: i64, success: bool) -> AppResult<()> {
@@ -588,6 +589,21 @@ mod tests {
         repo.delete_api_key("k1").unwrap();
         assert!(repo.get_api_key_by_key("sk-lgw-a").unwrap().is_none());
         assert!(repo.list_api_keys().unwrap().is_empty());
+    }
+
+    #[test]
+    fn consume_quota_atomic_caps_at_total() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let k = ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: Some(10), quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        };
+        repo.insert_api_key(&k).unwrap();
+        assert!(repo.consume_quota("k1", 6).unwrap());   // 0+6<=10 -> true, used=6
+        assert!(!repo.consume_quota("k1", 6).unwrap());  // 6+6>10 -> false, used stays 6
+        let got = repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap();
+        assert_eq!(got.quota_used, 6);
     }
 
     #[test]
