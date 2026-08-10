@@ -287,6 +287,14 @@ async fn clear_logs_empties_both_tables() {
     assert_eq!(resp.status(), 200);
     let _ = resp.text().await;
 
+    let log = state.repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.risk_level, "high");
+    let findings = state.repo.get_findings(&log.id).unwrap();
+    assert!(
+        findings.iter().any(|f| f.phase == "request"),
+        "expected request-phase findings before clear"
+    );
+
     let cleared = state.repo.clear_logs().unwrap();
     assert_eq!(cleared, 2);
 
@@ -295,8 +303,9 @@ async fn clear_logs_empties_both_tables() {
         state.repo.latest_log().unwrap().is_none(),
         "request_logs should be empty"
     );
-    // 通过任意 log_id 查询确认 findings 表已无孤儿记录
+    // 用真实 log_id 确认 findings 表随 request_logs 级联清空，无孤儿记录
     assert!(
-        state.repo.get_findings("non-existent").unwrap().is_empty()
+        state.repo.get_findings(&log.id).unwrap().is_empty(),
+        "findings for deleted log_id must be removed"
     );
 }
