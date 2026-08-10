@@ -26,12 +26,10 @@ export function formatBucketLabel(bucketSecs: number, ts: number): string {
 
 export function computeTicks(buckets: TimeBucket[]): {
   xLabels: { i: number; label: string }[];
-  yMax: number;
 } {
   if (buckets.length === 0) {
-    return { xLabels: [], yMax: 1 };
+    return { xLabels: [] };
   }
-  const yMax = niceCeil(Math.max(...buckets.map((b) => b.calls)));
   const interval = buckets.length > 1 ? buckets[1].bucket - buckets[0].bucket : 3600;
   const target = 6;
   const step = Math.max(1, Math.floor(buckets.length / target));
@@ -43,7 +41,7 @@ export function computeTicks(buckets: TimeBucket[]): {
   if (last % step !== 0) {
     xLabels.push({ i: last, label: formatBucketLabel(interval, buckets[last].bucket * 1000) });
   }
-  return { xLabels, yMax };
+  return { xLabels };
 }
 
 export function stackSums(b: TimeBucket): number {
@@ -242,9 +240,12 @@ export default function LogTrendChart({
 
     draw();
 
-    const ro = new ResizeObserver(draw);
-    ro.observe(container);
-    return () => ro.disconnect();
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(draw);
+      ro.observe(container);
+    }
+    return () => ro?.disconnect();
   }, [buckets, dimension]);
 
   const handleMouseMove: React.MouseEventHandler<HTMLCanvasElement> = (e) => {

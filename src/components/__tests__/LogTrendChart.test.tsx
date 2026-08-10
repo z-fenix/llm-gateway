@@ -32,8 +32,7 @@ describe("LogTrendChart pure functions", () => {
       bucket: baseBucket.bucket + i * 3600,
       calls: i + 1,
     }));
-    const { xLabels, yMax } = computeTicks(buckets);
-    expect(yMax).toBe(20);
+    const { xLabels } = computeTicks(buckets);
     expect(xLabels.length).toBeLessThanOrEqual(7);
     expect(xLabels.length).toBeGreaterThanOrEqual(2);
     expect(xLabels[0].label).toMatch(/^\d{2}-\d{2} \d{2}:00$/);
