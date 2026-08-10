@@ -45,6 +45,7 @@ export default function SecurityPage() {
   };
 
   const load = () => {
+    setError(null);
     api.getSecuritySettings().then(setSettings).catch(handleError);
     api.getBuiltinSecurityRules().then(setBuiltinRules).catch(handleError);
     api.getCustomSecurityRules().then(setCustomRules).catch(handleError);
@@ -53,23 +54,27 @@ export default function SecurityPage() {
   useEffect(() => { load(); }, []);
 
   const updateSetting = (field: keyof SecuritySettings, value: unknown) => {
+    setError(null);
     api.setSecuritySetting(`security.${field}`, value)
       .then(() => setSettings((prev) => ({ ...prev, [field]: value })))
       .catch(handleError);
   };
 
   const updateBuiltin = (rule: BuiltinRule, enabled: boolean, severity: string) => {
+    setError(null);
     api.updateBuiltinSecurityRule(rule.id, enabled, severity)
       .then(load)
       .catch(handleError);
   };
 
   const resetBuiltin = () => {
+    if (!window.confirm("确定重置全部内置规则为默认?自定义启停/级别将丢失。")) return;
     api.resetBuiltinSecurityRules().then(load).catch(handleError);
   };
 
   const createCustom = () => {
     if (!form.pattern.trim()) return;
+    setError(null);
     api.createCustomSecurityRule(
       form.rule_type,
       form.category,
@@ -86,12 +91,14 @@ export default function SecurityPage() {
   };
 
   const toggleCustom = (rule: CustomRule) => {
+    setError(null);
     api.toggleCustomSecurityRule(rule.id, !rule.enabled)
       .then(load)
       .catch(handleError);
   };
 
   const deleteCustom = (rule: CustomRule) => {
+    setError(null);
     api.deleteCustomSecurityRule(rule.id)
       .then(load)
       .catch(handleError);
@@ -209,9 +216,11 @@ export default function SecurityPage() {
               className="w-32 border rounded px-2 py-1"
               min={1024}
               value={settings.max_scan_bytes}
-              onChange={(e) =>
-                updateSetting("max_scan_bytes", Number(e.target.value))
-              }
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (!Number.isFinite(n) || n < 0) { setError("请输入非负数字"); return; }
+                updateSetting("max_scan_bytes", n);
+              }}
             />
           </label>
         </div>

@@ -15,10 +15,11 @@ export default function ChannelsPage() {
     setError(err instanceof Error ? err.message : String(err));
   };
 
-  const load = () => api.listChannels().then(setList).catch(handleError);
+  const load = () => { setError(null); api.listChannels().then(setList).catch(handleError); };
   useEffect(() => { load(); }, []);
 
   const save = async (c: Channel) => {
+    setError(null);
     try {
       if (c.id) await api.updateChannel(c); else await api.createChannel(c);
       setCreating(false); setEditing(null); load();
@@ -27,6 +28,7 @@ export default function ChannelsPage() {
     }
   };
   const test = async (id: string) => {
+    setError(null);
     try {
       const r = await api.testChannel(id);
       setTestMsg((m) => ({ ...m, [id]: r.ok ? `✓ ${r.latency_ms}ms` : `✗ ${r.error}` }));
@@ -63,7 +65,7 @@ export default function ChannelsPage() {
               <td className="space-x-2">
                 <button className="text-blue-600" onClick={() => setEditing(c)}>编辑</button>
                 <button className="text-green-600" onClick={() => test(c.id)}>测试</button>
-                <button className="text-red-600" onClick={() => api.deleteChannel(c.id).then(load).catch(handleError)}>删除</button>
+                <button className="text-red-600" onClick={() => { setError(null); api.deleteChannel(c.id).then(load).catch(handleError); }}>删除</button>
                 {testMsg[c.id] && <span className="text-xs">{testMsg[c.id]}</span>}
               </td>
             </tr>

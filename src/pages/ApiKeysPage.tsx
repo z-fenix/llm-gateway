@@ -13,13 +13,19 @@ export default function ApiKeysPage() {
     setError(err instanceof Error ? err.message : String(err));
   };
 
-  const load = () => api.listApiKeys().then(setList).catch(handleError);
+  const load = () => { setError(null); api.listApiKeys().then(setList).catch(handleError); };
   useEffect(() => { load(); }, []);
 
   const create = async () => {
     if (!name) return;
     const q = quota.trim();
-    const quotaNum = q && !isNaN(Number(q)) ? Number(q) : null;
+    let quotaNum: number | null = null;
+    if (q) {
+      const n = Number(q);
+      if (!Number.isFinite(n) || n < 0) { setError("请输入非负数字"); return; }
+      quotaNum = n;
+    }
+    setError(null);
     try {
       await api.createApiKey(name, quotaNum);
       setName(""); setQuota(""); load();
@@ -51,8 +57,8 @@ export default function ApiKeysPage() {
               <td>{k.total_calls}</td><td>{k.total_tokens}</td>
               <td>{k.enabled ? "启用" : "禁用"}</td>
               <td className="space-x-2">
-                <button className="text-blue-600" onClick={() => api.setApiKeyEnabled(k.id, !k.enabled).then(load).catch(handleError)}>{k.enabled ? "禁用" : "启用"}</button>
-                <button className="text-red-600" onClick={() => api.deleteApiKey(k.id).then(load).catch(handleError)}>删除</button>
+                <button className="text-blue-600" onClick={() => { setError(null); api.setApiKeyEnabled(k.id, !k.enabled).then(load).catch(handleError); }}>{k.enabled ? "禁用" : "启用"}</button>
+                <button className="text-red-600" onClick={() => { setError(null); api.deleteApiKey(k.id).then(load).catch(handleError); }}>删除</button>
               </td>
             </tr>
           ))}

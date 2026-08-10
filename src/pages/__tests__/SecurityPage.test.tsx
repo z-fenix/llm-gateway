@@ -108,4 +108,17 @@ describe("SecurityPage", () => {
     const toggle = screen.getByRole("checkbox", { name: /API key leak/ }) as HTMLInputElement;
     expect(toggle).toBeInTheDocument();
   });
+
+  it("重置默认需要确认", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<SecurityPage />);
+    await waitFor(() => expect(screen.getByText("重置默认")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("重置默认"));
+    expect(confirmSpy).toHaveBeenCalledWith("确定重置全部内置规则为默认?自定义启停/级别将丢失。");
+    expect(api.resetBuiltinSecurityRules).not.toHaveBeenCalled();
+    confirmSpy.mockReturnValue(true);
+    fireEvent.click(screen.getByText("重置默认"));
+    await waitFor(() => expect(api.resetBuiltinSecurityRules).toHaveBeenCalled());
+    confirmSpy.mockRestore();
+  });
 });

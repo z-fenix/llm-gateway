@@ -17,6 +17,7 @@ export default function RoleRoutesPage() {
   };
 
   const load = () => {
+    setError(null);
     api.listRoleRoutes().then(setRoutes).catch(handleError);
     api.listRolePatterns().then(setPatterns).catch(handleError);
     api.listChannels().then(setChannels).catch(handleError);
@@ -27,6 +28,7 @@ export default function RoleRoutesPage() {
   const routeFor = (role: string) => routes.find((r) => r.role === role);
 
   const bind = async (role: string, channel_id: string, target_model: string) => {
+    setError(null);
     try {
       if (!channel_id) { await api.deleteRoleRoute(role); } else { await api.setRoleRoute(role, channel_id, target_model); }
       load();
@@ -72,13 +74,13 @@ export default function RoleRoutesPage() {
         <h2 className="mb-2 font-semibold">全局兜底模型</h2>
         <div className="flex gap-2">
           <select className="border rounded px-2 py-1" value={fallback?.[0] ?? ""}
-            onChange={(e) => e.target.value ? api.setFallback(e.target.value, fallback?.[1] ?? "").then(load).catch(handleError) : api.clearFallback().then(load).catch(handleError)}>
+            onChange={(e) => { setError(null); e.target.value ? api.setFallback(e.target.value, fallback?.[1] ?? "").then(load).catch(handleError) : api.clearFallback().then(load).catch(handleError); }}>
             <option value="">（无兜底）</option>
             {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <input className="border rounded px-2 py-1" placeholder="兜底上游模型" defaultValue={fallback?.[1] ?? ""}
             key={fallback?.[1] ?? ""} disabled={!fallback?.[0]}
-            onBlur={(e) => fallback?.[0] && api.setFallback(fallback[0], e.target.value).then(load).catch(handleError)} />
+            onBlur={(e) => fallback?.[0] && (setError(null), api.setFallback(fallback[0], e.target.value).then(load).catch(handleError))} />
         </div>
       </div>
 
@@ -92,7 +94,7 @@ export default function RoleRoutesPage() {
                 <td className="p-2 font-mono">{p.pattern}</td>
                 <td>{p.role}</td><td>{p.priority}</td>
                 <td>{p.enabled ? "启用" : "禁用"}</td>
-                <td><button className="text-red-600" onClick={() => api.deleteRolePattern(p.id).then(load).catch(handleError)}>删除</button></td>
+                <td><button className="text-red-600" onClick={() => { setError(null); api.deleteRolePattern(p.id).then(load).catch(handleError); }}>删除</button></td>
               </tr>
             ))}
           </tbody>

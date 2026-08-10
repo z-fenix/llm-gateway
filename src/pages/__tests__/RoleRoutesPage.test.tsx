@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
 import RoleRoutesPage from "../RoleRoutesPage";
 import { api } from "../../lib/api";
@@ -33,5 +33,15 @@ describe("RoleRoutesPage", () => {
     await waitFor(() =>
       expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument()
     );
+  });
+
+  it("切换角色渠道调用 setRoleRoute/deleteRoleRoute", async () => {
+    render(<RoleRoutesPage />);
+    await waitFor(() => expect(screen.getByText("sonnet")).toBeInTheDocument());
+    const select = screen.getAllByRole("combobox")[0];
+    fireEvent.change(select, { target: { value: "c1" } });
+    await waitFor(() => expect(api.setRoleRoute).toHaveBeenCalledWith("sonnet", "c1", expect.any(String)));
+    fireEvent.change(select, { target: { value: "" } });
+    await waitFor(() => expect(api.deleteRoleRoute).toHaveBeenCalledWith("sonnet"));
   });
 });

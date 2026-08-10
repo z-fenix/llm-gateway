@@ -71,14 +71,24 @@ export default function LogsPage() {
   const [page, setPage] = useState(0);
   const [data, setData] = useState<{ items: RequestLog[]; total: number }>({ items: [], total: 0 });
   const [open, setOpen] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const limit = 20;
 
-  const load = () => api.listLogs(keyword || null, limit, page * limit).then(setData).catch(console.error);
+  const handleError = (err: unknown) => {
+    console.error(err);
+    setError(err instanceof Error ? err.message : String(err));
+  };
+
+  const load = () => {
+    setError(null);
+    api.listLogs(keyword || null, limit, page * limit).then(setData).catch(handleError);
+  };
   useEffect(() => { load(); }, [page]);
 
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold">请求日志</h1>
+      {error && <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
       <div className="mb-3 flex gap-2">
         <input className="border rounded px-2 py-1" placeholder="搜索 模型/渠道/TraceID/密钥"
           value={keyword} onChange={(e) => setKeyword(e.target.value)} />
