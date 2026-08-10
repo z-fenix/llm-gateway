@@ -8,6 +8,87 @@ pub struct Repository {
     pub db: Db,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum StatusClass {
+    Success,
+    ClientError,
+    ServerError,
+}
+
+impl StatusClass {
+    pub fn range(&self) -> (i64, i64) {
+        match self {
+            StatusClass::Success => (200, 299),
+            StatusClass::ClientError => (400, 499),
+            StatusClass::ServerError => (500, 599),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct LogFilter {
+    pub keyword: Option<String>,
+    pub api_key_id: Option<String>,
+    pub channel_id: Option<String>,
+    pub role: Option<String>,
+    pub risk_level: Option<String>,
+    pub status: Option<StatusClass>,
+    pub is_stream: Option<bool>,
+    pub after: Option<i64>,
+    pub before: Option<i64>,
+}
+
+fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
+    let mut sql = String::from("WHERE 1=1");
+    let mut values: Vec<rusqlite::types::Value> = Vec::new();
+
+    if let Some(kw) = &filter.keyword {
+        sql.push_str(" AND (request_model LIKE ? OR upstream_model LIKE ? OR trace_id LIKE ? OR channel_name LIKE ? OR key_name LIKE ?)");
+        let like = format!("%{}%", kw);
+        values.push(like.clone().into());
+        values.push(like.clone().into());
+        values.push(like.clone().into());
+        values.push(like.clone().into());
+        values.push(like.into());
+    }
+    if let Some(v) = &filter.api_key_id {
+        sql.push_str(" AND api_key_id = ?");
+        values.push(v.clone().into());
+    }
+    if let Some(v) = &filter.channel_id {
+        sql.push_str(" AND channel_id = ?");
+        values.push(v.clone().into());
+    }
+    if let Some(v) = &filter.role {
+        sql.push_str(" AND role = ?");
+        values.push(v.clone().into());
+    }
+    if let Some(v) = &filter.risk_level {
+        sql.push_str(" AND risk_level = ?");
+        values.push(v.clone().into());
+    }
+    if let Some(s) = &filter.status {
+        sql.push_str(" AND status_code BETWEEN ? AND ?");
+        let (lo, hi) = s.range();
+        values.push(lo.into());
+        values.push(hi.into());
+    }
+    if let Some(v) = filter.is_stream {
+        sql.push_str(" AND is_stream = ?");
+        values.push((if v { 1i64 } else { 0i64 }).into());
+    }
+    if let Some(v) = filter.after {
+        sql.push_str(" AND created_at >= ?");
+        values.push(v.into());
+    }
+    if let Some(v) = filter.before {
+        sql.push_str(" AND created_at <= ?");
+        values.push(v.into());
+    }
+
+    (sql, values)
+}
+
 impl Repository {
     pub fn new(db: Db) -> Self {
         Self { db }
@@ -320,36 +401,37 @@ impl Repository {
         conn.execute("DELETE FROM role_patterns WHERE id=?1", [id])?;
         Ok(())
     }
-    pub fn count_logs(&self, keyword: Option<&str>) -> AppResult<i64> {
+    pub fn count_logs(&self, filter: &LogFilter) -> AppResult<i64> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        let n: i64 = match keyword {
-            Some(k) => conn.query_row(
-                "SELECT COUNT(*) FROM request_logs WHERE request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1",
-                [format!("%{}%", k)], |r| r.get(0))?,
-            None => conn.query_row("SELECT COUNT(*) FROM request_logs", [], |r| r.get(0))?,
-        };
+        let (where_sql, values) = build_where(filter);
+        let sql = format!("SELECT COUNT(*) FROM request_logs {}", where_sql);
+        let n: i64 = conn.query_row(&sql, rusqlite::params_from_iter(values), |r| r.get(0))?;
         Ok(n)
     }
-    pub fn list_logs(&self, keyword: Option<&str>, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
+    pub fn list_logs(&self, filter: &LogFilter, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        let like = keyword.map(|k| format!("%{}%", k));
-        let sql = "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs
-                   WHERE (?1 IS NULL OR request_model LIKE ?1 OR upstream_model LIKE ?1 OR trace_id LIKE ?1 OR channel_name LIKE ?1 OR key_name LIKE ?1)
-                   ORDER BY seq DESC LIMIT ?2 OFFSET ?3";
-        let mut stmt = conn.prepare(sql)?;
-        let rows = stmt.query_map(rusqlite::params![like, limit, offset], |r| Ok(RequestLog {
-            id: r.get(0)?, seq: r.get(1)?, trace_id: r.get(2)?, api_key_id: r.get(3)?,
-            key_name: r.get(4)?, channel_id: r.get(5)?, channel_name: r.get(6)?, role: r.get(7)?,
-            request_model: r.get(8)?, upstream_model: r.get(9)?, protocol: r.get(10)?,
-            status_code: r.get(11)?, input_tokens: r.get(12)?, output_tokens: r.get(13)?,
-            latency_ms: r.get(14)?, is_stream: r.get::<_,i64>(15)? != 0, error: r.get(16)?,
-            fallback: r.get::<_,i64>(17)? != 0, tool_calls: r.get(18)?, request_body: r.get(19)?,
-            response_body: r.get(20)?, risk_level: r.get(21)?, risk_score: r.get(22)?,
-            risk_summary: r.get(23)?, security_action: r.get(24)?,
-            sanitized: r.get::<_,i64>(25)? != 0, blocked_reason: r.get(26)?, created_at: r.get(27)?,
-        }))?;
+        let (where_sql, values) = build_where(filter);
+        let sql = format!(
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs {} ORDER BY seq DESC LIMIT ? OFFSET ?",
+            where_sql
+        );
+        let mut stmt = conn.prepare(&sql)?;
+        let rows = stmt.query_map(
+            rusqlite::params_from_iter(values.iter().chain([limit.into(), offset.into()].iter())),
+            |r| Ok(RequestLog {
+                id: r.get(0)?, seq: r.get(1)?, trace_id: r.get(2)?, api_key_id: r.get(3)?,
+                key_name: r.get(4)?, channel_id: r.get(5)?, channel_name: r.get(6)?, role: r.get(7)?,
+                request_model: r.get(8)?, upstream_model: r.get(9)?, protocol: r.get(10)?,
+                status_code: r.get(11)?, input_tokens: r.get(12)?, output_tokens: r.get(13)?,
+                latency_ms: r.get(14)?, is_stream: r.get::<_,i64>(15)? != 0, error: r.get(16)?,
+                fallback: r.get::<_,i64>(17)? != 0, tool_calls: r.get(18)?, request_body: r.get(19)?,
+                response_body: r.get(20)?, risk_level: r.get(21)?, risk_score: r.get(22)?,
+                risk_summary: r.get(23)?, security_action: r.get(24)?,
+                sanitized: r.get::<_,i64>(25)? != 0, blocked_reason: r.get(26)?, created_at: r.get(27)?,
+            })
+        )?;
         let mut out = Vec::new();
         for r in rows { out.push(r?); }
         Ok(out)
@@ -736,6 +818,22 @@ mod tests {
         }
     }
 
+    fn make_log_with(seq: i64, status: i64, channel_id: &str, risk_level: &str, created_at: i64) -> RequestLog {
+        RequestLog {
+            id: format!("l{}", seq), seq, trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()), key_name: Some("alice".into()),
+            channel_id: Some(channel_id.into()), channel_name: Some("ch".into()),
+            role: Some("coder".into()), request_model: Some("gpt-4o".into()),
+            upstream_model: Some("gpt-4o".into()), protocol: "openai".into(),
+            status_code: Some(status), input_tokens: 10, output_tokens: 10,
+            latency_ms: 100, is_stream: false, error: None, fallback: false,
+            tool_calls: None, request_body: None, response_body: None,
+            risk_level: risk_level.into(), risk_score: 0, risk_summary: None,
+            security_action: "allow".into(), sanitized: false, blocked_reason: None,
+            created_at,
+        }
+    }
+
     #[test]
     fn log_query_and_pagination() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
@@ -749,16 +847,91 @@ mod tests {
         repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2)).unwrap();
         repo.insert_log(&make_log(3, "gpt-4o", 30, 300, 3)).unwrap();
 
-        assert_eq!(repo.count_logs(None).unwrap(), 3);
-        assert_eq!(repo.count_logs(Some("gpt-4o")).unwrap(), 2);
+        assert_eq!(repo.count_logs(&LogFilter::default()).unwrap(), 3);
+        assert_eq!(repo.count_logs(&LogFilter { keyword: Some("gpt-4o".into()), ..Default::default() }).unwrap(), 2);
 
-        let page = repo.list_logs(None, 2, 0).unwrap();
+        let page = repo.list_logs(&LogFilter::default(), 2, 0).unwrap();
         assert_eq!(page.len(), 2);
         assert_eq!(page[0].seq, 3);
         assert_eq!(page[1].seq, 2);
 
-        let page = repo.list_logs(Some("gpt-4o"), 10, 0).unwrap();
+        let page = repo.list_logs(&LogFilter { keyword: Some("gpt-4o".into()), ..Default::default() }, 10, 0).unwrap();
         assert_eq!(page.len(), 2);
+    }
+
+    #[test]
+    fn list_logs_filter_multi_condition_and() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_channel(&ch("ch2")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+
+        repo.insert_log(&make_log_with(1, 200, "ch1", "high", 1)).unwrap();
+        repo.insert_log(&make_log_with(2, 200, "ch1", "low", 2)).unwrap();
+        repo.insert_log(&make_log_with(3, 500, "ch1", "high", 3)).unwrap();
+        repo.insert_log(&make_log_with(4, 200, "ch2", "high", 4)).unwrap();
+
+        let filter = LogFilter {
+            channel_id: Some("ch1".into()),
+            risk_level: Some("high".into()),
+            status: Some(StatusClass::Success),
+            ..Default::default()
+        };
+        let items = repo.list_logs(&filter, 10, 0).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].seq, 1);
+        assert_eq!(repo.count_logs(&filter).unwrap(), 1);
+    }
+
+    #[test]
+    fn list_logs_filter_date_range_and_status_class() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+
+        repo.insert_log(&make_log_with(1, 200, "ch1", "clean", 100)).unwrap();
+        repo.insert_log(&make_log_with(2, 500, "ch1", "clean", 200)).unwrap();
+        repo.insert_log(&make_log_with(3, 503, "ch1", "clean", 300)).unwrap();
+
+        let filter = LogFilter {
+            after: Some(150),
+            before: Some(250),
+            status: Some(StatusClass::ServerError),
+            ..Default::default()
+        };
+        let items = repo.list_logs(&filter, 10, 0).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].seq, 2);
+        assert_eq!(items[0].status_code, Some(500));
+        assert_eq!(repo.count_logs(&filter).unwrap(), 1);
+    }
+
+    #[test]
+    fn list_logs_keyword_backward_compatible() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
+            enabled: true, quota_total: None, quota_used: 0,
+            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+        }).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2)).unwrap();
+        repo.insert_log(&make_log(3, "gpt-4o", 30, 300, 3)).unwrap();
+
+        let filter = LogFilter { keyword: Some("gpt-4o".into()), ..Default::default() };
+        assert_eq!(repo.count_logs(&filter).unwrap(), 2);
+        let items = repo.list_logs(&filter, 10, 0).unwrap();
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().all(|l| l.request_model.as_deref() == Some("gpt-4o")));
     }
 
     #[test]
@@ -817,7 +990,7 @@ mod tests {
         }).unwrap();
 
         repo.insert_log(&make_log_risk(1, "gpt-4o", "high", 85)).unwrap();
-        let logs = repo.list_logs(None, 10, 0).unwrap();
+        let logs = repo.list_logs(&LogFilter::default(), 10, 0).unwrap();
         assert_eq!(logs.len(), 1);
         let got = &logs[0];
         assert_eq!(got.risk_level, "high");
