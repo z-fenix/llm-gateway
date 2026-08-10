@@ -187,6 +187,8 @@ pub fn apply_settings(state: &crate::proxy::state::AppState, s: &SecuritySetting
 }
 
 pub fn decide_action(result: &mut SecurityScanResult, settings: &SecuritySettings) {
+    result.blocked_reason = None; // 复位，仅 Block 时重设
+
     if !settings.enabled {
         result.action = SecurityAction::Allow;
         return;
@@ -216,7 +218,10 @@ pub fn decide_action(result: &mut SecurityScanResult, settings: &SecuritySetting
                 SecurityAction::Allow
             }
         }
-        _ => SecurityAction::Allow,
+        other => {
+            log::warn!("unknown security mode {:?}, falling back to Allow", other);
+            SecurityAction::Allow
+        }
     };
 
     if settings.block_on_critical && result.risk_level == RiskLevel::Critical {
@@ -318,6 +323,23 @@ mod tests {
         let mut r = res(RiskLevel::Critical);
         let mut s = settings("block", true);
         s.enabled = false;
+        decide_action(&mut r, &s);
+        assert_eq!(r.action, SecurityAction::Allow);
+    }
+
+    #[test]
+    fn decide_action_clears_stale_blocked_reason_on_non_block() {
+        let mut r = SecurityScanResult { blocked_reason: Some("stale".into()), ..Default::default() };
+        let s = SecuritySettings { mode: "audit".into(), ..Default::default() };
+        decide_action(&mut r, &s);
+        assert_eq!(r.action, SecurityAction::Allow);
+        assert!(r.blocked_reason.is_none(), "stale blocked_reason 应被清除");
+    }
+
+    #[test]
+    fn decide_action_unknown_mode_falls_back_allow() {
+        let mut r = SecurityScanResult::default();
+        let s = SecuritySettings { mode: "bogus".into(), ..Default::default() };
         decide_action(&mut r, &s);
         assert_eq!(r.action, SecurityAction::Allow);
     }
