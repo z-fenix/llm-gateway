@@ -2,6 +2,7 @@ pub mod auth;
 pub mod commands;
 pub mod db;
 pub mod error;
+pub mod knowledge;
 pub mod provider;
 pub mod protocol;
 pub mod proxy;
