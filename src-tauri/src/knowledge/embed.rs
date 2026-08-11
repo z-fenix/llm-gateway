@@ -86,9 +86,6 @@ impl Embedder {
             .json()
             .await
             .map_err(|_| "embedding response invalid".to_string())?;
-        if parsed.data.len() != chunk.len() {
-            return Err("embedding response length mismatch".to_string());
-        }
         let mut items: Vec<(usize, Vec<f32>)> = parsed
             .data
             .into_iter()
@@ -96,6 +93,14 @@ impl Embedder {
             .map(|(pos, item)| (item.index.unwrap_or(pos), item.embedding))
             .collect();
         items.sort_by_key(|(idx, _)| *idx);
+        if items.len() != chunk.len() {
+            return Err("embedding index mismatch".to_string());
+        }
+        for (i, (idx, _)) in items.iter().enumerate() {
+            if *idx != i {
+                return Err("embedding index mismatch".to_string());
+            }
+        }
         let mut out = Vec::with_capacity(items.len());
         for (_, vec) in items {
             let current_dim = *self.dim.read();
@@ -269,20 +274,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn embed_upstream_error_surfaces() {
-        let (base_url, _) = spawn_mock(500, serde_json::json!({"error": "boom"})).await;
+    async fn embed_index_mismatch_rejects() {
+        let (base_url, _) = spawn_mock(
+            200,
+            serde_json::json!({
+                "object": "list",
+                "data": [
+                    {"object": "embedding", "index": 0, "embedding": [1.0, 0.0, 0.0, 0.0]},
+                    {"object": "embedding", "index": 0, "embedding": [0.0, 1.0, 0.0, 0.0]},
+                    {"object": "embedding", "index": 1, "embedding": [0.0, 0.0, 0.0, 1.0]},
+                ]
+            }),
+        )
+        .await;
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        let mut ch = test_channel("ch1", &base_url);
-        ch.api_key = "sk-secret-key".into();
-        state.repo.insert_channel(&ch).unwrap();
+        state.repo.insert_channel(&test_channel("ch1", &base_url)).unwrap();
         let kb = test_kb(Some("ch1"));
         let embedder = Embedder::from_kb(&state, &kb).unwrap();
-        let err = embedder.embed(&["x".into()]).await.unwrap_err();
+        let err = embedder.embed(&["a".into(), "b".into(), "c".into()]).await.unwrap_err();
 
-        assert!(err.contains("500"), "error should surface status: {}", err);
-        assert!(!err.contains("sk-secret-key"), "error must not leak api_key: {}", err);
-        assert!(!err.contains("boom"), "error must not include upstream body: {}", err);
+        assert!(err.contains("index mismatch"), "error should indicate index mismatch: {}", err);
     }
 }
