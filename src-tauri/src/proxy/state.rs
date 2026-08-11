@@ -13,6 +13,8 @@ pub struct AppState {
     pub fallback: Arc<RwLock<Option<(String, String)>>>,
     pub retry_count: usize,
     pub security: Arc<RwLock<SecuritySettings>>,
+    /// 全局默认 embedding 渠道 id（从 store `rag.default_embedding_channel` 加载）
+    pub default_embedding_channel: Arc<RwLock<Option<String>>>,
 }
 
 impl AppState {
@@ -33,6 +35,7 @@ impl AppState {
             fallback: Arc::new(RwLock::new(None)),
             retry_count: 2,
             security: Arc::new(RwLock::new(SecuritySettings::default())),
+            default_embedding_channel: Arc::new(RwLock::new(None)),
         }
     }
 }

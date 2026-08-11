@@ -38,6 +38,17 @@ pub fn run() {
                 }
             }
 
+            // 从 tauri-plugin-store 加载全局默认 embedding 渠道
+            if let Ok(store) = app.store("store.bin") {
+                if let Some(value) = store.get("rag.default_embedding_channel") {
+                    if let Some(id) = value.as_str() {
+                        if !id.is_empty() {
+                            *state.default_embedding_channel.write() = Some(id.to_string());
+                        }
+                    }
+                }
+            }
+
             // 从 tauri-plugin-store 加载安全设置并同步到 AppState
             let sec = security::get_security_settings(&app.handle());
             security::apply_settings(&state, &sec);
