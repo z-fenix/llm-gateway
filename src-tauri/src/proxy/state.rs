@@ -1,6 +1,7 @@
 use crate::db::repository::Repository;
 use crate::db::Db;
 use crate::security::SecuritySettings;
+use std::path::PathBuf;
 use std::sync::Arc;
 use parking_lot::RwLock;
 
@@ -15,6 +16,8 @@ pub struct AppState {
     pub security: Arc<RwLock<SecuritySettings>>,
     /// 全局默认 embedding 渠道 id（从 store `rag.default_embedding_channel` 加载）
     pub default_embedding_channel: Arc<RwLock<Option<String>>>,
+    /// 知识库 usearch 索引文件存放目录（生产为 app_data_dir/kb，测试用临时目录）
+    pub kb_index_dir: Arc<RwLock<PathBuf>>,
 }
 
 impl AppState {
@@ -28,6 +31,7 @@ impl AppState {
             .no_proxy()
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
+        let kb_index_dir = std::env::temp_dir().join("llm-gateway").join("kb");
         Self {
             db,
             repo,
@@ -36,6 +40,7 @@ impl AppState {
             retry_count: 2,
             security: Arc::new(RwLock::new(SecuritySettings::default())),
             default_embedding_channel: Arc::new(RwLock::new(None)),
+            kb_index_dir: Arc::new(RwLock::new(kb_index_dir)),
         }
     }
 }

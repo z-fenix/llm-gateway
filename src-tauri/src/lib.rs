@@ -24,6 +24,10 @@ pub fn run() {
             std::fs::create_dir_all(&dir).ok();
             let db = Db::open(&dir.join("llm-gateway.db")).expect("open db");
             let state = AppState::new(db);
+            // 知识库向量索引固定放在 app_data_dir/kb/ 下
+            let kb_dir = dir.join("kb");
+            std::fs::create_dir_all(&kb_dir).ok();
+            *state.kb_index_dir.write() = kb_dir;
 
             // 从 tauri-plugin-store 加载 fallback 并同步到 AppState
             if let Ok(store) = app.store("store.bin") {

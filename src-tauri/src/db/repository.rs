@@ -910,6 +910,24 @@ impl Repository {
         Ok(out)
     }
 
+    pub fn fts_search_chunks(&self, kb_id: &str, query: &str, top_k: usize) -> AppResult<Vec<(i64, f64)>> {
+        let escaped = match fts5_escape(query) {
+            Some(q) => q,
+            None => return Ok(Vec::new()),
+        };
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT c.embedding_id, rank FROM kb_chunks_fts f JOIN kb_chunks c ON c.rowid=f.rowid WHERE f.content MATCH ?1 AND c.kb_id=?2 ORDER BY rank LIMIT ?3",
+        )?;
+        let rows = stmt.query_map(params![escaped, kb_id, top_k as i64], |r| {
+            Ok((r.get::<_, i64>(0)?, r.get::<_, f64>(1)?))
+        })?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
     pub fn next_embedding_id(&self) -> AppResult<i64> {
         let conn = self.db.conn();
         let mut conn = conn.lock();
@@ -926,6 +944,21 @@ impl Repository {
         tx.commit()?;
         Ok(id)
     }
+}
+
+fn fts5_escape(query: &str) -> Option<String> {
+    let cleaned: String = query
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
+        .collect();
+    let tokens: Vec<String> = cleaned
+        .split_whitespace()
+        .map(|s| format!("\"{}\"", s.replace('"', "\"\"")))
+        .collect();
+    if tokens.is_empty() {
+        return None;
+    }
+    Some(tokens.join(" "))
 }
 
 fn row_to_channel(r: &rusqlite::Row) -> rusqlite::Result<Channel> {
@@ -1893,6 +1926,26 @@ mod tests {
                 .unwrap();
             assert_eq!(hits, 0);
         }
+    }
+
+    #[test]
+    fn fts_search_chunks_returns_matches() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.create_kb(&kb("kb1", "my-kb")).unwrap();
+        repo.insert_document(&kb_doc("d1", "kb1", "a.txt")).unwrap();
+        repo.insert_chunks(&[
+            kb_chunk("c1", "d1", "kb1", 0, "unique keyword alpha", 1),
+            kb_chunk("c2", "d1", "kb1", 1, "beta gamma", 2),
+            kb_chunk("c3", "d1", "kb1", 2, "alpha beta keyword", 3),
+        ]).unwrap();
+
+        let hits = repo.fts_search_chunks("kb1", "alpha", 10).unwrap();
+        assert_eq!(hits.len(), 2);
+        let ids: Vec<i64> = hits.iter().map(|(id, _)| *id).collect();
+        assert!(ids.contains(&1));
+        assert!(ids.contains(&3));
+        // rank 越低越相关，应排在前面
+        assert!(hits[0].1 <= hits[1].1);
     }
 
     #[test]
