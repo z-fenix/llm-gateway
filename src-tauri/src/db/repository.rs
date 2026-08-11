@@ -947,12 +947,9 @@ impl Repository {
 }
 
 fn fts5_escape(query: &str) -> Option<String> {
-    let cleaned: String = query
-        .chars()
-        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
-        .collect();
-    let tokens: Vec<String> = cleaned
+    let tokens: Vec<String> = query
         .split_whitespace()
+        .filter(|s| !s.is_empty())
         .map(|s| format!("\"{}\"", s.replace('"', "\"\"")))
         .collect();
     if tokens.is_empty() {
@@ -1937,6 +1934,7 @@ mod tests {
             kb_chunk("c1", "d1", "kb1", 0, "unique keyword alpha", 1),
             kb_chunk("c2", "d1", "kb1", 1, "beta gamma", 2),
             kb_chunk("c3", "d1", "kb1", 2, "alpha beta keyword", 3),
+            kb_chunk("c4", "d1", "kb1", 3, "under_score foo-bar", 4),
         ]).unwrap();
 
         let hits = repo.fts_search_chunks("kb1", "alpha", 10).unwrap();
@@ -1946,6 +1944,16 @@ mod tests {
         assert!(ids.contains(&3));
         // rank 越低越相关，应排在前面
         assert!(hits[0].1 <= hits[1].1);
+
+        // 下划线保留，应能命中
+        let hits = repo.fts_search_chunks("kb1", "under_score", 10).unwrap();
+        let ids: Vec<i64> = hits.iter().map(|(id, _)| *id).collect();
+        assert!(ids.contains(&4), "underscore should be preserved in fts5_escape");
+
+        // 连字符保留并正确切分，应能命中
+        let hits = repo.fts_search_chunks("kb1", "foo-bar", 10).unwrap();
+        let ids: Vec<i64> = hits.iter().map(|(id, _)| *id).collect();
+        assert!(ids.contains(&4), "hyphen should not break tokenization");
     }
 
     #[test]

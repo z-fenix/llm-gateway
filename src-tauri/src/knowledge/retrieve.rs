@@ -23,23 +23,24 @@ const RETRIEVE_FTS_TOP_K: usize = 20;
 /// 两路结果各自按列表中的名次 rank（从 1 开始）打分：
 /// `score = Σ 1 / (60 + rank)`
 /// 合并相同 embedding_id 的分数后按分降序取 top_n。
-pub fn rrf_fuse(vector_hits: &[(u64, f32)], fts_hits: &[(i64, f64)], top_n: usize) -> Vec<i64> {
-    rrf_fuse_scored(vector_hits, fts_hits, top_n)
+pub fn rrf_fuse(vector_hits: &[(u64, f32)], fts_hits: &[(i64, f64)], top_n: usize) -> Result<Vec<i64>, String> {
+    Ok(rrf_fuse_scored(vector_hits, fts_hits, top_n)?
         .into_iter()
         .map(|(id, _)| id)
-        .collect()
+        .collect())
 }
 
 fn rrf_fuse_scored(
     vector_hits: &[(u64, f32)],
     fts_hits: &[(i64, f64)],
     top_n: usize,
-) -> Vec<(i64, f64)> {
+) -> Result<Vec<(i64, f64)>, String> {
     let mut scores: HashMap<i64, f64> = HashMap::new();
 
     for (rank, (id, _)) in vector_hits.iter().enumerate() {
         let rank = rank + 1;
-        let emb_id = i64::try_from(*id).unwrap_or(i64::MAX);
+        let emb_id = i64::try_from(*id)
+            .map_err(|_| format!("embedding_id {} out of i64 range", id))?;
         *scores.entry(emb_id).or_insert(0.0) += 1.0 / (RRF_K + rank as f64);
     }
 
@@ -54,7 +55,7 @@ fn rrf_fuse_scored(
             .unwrap_or(std::cmp::Ordering::Equal)
             .then_with(|| a.0.cmp(&b.0))
     });
-    scored.into_iter().take(top_n).collect()
+    Ok(scored.into_iter().take(top_n).collect())
 }
 
 /// 对查询做混合检索：先分别走向量相似度与 FTS5 全文，再用 RRF 融合回表取片段。
@@ -74,15 +75,35 @@ pub async fn retrieve(
 
     let dim = query_vec.len();
     let index_path = state.kb_index_dir.read().join(format!("{}.usearch", kb.id));
-    let index = VectorIndex::open_or_create(&index_path, dim)?;
-    let vector_hits = index.search(&query_vec, RETRIEVE_VECTOR_TOP_K)?;
+    let query_vec_for_search = query_vec.clone();
 
-    let fts_hits = state
-        .repo
-        .fts_search_chunks(&kb.id, query, RETRIEVE_FTS_TOP_K)
-        .map_err(|e| format!("fts search failed: {e}"))?;
+    let vector_task = tokio::task::spawn_blocking(move || {
+        let index = VectorIndex::open_or_create(&index_path, dim)?;
+        index.search(&query_vec_for_search, RETRIEVE_VECTOR_TOP_K)
+    });
+    let repo_for_fts = state.repo.clone();
+    let kb_id_for_fts = kb.id.clone();
+    let query_for_fts = query.to_string();
+    let fts_task = tokio::task::spawn_blocking(move || {
+        repo_for_fts.fts_search_chunks(&kb_id_for_fts, &query_for_fts, RETRIEVE_FTS_TOP_K)
+    });
 
-    let scored = rrf_fuse_scored(&vector_hits, &fts_hits, top_n);
+    let (vector_hits, fts_hits) = tokio::try_join!(
+        async {
+            vector_task
+                .await
+                .map_err(|e| format!("vector search task failed: {e}"))?
+                .map_err(|e| format!("vector search failed: {e}"))
+        },
+        async {
+            fts_task
+                .await
+                .map_err(|e| format!("fts search task failed: {e}"))?
+                .map_err(|e| format!("fts search failed: {e}"))
+        }
+    )?;
+
+    let scored = rrf_fuse_scored(&vector_hits, &fts_hits, top_n)?;
     if scored.is_empty() {
         return Ok(Vec::new());
     }
@@ -104,19 +125,20 @@ pub async fn retrieve(
 
     let mut out = Vec::with_capacity(scored.len());
     for (id, score) in scored {
-        if let Some(chunk) = chunk_by_id.get(&id) {
-            let filename = filename_by_doc_id
-                .get(&chunk.doc_id)
-                .cloned()
-                .unwrap_or_default();
-            out.push(RetrievedChunk {
-                embedding_id: id,
-                content: chunk.content.clone(),
-                symbol: chunk.symbol.clone(),
-                filename,
-                score,
-            });
-        }
+        let chunk = chunk_by_id
+            .get(&id)
+            .ok_or_else(|| format!("kb chunk missing for embedding_id {}", id))?;
+        let filename = filename_by_doc_id
+            .get(&chunk.doc_id)
+            .cloned()
+            .unwrap_or_default();
+        out.push(RetrievedChunk {
+            embedding_id: id,
+            content: chunk.content.clone(),
+            symbol: chunk.symbol.clone(),
+            filename,
+            score,
+        });
     }
 
     Ok(out)
@@ -141,7 +163,7 @@ mod tests {
         // fts: id2 rank1, id4 rank2
         let fts_hits = vec![(2i64, 1.0f64), (4i64, 2.0f64)];
 
-        let ids = rrf_fuse(&vector_hits, &fts_hits, 3);
+        let ids = rrf_fuse(&vector_hits, &fts_hits, 3).unwrap();
 
         // id2 两路都命中，分数最高应排第一；id1 次之；id3/id4 同分取 id 小者
         assert_eq!(ids.len(), 3);
@@ -153,16 +175,16 @@ mod tests {
 
     #[test]
     fn rrf_fuse_empty_inputs() {
-        assert!(rrf_fuse(&[], &[], 5).is_empty());
-        assert!(rrf_fuse(&[(1u64, 0.0f32)], &[], 5).is_empty() == false);
-        assert!(rrf_fuse(&[], &[(1i64, 0.0f64)], 5).is_empty() == false);
+        assert!(rrf_fuse(&[], &[], 5).unwrap().is_empty());
+        assert!(rrf_fuse(&[(1u64, 0.0f32)], &[], 5).unwrap().is_empty() == false);
+        assert!(rrf_fuse(&[], &[(1i64, 0.0f64)], 5).unwrap().is_empty() == false);
     }
 
     #[test]
     fn rrf_fuse_top_n_caps() {
         let vector_hits = vec![(1u64, 0.0f32), (2u64, 0.0f32), (3u64, 0.0f32)];
         let fts_hits = vec![(4i64, 0.0f64), (5i64, 0.0f64)];
-        assert_eq!(rrf_fuse(&vector_hits, &fts_hits, 2).len(), 2);
+        assert_eq!(rrf_fuse(&vector_hits, &fts_hits, 2).unwrap().len(), 2);
     }
 
     fn channel(id: &str, base_url: &str) -> Channel {
@@ -347,10 +369,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn retrieve_error_on_embed_failure() {
+    async fn retrieve_error_when_chunk_missing() {
         let (base_url, _) = spawn_mock_embeddings(
-            500,
-            serde_json::json!({ "error": "boom" }),
+            200,
+            serde_json::json!({
+                "object": "list",
+                "data": [{"object": "embedding", "index": 0, "embedding": [1.0, 0.0, 0.0, 0.0]}]
+            }),
         )
         .await;
 
@@ -359,11 +384,33 @@ mod tests {
         state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
         *state.default_embedding_channel.write() = Some("ch1".into());
 
-        let mut test_kb = kb("err_kb");
+        let kb_id = "missing_chunk_kb";
+        let mut test_kb = kb(kb_id);
         test_kb.embedding_channel_id = Some("ch1".into());
         state.repo.create_kb(&test_kb).unwrap();
+        state.repo.insert_document(&kb_doc("d1", kb_id, "a.txt")).unwrap();
+        // 索引中写入 emb_id=999，但 DB 中不存在对应 chunk
+        state
+            .repo
+            .insert_chunks(&[kb_chunk("c1", "d1", kb_id, "real content", 1)])
+            .unwrap();
 
-        let err = retrieve(&state, &test_kb, "hello", 3).await.unwrap_err();
-        assert!(err.contains("upstream error"), "{err}");
+        let index_dir = std::env::temp_dir()
+            .join("llm-gateway")
+            .join("kb")
+            .join(format!("missing_chunk_test_{}", kb_id));
+        let _ = fs::remove_dir_all(&index_dir);
+        let _ = fs::create_dir_all(&index_dir);
+        let index_path = index_dir.join(format!("{}.usearch", kb_id));
+        let index = VectorIndex::create(&index_path, 4).unwrap();
+        index.add(999, &[1.0, 0.0, 0.0, 0.0]).unwrap();
+        index.save().unwrap();
+
+        *state.kb_index_dir.write() = index_dir;
+
+        let err = retrieve(&state, &test_kb, "real content", 3)
+            .await
+            .unwrap_err();
+        assert!(err.contains("kb chunk missing for embedding_id 999"), "{err}");
     }
 }

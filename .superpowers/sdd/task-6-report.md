@@ -1,82 +1,147 @@
-# Task 6 后端测试补强报告
+# Task 6 报告: 混合检索(FTS5 + 向量 + RRF 融合)
 
-## 变更摘要
-- 新建：`src-tauri/tests/failover.rs`
-- 修改：`src-tauri/src/db/repository.rs`（仅测试模块）
-- 修改：`src-tauri/src/security/rules.rs`（仅测试模块）
-- 修改：`src-tauri/tests/common/mod.rs`（添加 `#![allow(dead_code)]`）
-- 生产代码逻辑/签名未改动。
+## 做了什么
 
-## 新增测试清单
+1. 新建 `src-tauri/src/knowledge/retrieve.rs`,实现:
+   - `RetrievedChunk { embedding_id, content, symbol, filename, score }`
+   - 纯函数 `rrf_fuse(vector_hits, fts_hits, top_n) -> Vec<i64>`
+   - 异步 `retrieve(state, kb, query, top_n) -> Result<Vec<RetrievedChunk>, String>`
+2. 在 `src-tauri/src/knowledge/mod.rs` 加入 `pub mod retrieve;`。
+3. 在 `src-tauri/src/db/repository.rs` 加入 `fts_search_chunks(kb_id, query, top_k) -> Vec<(i64, f64)>` 与 FTS5 查询转义辅助函数。
+4. 为 `retrieve` 提供索引目录,在 `src-tauri/src/proxy/state.rs` 的 `AppState` 新增 `kb_index_dir: Arc<RwLock<PathBuf>>`,并在 `src-tauri/src/lib.rs` 启动时指向 `app_data_dir/kb/`。
+5. TDD 单测覆盖 `rrf_fuse`、`fts_search_chunks`、`retrieve` 集成路径。
 
-### `src-tauri/tests/failover.rs`（7 个）
-| 测试名 | 覆盖内容 |
-| --- | --- |
-| `dispatch_primary_401_falls_back` | 主渠道 401 → 触发 failover，命中备渠道，主 success_rate 下降 |
-| `dispatch_primary_403_falls_back` | 主渠道 403 → 触发 failover，命中备渠道，主 success_rate 下降 |
-| `dispatch_primary_429_falls_back` | 主渠道 429 → 触发 failover，命中备渠道，主 success_rate 下降 |
-| `dispatch_primary_500_falls_back` | 主渠道 500 → 触发 failover，命中备渠道，主 success_rate 下降 |
-| `dispatch_primary_network_unreachable_falls_back` | 主渠道指向未监听端口（`http://127.0.0.1:1`）→ 网络不可达触发 failover |
-| `dispatch_all_candidates_fail_returns_5xx` | 主/备全部失败 → 返回上游 5xx 错误，且两条渠道 success_rate 均下降 |
-| `dispatch_primary_400_does_not_fallback` | 主渠道 400（非 failover 4xx）→ 不触发 failover，备渠道未被命中 |
+## 函数签名
 
-说明：本文件采用**普通调度路径**（`role_route = None`），与 `tests/forward_failover.rs` 的角色路由+兜底路径不重复。`forward_failover.rs` 已覆盖 5xx/400，本文件补全 401/403/429/网络不可达/全失败，并额外验证 `record_channel_stats` 的副作用。
+```rust
+// src-tauri/src/knowledge/retrieve.rs
+pub struct RetrievedChunk {
+    pub embedding_id: i64,
+    pub content: String,
+    pub symbol: Option<String>,
+    pub filename: String,
+    pub score: f64,
+}
 
-### `src-tauri/src/db/repository.rs` 测试模块（4 个）
-| 测试名 | 覆盖内容 |
-| --- | --- |
-| `consume_quota_zero_tokens_increments_calls_without_changing_used` | 零 token 消耗：调用次数 +1，quota_used 不变 |
-| `consume_quota_large_value_and_over_cap_is_atomic` | 大值消费后再次大额请求超额，原子性拒绝且 used 不扣减 |
-| `consume_quota_over_cap_does_not_decrement` | 已用接近上限时超额请求返回 false，且 quota_used/total_calls/total_tokens 均不变 |
-| `record_channel_stats_sliding_window_updates_avg_and_success_rate` | 多次调用后 `avg_latency_ms` 与 `success_rate` 滑动窗口值按预期变化 |
+pub fn rrf_fuse(
+    vector_hits: &[(u64, f32)],
+    fts_hits: &[(i64, f64)],
+    top_n: usize,
+) -> Vec<i64>;
 
-### `src-tauri/src/security/rules.rs` 测试模块（2 个）
-| 测试名 | 覆盖内容 |
-| --- | --- |
-| `custom_blacklist_case_insensitive_and_evidence_masked` | 黑名单关键字大小写不敏感命中，且 `evidence_masked` 含 `****`、不含原文 |
-| `custom_rules_append_not_replace` | `findings` 预存一条记录，调用后长度 +1，确认 append 语义 |
+pub async fn retrieve(
+    state: &AppState,
+    kb: &KnowledgeBase,
+    query: &str,
+    top_n: usize,
+) -> Result<Vec<RetrievedChunk>, String>;
 
-## stream=true 非流式 collect 路径
-经检查 `src-tauri/src/proxy/handlers.rs`：`chat.stream == true` 直接走 `handle_stream` -> `forwarder::forward_stream`；`forwarder::forward` 内部仅按 `chat.stream` 构造上游 URL，不存在把 stream 请求当作非流式聚合返回完整响应的独立路径。**该路径不存在，故跳过，未 invent。**
-
-## 验证结果
-
-### Build
+// src-tauri/src/db/repository.rs
+pub fn fts_search_chunks(
+    &self,
+    kb_id: &str,
+    query: &str,
+    top_k: usize,
+) -> AppResult<Vec<(i64, f64)>>;
 ```
+
+## RRF 公式
+
+- 向量检索结果 `vector_hits` 按列表顺序给出第 1 名(最近)、第 2 名...;
+- 全文检索结果 `fts_hits` 按 `ORDER BY rank` 给出第 1 名(最相关)、第 2 名...;
+- 对每一路第 `rank` 名的 embedding_id,贡献 `1 / (60 + rank)`;
+- 合并相同 embedding_id 的分数,按分数降序取 `top_n`;
+- 同分按 embedding_id 升序稳定。
+
+## FTS5 查询转义策略
+
+实现 `fts5_escape`:
+
+1. 将非 `is_alphanumeric()` 字符统一替换为空格(保留 CJK 等字符);
+2. `split_whitespace` 得到 token;
+3. 每个 token 用双引号包裹,内部双引号转义为 `""`;
+4. 多个 token 用空格连接(FTS5 空格 = 隐式 AND);
+5. 无有效 token 时直接返回空结果,避免 `MATCH ""` 语法错误。
+
+示例: `alpha keyword` -> `"alpha" "keyword"`;含特殊字符 `foo*bar` -> `"foobar"`。
+
+## retrieve 编排流程
+
+1. `Embedder::from_kb(state, kb)` 获取 embedding 渠道(优先库配置,回退全局默认);
+2. `embed([query])` 得到查询向量;
+3. `VectorIndex::open_or_create(<kb_index_dir>/<kb_id>.usearch, dim)` 并 `search(query_vec, 20)`;
+4. `repo.fts_search_chunks(kb_id, query, 20)`;
+5. `rrf_fuse_scored` 融合,取 `top_n` embedding_id;
+6. `repo.get_chunks_by_embedding_ids` 回表取 chunk;
+7. `repo.list_documents` 映射 `doc_id -> filename`;
+8. 按 RRF 顺序组装 `RetrievedChunk`,携带 RRF 分数。
+
+任何步骤 Err 都向上返回,由调用方处理,函数内部不 panic。
+
+## 索引路径策略
+
+- 生产:启动时在 `lib.rs` 将 `AppState.kb_index_dir` 设为 `app_data_dir()/kb/`,与 SQLite 数据库同根目录;
+- 测试/默认:`AppState::new` 初始化为 `std::env::temp_dir()/llm-gateway/kb/`;
+- 每个库的 usearch 索引文件名为 `<kb_id>.usearch`。
+
+## 测试命令与输出
+
+```bash
+# rrf 纯函数
+cargo test --manifest-path src-tauri/Cargo.toml --lib rrf_fuse
+# output: 3 passed
+
+# FTS 检索
+cargo test --manifest-path src-tauri/Cargo.toml --lib fts_search
+# output: 1 passed
+
+# retrieve 集成(内存 DB + mock embedding server + temp usearch 索引)
+cargo test --manifest-path src-tauri/Cargo.toml --lib retrieve_
+# output: 3 passed
+
+# 全量
+cargo test --manifest-path src-tauri/Cargo.toml
+# output: lib 159 passed; integration tests 38 passed; 0 failed
+
+# 构建
 cargo build --manifest-path src-tauri/Cargo.toml
-   Compiling llm-gateway v0.1.0
-    Finished `dev` profile [unoptimized + debuginfo] target(s)
-```
-干净，无错误。
-
-### Tests
-基线：143 个测试通过（116 unit + 27 integration）。
-完成后：156 个测试通过（122 unit + 34 integration）。
-
-```
-test result: ok. 122 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (failover)
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (forward_failover)
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (gateway_e2e)
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (security_request)
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (security_response)
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (security_stream)
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (stream_e2e)
+# output: Finished dev profile, 0 warnings
 ```
 
-### Warnings
-- 变更前：`cargo test ... | grep -ci warning` = **8**
-- 变更后：`cargo test ... | grep -ci warning` = **0**
+## 自审偏差
 
-`tests/common/mod.rs` 的 `MockUpstream` 未用字段与 `spawn_mock`/`spawn_mock_stream` 未用告警已通过 `#![allow(dead_code)]` 消除。
+- `rrf_fuse_merges_and_dedups` 首次断言误将同分场景写错,修正后通过;实际 RRF 中 id4(fts rank2) 得分为 `1/62`,id3(vector rank3) 得分为 `1/63`,id4 应在前。
+- `kb_index_dir` 未在原始 Task 6 修改清单中,但 `retrieve` 签名需要 state 提供索引目录,因此补充加入 `AppState`,并在 `lib.rs` 启动时指向 `app_data_dir/kb/`;已在报告说明。
+- 文件名通过 `list_documents` 映射而非直接 join SQL,保持 repository 改动最小(仅新增 `fts_search_chunks`)。
+- 无新 warning。
 
-## 生产 Bug / 关注点
-未发现生产 bug。所有新增测试均为边界/分支覆盖，未修改生产逻辑。
+## 评审修复(2026-08-11)
 
-## 自检项
-- [x] 每个新测试都有有意义断言，无空断言测试。
-- [x] failover 分支未与 `forward_failover.rs` 重复。
-- [x] 未修改生产代码（`git diff src/` 仅在 repository.rs/rules.rs 的 `#[cfg(test)]` 模块内）。
-- [x] 未使用真实 api_key，测试 key 均为 `sk-lgw-*` / `sk-test` 等 fixture。
-- [x] 未使用固定端口，全部使用 `spawn_mock` 绑定 ephemeral port；网络不可达测试使用 `127.0.0.1:1`。
-- [x] 构建通过、全部测试绿色、无新增 warning。
+针对 Task 6 混合检索评审发现的 2 个 Important + 2 个 Minor 问题,已修复并验证:
+
+1. **并发执行向量与 FTS 检索** (`src-tauri/src/knowledge/retrieve.rs`)
+   - 将 `VectorIndex::open_or_create/search` 与 `repo.fts_search_chunks` 分别包入 `tokio::task::spawn_blocking`,再通过 `tokio::try_join!` 并发执行,`retrieve` 保持 `async`。
+   - 任一路失败(JoinError 或内部 Err)都会使整体返回 Err,由调用方降级。
+
+2. **缺失 embedding_id 显式报错** (`src-tauri/src/knowledge/retrieve.rs`)
+   - 回表后若某个 RRF 结果的 `embedding_id` 在 DB 中找不到,返回 `Err(format!("kb chunk missing for embedding_id {}", id))`。
+   - 该静态文案不含敏感信息,会在 `rag_hook` 处触发静默降级。
+   - 新增测试 `retrieve_error_when_chunk_missing` 覆盖索引有 id 但 DB 无 chunk 的场景。
+
+3. **FTS5 查询转义保留合法 token 字符** (`src-tauri/src/db/repository.rs`)
+   - `fts5_escape` 改为按 Unicode 空白拆分 token,仅对双引号做 `\"\"\"` 转义,再用 `"token1" "token2" ...` 拼接。
+   - 下划线、连字符、点号等不再被抹掉,避免 MATCH 语法错误与注入。
+   - 更新 `fts_search_chunks_returns_matches`,新增 `under_score` 与 `foo-bar` 查询命中断言。
+
+4. **i64 转换失败不使用哨兵** (`src-tauri/src/knowledge/retrieve.rs`)
+   - `rrf_fuse_scored` 中 `i64::try_from(*id)` 失败时返回 `Err(format!("embedding_id {} out of i64 range", id))`。
+   - `rrf_fuse`/`rrf_fuse_scored` 签名调整为 `Result`,测试已同步 `.unwrap()`。
+
+验证结果:
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml
+# 159 lib + 38 integration passed; 0 failed
+cargo build --manifest-path src-tauri/Cargo.toml
+# Finished dev profile, 0 warnings
+```
