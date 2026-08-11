@@ -297,4 +297,26 @@ mod tests {
 
         assert!(err.contains("index mismatch"), "error should indicate index mismatch: {}", err);
     }
+
+    #[tokio::test]
+    async fn embed_upstream_error_surfaces() {
+        let (base_url, _) = spawn_mock(
+            500,
+            serde_json::json!({ "error": "boom" }),
+        )
+        .await;
+
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let mut channel = test_channel("ch1", &base_url);
+        channel.api_key = "sk-secret-key".into();
+        state.repo.insert_channel(&channel).unwrap();
+        let kb = test_kb(Some("ch1"));
+        let embedder = Embedder::from_kb(&state, &kb).unwrap();
+        let err = embedder.embed(&["a".into(), "b".into()]).await.unwrap_err();
+
+        assert!(err.contains("upstream error"), "error should indicate upstream failure: {}", err);
+        assert!(!err.contains("sk-secret-key"), "error must not leak api key: {}", err);
+        assert!(!err.contains("boom"), "error must not leak upstream body: {}", err);
+    }
 }
