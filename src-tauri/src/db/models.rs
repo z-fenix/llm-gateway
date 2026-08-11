@@ -107,3 +107,43 @@ pub struct CustomRule {
     pub severity: String, pub action: String, pub enabled: bool,
     pub description: Option<String>, pub created_at: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KnowledgeBase {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub embedding_channel_id: Option<String>,
+    pub embedding_model: String,
+    pub dim: i64,
+    pub doc_count: i64,
+    pub chunk_count: i64,
+    pub enabled: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KbDocument {
+    pub id: String,
+    pub kb_id: String,
+    pub filename: String,
+    pub file_type: String,
+    pub size_bytes: i64,
+    pub chunk_count: i64,
+    pub status: String,
+    pub error: Option<String>,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KbChunk {
+    pub id: String,
+    pub doc_id: String,
+    pub kb_id: String,
+    pub seq: i64,
+    pub symbol: Option<String>,
+    pub content: String,
+    pub token_count: i64,
+    pub embedding_id: i64,
+}

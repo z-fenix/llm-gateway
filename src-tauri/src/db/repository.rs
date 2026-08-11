@@ -1,4 +1,4 @@
-use super::models::{ApiKey, BuiltinRule, Channel, CustomRule, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute};
+use super::models::{ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute};
 use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
@@ -731,6 +731,201 @@ impl Repository {
         let lat: i64 = conn.query_row("SELECT CAST(COALESCE(AVG(latency_ms),0) AS INTEGER) FROM request_logs", [], |r| r.get(0))?;
         Ok((tr, tt, ar, at, ac, lat))
     }
+
+    // 知识库 CRUD
+    pub fn create_kb(&self, kb: &KnowledgeBase) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO knowledge_bases (id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
+            params![
+                kb.id, kb.name, kb.description, kb.embedding_channel_id, kb.embedding_model,
+                kb.dim, kb.doc_count, kb.chunk_count, kb.enabled as i64, kb.created_at, kb.updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_kbs(&self) -> AppResult<Vec<KnowledgeBase>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at FROM knowledge_bases ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map([], row_to_kb)?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn get_kb_by_name(&self, name: &str) -> AppResult<Option<KnowledgeBase>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at FROM knowledge_bases WHERE name=?1",
+        )?;
+        let mut rows = stmt.query(params![name])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(row_to_kb(r)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_kb(&self, id: &str) -> AppResult<Option<KnowledgeBase>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at FROM knowledge_bases WHERE id=?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(row_to_kb(r)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn delete_kb(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute("DELETE FROM knowledge_bases WHERE id=?1", [id])?;
+        Ok(())
+    }
+
+    pub fn set_kb_status(&self, id: &str, enabled: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE knowledge_bases SET enabled=?2 WHERE id=?1",
+            params![id, enabled as i64],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_kb_counts(&self, id: &str, doc_count: i64, chunk_count: i64) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE knowledge_bases SET doc_count=?2, chunk_count=?3 WHERE id=?1",
+            params![id, doc_count, chunk_count],
+        )?;
+        Ok(())
+    }
+
+    pub fn insert_document(&self, doc: &KbDocument) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO kb_documents (id,kb_id,filename,file_type,size_bytes,chunk_count,status,error,created_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+            params![
+                doc.id, doc.kb_id, doc.filename, doc.file_type, doc.size_bytes,
+                doc.chunk_count, doc.status, doc.error, doc.created_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_documents(&self, kb_id: &str) -> AppResult<Vec<KbDocument>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,kb_id,filename,file_type,size_bytes,chunk_count,status,error,created_at FROM kb_documents WHERE kb_id=?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![kb_id], row_to_kb_doc)?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn update_document_status(&self, id: &str, status: &str, error: Option<&str>) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE kb_documents SET status=?2, error=?3 WHERE id=?1",
+            params![id, status, error],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_document(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute("DELETE FROM kb_documents WHERE id=?1", [id])?;
+        Ok(())
+    }
+
+    pub fn insert_chunks(&self, chunks: &[KbChunk]) -> AppResult<()> {
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        for chunk in chunks {
+            tx.execute(
+                "INSERT INTO kb_chunks (id,doc_id,kb_id,seq,symbol,content,token_count,embedding_id)
+                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+                params![
+                    chunk.id, chunk.doc_id, chunk.kb_id, chunk.seq, chunk.symbol,
+                    chunk.content, chunk.token_count, chunk.embedding_id
+                ],
+            )?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn list_chunks(&self, kb_id: &str) -> AppResult<Vec<KbChunk>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,doc_id,kb_id,seq,symbol,content,token_count,embedding_id FROM kb_chunks WHERE kb_id=?1 ORDER BY seq ASC",
+        )?;
+        let rows = stmt.query_map(params![kb_id], row_to_kb_chunk)?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn get_chunks_by_embedding_ids(&self, kb_id: &str, ids: &[i64]) -> AppResult<Vec<KbChunk>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let sql = format!(
+            "SELECT id,doc_id,kb_id,seq,symbol,content,token_count,embedding_id FROM kb_chunks WHERE kb_id=?1 AND embedding_id IN ({})",
+            placeholders
+        );
+        let mut params: Vec<rusqlite::types::Value> = Vec::with_capacity(1 + ids.len());
+        params.push(rusqlite::types::Value::Text(kb_id.into()));
+        for id in ids {
+            params.push((*id).into());
+        }
+        let mut stmt = conn.prepare(&sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(params.iter()), row_to_kb_chunk)?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+
+    pub fn next_embedding_id(&self) -> AppResult<i64> {
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        tx.execute(
+            "UPDATE kb_meta SET value=value+1 WHERE key='next_embedding_id'",
+            [],
+        )?;
+        let id: i64 = tx.query_row(
+            "SELECT value FROM kb_meta WHERE key='next_embedding_id'",
+            [],
+            |r| r.get(0),
+        )?;
+        tx.commit()?;
+        Ok(id)
+    }
 }
 
 fn row_to_channel(r: &rusqlite::Row) -> rusqlite::Result<Channel> {
@@ -752,6 +947,49 @@ fn row_to_channel(r: &rusqlite::Row) -> rusqlite::Result<Channel> {
         avg_latency_ms: r.get(13)?,
         created_at: r.get(14)?,
         updated_at: r.get(15)?,
+    })
+}
+
+fn row_to_kb(r: &rusqlite::Row) -> rusqlite::Result<KnowledgeBase> {
+    Ok(KnowledgeBase {
+        id: r.get(0)?,
+        name: r.get(1)?,
+        description: r.get(2)?,
+        embedding_channel_id: r.get(3)?,
+        embedding_model: r.get(4)?,
+        dim: r.get(5)?,
+        doc_count: r.get(6)?,
+        chunk_count: r.get(7)?,
+        enabled: r.get::<_, i64>(8)? != 0,
+        created_at: r.get(9)?,
+        updated_at: r.get(10)?,
+    })
+}
+
+fn row_to_kb_doc(r: &rusqlite::Row) -> rusqlite::Result<KbDocument> {
+    Ok(KbDocument {
+        id: r.get(0)?,
+        kb_id: r.get(1)?,
+        filename: r.get(2)?,
+        file_type: r.get(3)?,
+        size_bytes: r.get(4)?,
+        chunk_count: r.get(5)?,
+        status: r.get(6)?,
+        error: r.get(7)?,
+        created_at: r.get(8)?,
+    })
+}
+
+fn row_to_kb_chunk(r: &rusqlite::Row) -> rusqlite::Result<KbChunk> {
+    Ok(KbChunk {
+        id: r.get(0)?,
+        doc_id: r.get(1)?,
+        kb_id: r.get(2)?,
+        seq: r.get(3)?,
+        symbol: r.get(4)?,
+        content: r.get(5)?,
+        token_count: r.get(6)?,
+        embedding_id: r.get(7)?,
     })
 }
 
@@ -1557,5 +1795,112 @@ mod tests {
         };
         let series = repo.log_timeseries(&filter, 60).unwrap();
         assert!(series.is_empty());
+    }
+
+    // 知识库测试
+    fn kb(id: &str, name: &str) -> KnowledgeBase {
+        KnowledgeBase {
+            id: id.into(), name: name.into(), description: None,
+            embedding_channel_id: None, embedding_model: "text-embedding-3-small".into(),
+            dim: 1536, doc_count: 0, chunk_count: 0, enabled: true,
+            created_at: 1, updated_at: 1,
+        }
+    }
+
+    fn kb_doc(id: &str, kb_id: &str, filename: &str) -> KbDocument {
+        KbDocument {
+            id: id.into(), kb_id: kb_id.into(), filename: filename.into(),
+            file_type: "txt".into(), size_bytes: 100, chunk_count: 0,
+            status: "indexed".into(), error: None, created_at: 1,
+        }
+    }
+
+    fn kb_chunk(id: &str, doc_id: &str, kb_id: &str, seq: i64, content: &str, emb_id: i64) -> KbChunk {
+        KbChunk {
+            id: id.into(), doc_id: doc_id.into(), kb_id: kb_id.into(),
+            seq, symbol: None, content: content.into(), token_count: 10, embedding_id: emb_id,
+        }
+    }
+
+    #[test]
+    fn kb_create_and_get() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let kb = kb("kb1", "my-kb");
+        repo.create_kb(&kb).unwrap();
+        let got = repo.get_kb("kb1").unwrap().unwrap();
+        assert_eq!(got.name, "my-kb");
+        assert_eq!(got.dim, 1536);
+        assert!(got.enabled);
+
+        let by_name = repo.get_kb_by_name("my-kb").unwrap().unwrap();
+        assert_eq!(by_name.id, "kb1");
+
+        let list = repo.list_kbs().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "kb1");
+    }
+
+    #[test]
+    fn kb_delete_cascades() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.create_kb(&kb("kb1", "my-kb")).unwrap();
+        repo.insert_document(&kb_doc("d1", "kb1", "a.txt")).unwrap();
+        repo.insert_chunks(&[
+            kb_chunk("c1", "d1", "kb1", 0, "hello world", 1),
+            kb_chunk("c2", "d1", "kb1", 1, "foo bar", 2),
+        ]).unwrap();
+
+        assert_eq!(count_table(&repo, "kb_documents"), 1);
+        assert_eq!(count_table(&repo, "kb_chunks"), 2);
+
+        repo.delete_kb("kb1").unwrap();
+        assert!(repo.get_kb("kb1").unwrap().is_none());
+        assert_eq!(count_table(&repo, "kb_documents"), 0);
+        assert_eq!(count_table(&repo, "kb_chunks"), 0);
+        // FTS 同步清理
+        let conn = repo.db.conn();
+        let conn = conn.lock();
+        let fts: i64 = conn.query_row("SELECT COUNT(*) FROM kb_chunks_fts", [], |r| r.get(0)).unwrap();
+        assert_eq!(fts, 0);
+    }
+
+    #[test]
+    fn kb_fts_trigger_syncs() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.create_kb(&kb("kb1", "my-kb")).unwrap();
+        repo.insert_document(&kb_doc("d1", "kb1", "a.txt")).unwrap();
+        repo.insert_chunks(&[
+            kb_chunk("c1", "d1", "kb1", 0, "unique keyword alpha", 1),
+            kb_chunk("c2", "d1", "kb1", 1, "beta gamma", 2),
+        ]).unwrap();
+
+        {
+            let conn = repo.db.conn();
+            let conn = conn.lock();
+            let hits: i64 = conn
+                .query_row("SELECT COUNT(*) FROM kb_chunks_fts WHERE content MATCH ?", ["alpha"], |r| r.get(0))
+                .unwrap();
+            assert_eq!(hits, 1);
+        }
+
+        // delete 后 FTS 应同步删除
+        repo.delete_document("d1").unwrap();
+        {
+            let conn = repo.db.conn();
+            let conn = conn.lock();
+            let hits: i64 = conn
+                .query_row("SELECT COUNT(*) FROM kb_chunks_fts WHERE content MATCH ?", ["alpha"], |r| r.get(0))
+                .unwrap();
+            assert_eq!(hits, 0);
+        }
+    }
+
+    #[test]
+    fn kb_next_embedding_id_monotonic() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        let a = repo.next_embedding_id().unwrap();
+        let b = repo.next_embedding_id().unwrap();
+        let c = repo.next_embedding_id().unwrap();
+        assert!(a < b && b < c, "embedding ids must be strictly monotonic: {a} {b} {c}");
     }
 }
