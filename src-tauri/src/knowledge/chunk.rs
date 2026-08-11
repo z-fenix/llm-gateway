@@ -1,8 +1,9 @@
 //! 知识库文档分块纯函数模块。
 //!
 //! 后续 `ingest` 任务会调用此处能力把原始文本/代码切分为 `Chunk`。
-//! 当前 `chunk_code` 仅按纯文本递归策略降级实现，Task 3 再接入 tree-sitter
-//! 做按符号切分。
+//! `chunk_code` 使用 tree-sitter 按函数/类/方法边界切分并回填 `symbol`。
+
+use tree_sitter::{Language, Node, Parser};
 
 const DEFAULT_OVERLAP_TOKENS: i64 = 50;
 const CHARS_PER_TOKEN: i64 = 4;
@@ -70,11 +71,149 @@ pub fn chunk_text(content: &str, target_tokens: i64, overlap_tokens: i64) -> Vec
     make_chunks(contents)
 }
 
-/// 代码分块占位实现：当前直接复用 `chunk_text`，symbol 固定为 `None`。
-/// Task 3 将用 tree-sitter 按函数/类等符号切分并回填 symbol。
+/// 代码分块：按 filename 扩展名选择 tree-sitter 语言，按函数/类/方法节点切分。
+///
+/// - 每个符号节点文本成一块，`symbol` 为该节点名称（取不到时 `None`）。
+/// - 超过 `target_tokens` 的节点按行递归降级到 `chunk_text`。
+/// - 不支持/无映射扩展名 → 直接走 `chunk_text` 且 `symbol=None`。
 pub fn chunk_code(content: &str, filename: &str, target_tokens: i64) -> Vec<Chunk> {
-    let _ = filename;
-    chunk_text(content, target_tokens, DEFAULT_OVERLAP_TOKENS)
+    let lang = match detect_code_language(filename) {
+        Some(l) => l,
+        None => return chunk_text(content, target_tokens, DEFAULT_OVERLAP_TOKENS),
+    };
+
+    let mut parser = Parser::new();
+    let ts_lang = lang.language();
+    if parser.set_language(&ts_lang).is_err() {
+        return chunk_text(content, target_tokens, DEFAULT_OVERLAP_TOKENS);
+    }
+    let tree = match parser.parse(content, None) {
+        Some(t) => t,
+        None => return chunk_text(content, target_tokens, DEFAULT_OVERLAP_TOKENS),
+    };
+
+    let mut pieces: Vec<(Option<String>, String)> = Vec::new();
+    collect_symbol_chunks(tree.root_node(), content, lang, &mut pieces);
+
+    if pieces.is_empty() {
+        return chunk_text(content, target_tokens, DEFAULT_OVERLAP_TOKENS);
+    }
+
+    let mut contents: Vec<(Option<String>, String)> = Vec::new();
+    for (symbol, text) in pieces {
+        if estimate_tokens(&text) <= target_tokens {
+            contents.push((symbol, text));
+        } else {
+            for sub in chunk_text(&text, target_tokens, DEFAULT_OVERLAP_TOKENS) {
+                contents.push((symbol.clone(), sub.content));
+            }
+        }
+    }
+
+    contents
+        .into_iter()
+        .enumerate()
+        .map(|(i, (symbol, content))| Chunk {
+            seq: i as i64,
+            symbol,
+            token_count: estimate_tokens(&content),
+            content,
+        })
+        .collect()
+}
+
+#[derive(Debug, Clone, Copy)]
+enum CodeLanguage {
+    Rust,
+    JavaScript,
+    Python,
+    Go,
+}
+
+impl CodeLanguage {
+    fn language(self) -> Language {
+        match self {
+            CodeLanguage::Rust => Language::new(tree_sitter_rust::LANGUAGE),
+            CodeLanguage::JavaScript => Language::new(tree_sitter_javascript::LANGUAGE),
+            CodeLanguage::Python => Language::new(tree_sitter_python::LANGUAGE),
+            CodeLanguage::Go => Language::new(tree_sitter_go::LANGUAGE),
+        }
+    }
+
+    fn symbol_kinds(self) -> &'static [&'static str] {
+        match self {
+            CodeLanguage::Rust => &[
+                "function_item",
+                "struct_item",
+                "enum_item",
+                "trait_item",
+                "type_item",
+                "mod_item",
+            ],
+            CodeLanguage::JavaScript => &[
+                "function_declaration",
+                "method_definition",
+                "class_declaration",
+            ],
+            CodeLanguage::Python => &["function_definition", "class_definition"],
+            CodeLanguage::Go => &["function_declaration", "method_declaration"],
+        }
+    }
+}
+
+fn detect_code_language(filename: &str) -> Option<CodeLanguage> {
+    let lower = filename.to_lowercase();
+    if lower.ends_with(".rs") {
+        return Some(CodeLanguage::Rust);
+    }
+    if lower.ends_with(".ts")
+        || lower.ends_with(".tsx")
+        || lower.ends_with(".js")
+        || lower.ends_with(".jsx")
+    {
+        return Some(CodeLanguage::JavaScript);
+    }
+    if lower.ends_with(".py") {
+        return Some(CodeLanguage::Python);
+    }
+    if lower.ends_with(".go") {
+        return Some(CodeLanguage::Go);
+    }
+    None
+}
+
+fn collect_symbol_chunks(
+    node: Node,
+    source: &str,
+    lang: CodeLanguage,
+    out: &mut Vec<(Option<String>, String)>,
+) {
+    if let Some(text) = node_text(node, source) {
+        if lang.symbol_kinds().contains(&node.kind()) && !text.trim().is_empty() {
+            let symbol = symbol_name(node, source);
+            out.push((symbol, text.to_string()));
+            return;
+        }
+    }
+
+    for i in 0..node.child_count() {
+        if let Some(child) = node.child(i as u32) {
+            collect_symbol_chunks(child, source, lang, out);
+        }
+    }
+}
+
+fn symbol_name(node: Node, source: &str) -> Option<String> {
+    if let Some(name) = node.child_by_field_name("name") {
+        if let Ok(text) = name.utf8_text(source.as_bytes()) {
+            return Some(text.to_string());
+        }
+    }
+    None
+}
+
+fn node_text<'a>(node: Node<'a>, source: &'a str) -> Option<&'a str> {
+    source.get(node.start_byte()..node.end_byte())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -343,9 +482,65 @@ mod tests {
     }
 
     #[test]
-    fn chunk_code_delegates_to_text_with_symbol_none() {
-        let chunks = chunk_code("fn main() {}\nfn helper() {}", "main.rs", 50);
-        assert!(!chunks.is_empty());
-        assert!(chunks.iter().all(|c| c.symbol.is_none()));
+    fn chunk_code_splits_on_function_boundary() {
+        let src = r#"fn foo() {
+    println!("foo");
+}
+fn bar() {
+    println!("bar");
+}
+"#;
+        let chunks = chunk_code(src, "main.rs", 100);
+        assert!(
+            chunks.len() >= 2,
+            "应按函数边界至少切成 2 块,实际 {}",
+            chunks.len()
+        );
+        assert!(chunks.iter().any(|c| c.content.contains("fn foo")));
+        assert!(chunks.iter().any(|c| c.content.contains("fn bar")));
+    }
+
+    #[test]
+    fn chunk_code_records_symbol_names() {
+        let src = r#"fn foo() {}
+fn bar() {}
+"#;
+        let chunks = chunk_code(src, "lib.rs", 100);
+        let symbols: Vec<Option<String>> = chunks.iter().map(|c| c.symbol.clone()).collect();
+        assert!(symbols.contains(&Some("foo".to_string())));
+        assert!(symbols.contains(&Some("bar".to_string())));
+    }
+
+    #[test]
+    fn chunk_code_oversized_function_falls_back_to_lines() {
+        // 构造一个超大函数,超过 target_tokens
+        let mut body = String::new();
+        for i in 0..60 {
+            body.push_str(&format!("    let _ = \"line {} filler text\";\n", i));
+        }
+        let src = format!("fn big_fn() {{\n{}\n}}\n", body);
+        let chunks = chunk_code(&src, "big.rs", 100);
+        assert!(
+            chunks.len() > 1,
+            "超大函数应按行降级成多块,实际 {}",
+            chunks.len()
+        );
+        for (i, c) in chunks.iter().enumerate() {
+            assert!(
+                c.token_count <= 100,
+                "第 {} 块 token 数 {} 超过目标 100",
+                i,
+                c.token_count
+            );
+        }
+        assert!(chunks.iter().all(|c| c.symbol.as_deref() == Some("big_fn")));
+    }
+
+    #[test]
+    fn chunk_code_unsupported_language_text_fallback() {
+        let content = "line one\n\nline two\n\nline three";
+        let expected = chunk_text(content, 30, DEFAULT_OVERLAP_TOKENS);
+        let actual = chunk_code(content, "notes.unknown", 30);
+        assert_eq!(actual, expected);
     }
 }
