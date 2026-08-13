@@ -1,4 +1,6 @@
-use crate::db::models::KnowledgeBase;
+use crate::commands::knowledge::{file_type_str, kb_index_path};
+use crate::db::models::{KbDocument, KnowledgeBase};
+use crate::knowledge::ingest::{spawn_ingest, stage_content};
 use crate::knowledge::retrieve::retrieve;
 use crate::proxy::state::AppState;
 use rmcp::{
@@ -74,6 +76,107 @@ impl KbMcpServer {
         let chunks = retrieve(&self.state, &kb, &query, top_k).await?;
         serde_json::to_string(&chunks).map_err(|e| e.to_string())
     }
+
+    /// 创建知识库(空索引),返回新库 JSON 文本。
+    pub async fn do_kb_create(
+        &self,
+        name: String,
+        description: Option<String>,
+        embedding_channel_id: Option<String>,
+        embedding_model: String,
+    ) -> Result<String, String> {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return Err("knowledge base name must not be empty".to_string());
+        }
+        // 与命令层 create_kb 一致:确保索引目录存在(索引文件在首次摄取时按需创建)。
+        let index_dir = self.state.kb_index_dir.read().clone();
+        std::fs::create_dir_all(&index_dir)
+            .map_err(|e| format!("failed to create kb index dir: {e}"))?;
+
+        let now = chrono::Utc::now().timestamp();
+        let kb = KnowledgeBase {
+            id: uuid::Uuid::new_v4().to_string(),
+            name,
+            description,
+            embedding_channel_id,
+            embedding_model,
+            dim: 0,
+            doc_count: 0,
+            chunk_count: 0,
+            enabled: true,
+            created_at: now,
+            updated_at: now,
+            needs_reindex: false,
+        };
+        self.state.repo.create_kb(&kb).map_err(|e| e.to_string())?;
+        serde_json::to_string(&kb).map_err(|e| e.to_string())
+    }
+
+    /// 上传纯文本文档到知识库(异步摄取),返回文档 JSON 文本。
+    ///
+    /// 与 `commands::knowledge::upload_document` 流程一致,仅内容来源是纯文本
+    /// 而非 base64 解码:insert_document → stage_content → spawn_ingest。
+    pub async fn do_kb_upload(
+        &self,
+        kb_id: String,
+        filename: String,
+        content: String,
+    ) -> Result<String, String> {
+        if self
+            .state
+            .repo
+            .get_kb(&kb_id)
+            .map_err(|e| e.to_string())?
+            .is_none()
+        {
+            return Err(format!("knowledge base not found: {kb_id}"));
+        }
+        let file_type = file_type_str(&filename).to_string();
+        let doc = KbDocument {
+            id: uuid::Uuid::new_v4().to_string(),
+            kb_id,
+            filename,
+            file_type,
+            size_bytes: content.len() as i64,
+            chunk_count: 0,
+            status: "indexing".to_string(),
+            error: None,
+            created_at: chrono::Utc::now().timestamp(),
+        };
+        self.state.repo.insert_document(&doc).map_err(|e| e.to_string())?;
+        // 暂存纯文本原文,供异步摄取任务按 doc_id 读取(KbDocument 不含 content 字段)。
+        if let Err(e) = stage_content(&self.state, &doc.id, content.as_bytes()) {
+            let _ = self.state.repo.update_document_status(&doc.id, "failed", Some(&e));
+            return Err(e);
+        }
+        spawn_ingest(self.state.clone(), doc.id.clone());
+        serde_json::to_string(&doc).map_err(|e| e.to_string())
+    }
+
+    /// 删除知识库(级联清理文档/chunk),并尽力删除索引文件,返回成功 JSON 文本。
+    pub async fn do_kb_delete(&self, kb_id: String) -> Result<String, String> {
+        self.state
+            .repo
+            .delete_kb(&kb_id)
+            .map_err(|e| e.to_string())?;
+        // 删索引文件为尽力而为:失败仅忽略,不阻断删除结果(同命令层 delete_kb)。
+        let index_path = kb_index_path(&self.state, &kb_id);
+        let _ = std::fs::remove_file(&index_path);
+        let json = serde_json::json!({ "deleted": true, "kb_id": kb_id });
+        serde_json::to_string(&json).map_err(|e| e.to_string())
+    }
+
+    /// 全局用量统计(today/total 请求与 token、活跃渠道、平均延迟),返回 JSON 文本。
+    pub async fn do_stats_quota(&self) -> Result<String, String> {
+        let (tr, tt, ar, at, ac, lat) = self.state.repo.stats().map_err(|e| e.to_string())?;
+        let json = serde_json::json!({
+            "today_requests": tr, "today_tokens": tt,
+            "total_requests": ar, "total_tokens": at,
+            "active_channels": ac, "avg_latency_ms": lat,
+        });
+        serde_json::to_string(&json).map_err(|e| e.to_string())
+    }
 }
 
 #[derive(serde::Deserialize, rmcp::schemars::JsonSchema)]
@@ -89,6 +192,32 @@ pub struct KbSearchArgs {
 #[derive(serde::Deserialize, rmcp::schemars::JsonSchema)]
 #[schemars(crate = "rmcp::schemars")]
 pub struct KbGetBaseArgs {
+    pub kb_id: String,
+}
+
+#[derive(serde::Deserialize, rmcp::schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+pub struct KbCreateArgs {
+    pub name: String,
+    pub description: Option<String>,
+    #[schemars(description = "embedding 渠道 id;缺省用 rag.default_embedding_channel")]
+    pub embedding_channel_id: Option<String>,
+    #[schemars(description = "embedding 模型,必传")]
+    pub embedding_model: String,
+}
+
+#[derive(serde::Deserialize, rmcp::schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+pub struct KbUploadArgs {
+    pub kb_id: String,
+    pub filename: String,
+    #[schemars(description = "纯文本原文,异步摄取")]
+    pub content: String,
+}
+
+#[derive(serde::Deserialize, rmcp::schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+pub struct KbDeleteArgs {
     pub kb_id: String,
 }
 
@@ -126,6 +255,59 @@ impl KbMcpServer {
         Parameters(args): Parameters<KbSearchArgs>,
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         self.do_kb_search(args.query, args.kb_id, args.top_k)
+            .await
+            .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
+            .map_err(|e| {
+                rmcp::model::ErrorData::new(rmcp::model::ErrorCode::INTERNAL_ERROR, e, None)
+            })
+    }
+
+    /// 创建知识库
+    #[tool(name = "kb_create", description = "创建知识库")]
+    pub async fn kb_create(
+        &self,
+        Parameters(args): Parameters<KbCreateArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        self.do_kb_create(args.name, args.description, args.embedding_channel_id, args.embedding_model)
+            .await
+            .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
+            .map_err(|e| {
+                rmcp::model::ErrorData::new(rmcp::model::ErrorCode::INTERNAL_ERROR, e, None)
+            })
+    }
+
+    /// 上传纯文本文档到知识库(异步摄取)
+    #[tool(name = "kb_upload", description = "上传纯文本文档到知识库(异步摄取)")]
+    pub async fn kb_upload(
+        &self,
+        Parameters(args): Parameters<KbUploadArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        self.do_kb_upload(args.kb_id, args.filename, args.content)
+            .await
+            .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
+            .map_err(|e| {
+                rmcp::model::ErrorData::new(rmcp::model::ErrorCode::INTERNAL_ERROR, e, None)
+            })
+    }
+
+    /// 删除知识库(含索引文件)
+    #[tool(name = "kb_delete", description = "删除知识库(含索引文件)")]
+    pub async fn kb_delete(
+        &self,
+        Parameters(args): Parameters<KbDeleteArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        self.do_kb_delete(args.kb_id)
+            .await
+            .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
+            .map_err(|e| {
+                rmcp::model::ErrorData::new(rmcp::model::ErrorCode::INTERNAL_ERROR, e, None)
+            })
+    }
+
+    /// 全局用量统计
+    #[tool(name = "stats_quota", description = "全局用量统计(请求/token/活跃渠道/平均延迟)")]
+    pub async fn stats_quota(&self) -> Result<CallToolResult, rmcp::ErrorData> {
+        self.do_stats_quota()
             .await
             .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
             .map_err(|e| {
@@ -369,5 +551,161 @@ mod tests {
         let json = server.do_kb_list_bases().await.unwrap();
         let arr: Vec<Value> = serde_json::from_str(&json).unwrap();
         assert_eq!(arr.len(), 2);
+    }
+
+    // ---- Task 4: 管理/统计工具(kb_create / kb_upload / kb_delete / stats_quota) ----
+
+    /// 建一个指向 mock embedding 的 server(内存 DB + temp 索引目录),不摄取文档。
+    async fn server_with_mock_embeddings(name: &str) -> KbMcpServer {
+        let base_url = spawn_mock_embeddings().await;
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        *state.kb_index_dir.write() = test_index_dir(name);
+        state
+            .repo
+            .insert_channel(&embedding_channel("emb", &base_url))
+            .unwrap();
+        KbMcpServer::new(state)
+    }
+
+    #[tokio::test]
+    async fn kb_create_persists_and_returns_base() {
+        let server = server_with_mock_embeddings("kb_create").await;
+
+        let json = server
+            .do_kb_create("kb2".into(), None, None, "text-embedding".into())
+            .await
+            .unwrap();
+        let v: Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(v["name"], "kb2");
+        assert!(v["id"].is_string(), "new kb should carry an id: {json}");
+        assert_eq!(v["embedding_model"], "text-embedding");
+        assert_eq!(v["dim"], 0);
+        assert_eq!(v["enabled"], true);
+
+        // repo.list_kbs 含之
+        let kbs = server.state.repo.list_kbs().unwrap();
+        assert_eq!(kbs.len(), 1);
+        assert_eq!(kbs[0].name, "kb2");
+    }
+
+    #[tokio::test]
+    async fn kb_create_rejects_empty_name() {
+        let server = server_with_mock_embeddings("kb_create_empty").await;
+
+        let err = server
+            .do_kb_create("".into(), None, None, "m".into())
+            .await
+            .unwrap_err();
+        assert!(err.contains("must not be empty"), "{err}");
+    }
+
+    #[tokio::test]
+    async fn kb_upload_stages_and_spawns_ingest() {
+        let server = server_with_mock_embeddings("kb_upload").await;
+
+        let kb_json = server
+            .do_kb_create(
+                "kb-up".into(),
+                None,
+                Some("emb".into()),
+                "text-embedding-3-small".into(),
+            )
+            .await
+            .unwrap();
+        let kb_id = serde_json::from_str::<Value>(&kb_json).unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        let doc_json = server
+            .do_kb_upload(
+                kb_id.clone(),
+                "guide.md".into(),
+                "## 标题\nRAG 关键词内容 quantum".into(),
+            )
+            .await
+            .unwrap();
+        let v: Value = serde_json::from_str(&doc_json).unwrap();
+        assert_eq!(v["status"], "indexing");
+        assert_eq!(v["file_type"], "md");
+        let doc_id = v["id"].as_str().unwrap().to_string();
+
+        // 等待异步摄取结束 → indexed,且 chunk 落库
+        wait_for_status(&server.state, &doc_id, "indexed").await;
+        let chunks = server.state.repo.list_chunks(&kb_id).unwrap();
+        assert!(!chunks.is_empty(), "ingested doc should produce chunks");
+    }
+
+    #[tokio::test]
+    async fn kb_upload_rejects_unknown_base() {
+        let server = server_with_mock_embeddings("kb_upload_unknown").await;
+
+        let err = server
+            .do_kb_upload("nope".into(), "a.md".into(), "x".into())
+            .await
+            .unwrap_err();
+        assert!(err.contains("knowledge base not found"), "{err}");
+    }
+
+    #[tokio::test]
+    async fn kb_delete_removes_base_and_index() {
+        let server = server_with_mock_embeddings("kb_delete").await;
+
+        let kb_json = server
+            .do_kb_create(
+                "kb-del".into(),
+                None,
+                Some("emb".into()),
+                "text-embedding-3-small".into(),
+            )
+            .await
+            .unwrap();
+        let kb_id = serde_json::from_str::<Value>(&kb_json).unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        // 摄取一文档使索引文件落盘,再删除验证索引一并清理。
+        let doc_json = server
+            .do_kb_upload(
+                kb_id.clone(),
+                "notes.md".into(),
+                "## Title\nquantum computing basics".into(),
+            )
+            .await
+            .unwrap();
+        let doc_id = serde_json::from_str::<Value>(&doc_json).unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        wait_for_status(&server.state, &doc_id, "indexed").await;
+
+        let index_path = crate::commands::knowledge::kb_index_path(&server.state, &kb_id);
+        assert!(index_path.exists(), "index file should exist after ingest");
+
+        server.do_kb_delete(kb_id.clone()).await.unwrap();
+        assert!(
+            server.state.repo.get_kb(&kb_id).unwrap().is_none(),
+            "kb row should be gone"
+        );
+        assert!(
+            !index_path.exists(),
+            "index file should be removed on delete"
+        );
+    }
+
+    #[tokio::test]
+    async fn stats_quota_returns_aggregates() {
+        let server = server_with_mock_embeddings("stats_quota").await;
+
+        let json = server.do_stats_quota().await.unwrap();
+        let v: Value = serde_json::from_str(&json).unwrap();
+        assert!(v["today_requests"].is_number());
+        assert!(v["today_tokens"].is_number());
+        assert!(v["total_requests"].is_number());
+        assert!(v["total_tokens"].is_number());
+        assert!(v["active_channels"].is_number());
+        assert!(v["avg_latency_ms"].is_number());
     }
 }

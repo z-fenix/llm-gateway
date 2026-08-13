@@ -10,7 +10,7 @@ use tauri_plugin_store::StoreExt;
 
 const SEARCH_TOP_N: usize = 10;
 
-fn file_type_str(filename: &str) -> &'static str {
+pub(crate) fn file_type_str(filename: &str) -> &'static str {
     match detect_file_type(filename) {
         FileType::Markdown => "md",
         FileType::Code => "code",
@@ -24,7 +24,7 @@ fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("invalid base64 content: {e}"))
 }
 
-fn kb_index_path(state: &AppState, kb_id: &str) -> std::path::PathBuf {
+pub(crate) fn kb_index_path(state: &AppState, kb_id: &str) -> std::path::PathBuf {
     state.kb_index_dir.read().join(format!("{}.usearch", kb_id))
 }
 
