@@ -5,3 +5,6 @@ dist/
 .idea/
 src-tauri/gen/
 .DS_Store
+
+# superpowers SDD 工作区(报告/账本等 scratch)
+.superpowers/sdd/
