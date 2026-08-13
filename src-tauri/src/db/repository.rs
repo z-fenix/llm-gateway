@@ -882,6 +882,14 @@ impl Repository {
         Ok(())
     }
 
+    /// 摄取回滚:按 doc_id 删除其全部 chunk。kb_chunks 的 DELETE 触发器会同步清理 FTS。
+    pub fn delete_chunks_by_doc(&self, doc_id: &str) -> AppResult<usize> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let deleted = conn.execute("DELETE FROM kb_chunks WHERE doc_id=?1", params![doc_id])?;
+        Ok(deleted)
+    }
+
     pub fn insert_chunks(&self, chunks: &[KbChunk]) -> AppResult<()> {
         let conn = self.db.conn();
         let mut conn = conn.lock();

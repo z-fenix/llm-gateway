@@ -131,9 +131,42 @@ async fn run_ingest(state: &AppState, doc_id: &str) -> Result<(), String> {
     }
 
     state.repo.insert_chunks(&db_chunks).map_err(|e| e.to_string())?;
-    index.save()?;
 
-    finalize(state, &kb_id, doc_id, db_chunks.len() as i64)
+    // 摄取尾段非原子:insert_chunks 已把 chunk 落库(含 FTS),此后 save/finalize 任一
+    // 失败都必须回滚,否则「失败」文档的内容仍会被 FTS 检索命中,或在 save 成功后
+    // 留下会破坏 retrieve 的孤儿向量 id。
+    let tail = (|| -> Result<(), String> {
+        index.save()?;
+        finalize(state, &kb_id, doc_id, db_chunks.len() as i64)
+    })();
+    if let Err(e) = tail {
+        rollback_chunks(state, doc_id, &index, &db_chunks);
+        return Err(e);
+    }
+    Ok(())
+}
+
+/// 摄取尾段失败后的回滚:删除刚插入的 chunk(触发器同步清理 FTS),并从向量索引
+/// 移除这些 embedding_id 后再次保存,保证「失败」文档不留任何可检索内容或孤儿向量。
+fn rollback_chunks(state: &AppState, doc_id: &str, index: &VectorIndex, chunks: &[KbChunk]) {
+    if let Err(e) = state.repo.delete_chunks_by_doc(doc_id) {
+        log::error!(
+            "kb ingest rollback: failed to delete chunks for document {}: {}",
+            doc_id,
+            e
+        );
+    }
+    for chunk in chunks {
+        // remove 在 id 不存在时返回 Err,这里忽略:目标只是确保最终索引里不存在这些 id。
+        let _ = index.remove(chunk.embedding_id as u64);
+    }
+    if let Err(e) = index.save() {
+        log::error!(
+            "kb ingest rollback: failed to save index after removing vectors for document {}: {}",
+            doc_id,
+            e
+        );
+    }
 }
 
 fn chunk_by_type(filename: &str, text: &str) -> Vec<Chunk> {
@@ -363,6 +396,104 @@ mod tests {
         assert!(
             state.repo.list_chunks(&kb_id).unwrap().is_empty(),
             "failed ingest should not persist chunks"
+        );
+    }
+
+    #[tokio::test]
+    async fn ingest_rolls_back_on_save_failure() {
+        let base_url = spawn_mock(200).await;
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let dir = test_index_dir("save_failure");
+        *state.kb_index_dir.write() = dir.clone();
+
+        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        let kb_id = "kb-ingest-savefail".to_string();
+        state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
+
+        let d = doc("doc-ingest-savefail", &kb_id, "notes.md");
+        state.repo.insert_document(&d).unwrap();
+        stage_content(&state, &d.id, b"rollback secret keyword").unwrap();
+
+        // 让索引保存路径成为目录,迫使 VectorIndex::save 失败
+        std::fs::create_dir_all(dir.join(format!("{}.usearch", kb_id))).unwrap();
+
+        spawn_ingest(state.clone(), d.id.clone());
+
+        let failed = wait_for_status(&state, &d.id, "failed").await;
+        assert!(failed.error.is_some(), "failed doc should carry an error");
+
+        assert!(
+            state.repo.list_chunks(&kb_id).unwrap().is_empty(),
+            "save failure must roll back inserted chunks"
+        );
+        assert!(
+            state
+                .repo
+                .fts_search_chunks(&kb_id, "rollback", 10)
+                .unwrap()
+                .is_empty(),
+            "save failure must not leak chunks into FTS"
+        );
+    }
+
+    #[tokio::test]
+    async fn ingest_rollback_removes_chunks_and_vectors() {
+        let base_url = spawn_mock(200).await;
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let dir = test_index_dir("rollback_direct");
+        *state.kb_index_dir.write() = dir.clone();
+
+        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        let kb_id = "kb-ingest-rollback".to_string();
+        state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
+
+        let d = doc("doc-ingest-rollback", &kb_id, "notes.md");
+        state.repo.insert_document(&d).unwrap();
+
+        // 模拟 save 成功、finalize 失败的状态:chunk 已落库、向量已写入并持久化索引
+        let index_path = dir.join(format!("{}.usearch", kb_id));
+        let index = VectorIndex::create(&index_path, 4).unwrap();
+        let chunks: Vec<KbChunk> = (0..2)
+            .map(|i| KbChunk {
+                id: uuid::Uuid::new_v4().to_string(),
+                doc_id: d.id.clone(),
+                kb_id: kb_id.clone(),
+                seq: i,
+                symbol: None,
+                content: format!("rollback secret keyword {i}"),
+                token_count: 10,
+                embedding_id: i + 1,
+            })
+            .collect();
+        for c in &chunks {
+            index.add(c.embedding_id as u64, &[1.0, 0.0, 0.0, 0.0]).unwrap();
+        }
+        state.repo.insert_chunks(&chunks).unwrap();
+        index.save().unwrap();
+
+        rollback_chunks(&state, &d.id, &index, &chunks);
+
+        assert!(
+            state.repo.list_chunks(&kb_id).unwrap().is_empty(),
+            "rollback must delete inserted chunks"
+        );
+        assert!(
+            state
+                .repo
+                .fts_search_chunks(&kb_id, "rollback", 10)
+                .unwrap()
+                .is_empty(),
+            "rollback must sync chunks out of FTS"
+        );
+
+        // 回滚后重新打开索引,已移除的向量不应再被检索命中(无孤儿向量 id)
+        let reopened = VectorIndex::open_or_create(&index_path, 4).unwrap();
+        let hits = reopened.search(&[1.0, 0.0, 0.0, 0.0], 10).unwrap();
+        assert!(
+            hits.is_empty(),
+            "rolled-back vectors must not remain in the saved index: {hits:?}"
         );
     }
 }
