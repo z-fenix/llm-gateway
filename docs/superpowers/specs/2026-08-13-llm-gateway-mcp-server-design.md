@@ -62,15 +62,15 @@ axum server (现有 8777-8787)
 | 工具 | 参数 | 返回 | 底层复用 |
 |---|---|---|---|
 | `kb_list_bases` | — | `KnowledgeBase[]`(name/description/chunk_count/needs_reindex/enabled) | `repo.list_kbs`(含 needs_reindex 计算) |
-| `kb_get_base` | `kb_id: string`(或 name) | 单库详情 + 文档数 | `repo.get_kb`/`list_documents` |
-| `kb_search` | `query: string`,`kb_id?`(不传用 `rag.default_kb`),`top_k?`(默认 5,上限 20) | `RetrievedChunk[]`(content/symbol/filename/score) | `knowledge::retrieve` |
-| `kb_create` | `name`,`description?`,`embedding_channel_id?`,`embedding_model?`(空则用全局默认渠道/模型) | 创建结果 | `repo.create_kb` + 建空索引目录 |
+| `kb_get_base` | `kb_id: string`(先按 id 精确匹配,失败按 name 匹配) | 单库详情 + 文档数 | `repo.get_kb`/`get_kb_by_name`/`list_documents` |
+| `kb_search` | `query: string`,`kb_id?`(先 id 后 name,不传用 `rag.default_kb`),`top_k?`(默认 5,上限 20) | `RetrievedChunk[]`(content/symbol/filename/score) | `knowledge::retrieve` |
+| `kb_create` | `name`,`description?`,`embedding_channel_id?`(空用 `rag.default_embedding_channel`),`embedding_model`(**必传**,与现有 `create_kb` 命令一致) | 创建结果 | `repo.create_kb` + 建空索引目录 |
 | `kb_upload` | `kb_id`,`filename`,`content: string`(纯文本原文) | 文档记录(status=indexing,异步摄取) | 内部 base64 → `ingest::spawn_ingest` |
 | `kb_delete` | `kb_id` | 删除结果 | `repo.delete_kb` + 删索引文件 |
 | `stats_quota` | — | 全局用量统计(调用/token/配额概览) | 复用 `commands/stats` 统计逻辑 |
 
 **关键点:**
-- `kb_search` 复用 `rag.default_kb` 默认库语义(与网关注入一致);不传 `kb_id` 检索默认库。
+- `kb_search` 复用 `rag.default_kb` 默认库语义(与网关注入一致);`kb_id` 传值则按 id→name 解析到具体库,不传检索默认库。
 - `kb_upload` 收纯文本,MCP handler 内部 base64 编码后走现有 `upload_document` 摄取路径(参数与 Tauri 命令对齐,内容形态不同)。
 - 工具返回标准 MCP 结果 `content: [{type:"text", text: <JSON>}]`;错误用 MCP error,内部降级不 panic。
 
