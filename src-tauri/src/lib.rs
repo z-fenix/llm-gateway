@@ -143,6 +143,16 @@ pub fn run() {
             commands::security::toggle_custom_security_rule,
             commands::security::delete_custom_security_rule,
             commands::security::get_security_findings,
+            commands::knowledge::create_kb,
+            commands::knowledge::list_kbs,
+            commands::knowledge::delete_kb,
+            commands::knowledge::reindex_kb,
+            commands::knowledge::upload_document,
+            commands::knowledge::list_documents,
+            commands::knowledge::delete_document,
+            commands::knowledge::search_kb,
+            commands::knowledge::get_rag_settings,
+            commands::knowledge::set_rag_setting,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

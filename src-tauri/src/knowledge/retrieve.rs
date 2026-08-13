@@ -2,10 +2,11 @@ use crate::db::models::{KbChunk, KnowledgeBase};
 use crate::knowledge::embed::Embedder;
 use crate::knowledge::index::VectorIndex;
 use crate::proxy::state::AppState;
+use serde::Serialize;
 use std::collections::HashMap;
 
 /// 检索返回的片段。
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct RetrievedChunk {
     pub embedding_id: i64,
     pub content: String,

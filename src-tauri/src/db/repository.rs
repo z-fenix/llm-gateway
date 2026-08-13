@@ -840,6 +840,20 @@ impl Repository {
         Ok(out)
     }
 
+    pub fn get_document(&self, id: &str) -> AppResult<Option<KbDocument>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,kb_id,filename,file_type,size_bytes,chunk_count,status,error,created_at FROM kb_documents WHERE id=?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(row_to_kb_doc(r)?))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn update_document_status(&self, id: &str, status: &str, error: Option<&str>) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
