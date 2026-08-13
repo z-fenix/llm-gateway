@@ -174,6 +174,9 @@ async fn handle(
     };
     let request_model = chat.model.clone();
 
+    // 2.5 RAG 注入（必须在请求侧安检之前，注入内容同样过安检；故障静默降级）
+    crate::knowledge::rag_hook::maybe_inject(&state, &headers, &mut chat).await;
+
     // 3. request-side security inspection
     let unified = serde_json::to_value(&chat).unwrap_or_else(|_| body.clone());
     let proto_str = match proto {

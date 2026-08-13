@@ -31,7 +31,7 @@ impl Embedder {
         let channel_id = kb
             .embedding_channel_id
             .clone()
-            .or_else(|| state.default_embedding_channel.read().clone())
+            .or_else(|| state.rag.read().default_embedding_channel.clone())
             .filter(|id| !id.is_empty())
             .ok_or_else(|| "embedding channel not configured".to_string())?;
         let channel = state

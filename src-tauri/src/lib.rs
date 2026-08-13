@@ -42,20 +42,13 @@ pub fn run() {
                 }
             }
 
-            // 从 tauri-plugin-store 加载全局默认 embedding 渠道
-            if let Ok(store) = app.store("store.bin") {
-                if let Some(value) = store.get("rag.default_embedding_channel") {
-                    if let Some(id) = value.as_str() {
-                        if !id.is_empty() {
-                            *state.default_embedding_channel.write() = Some(id.to_string());
-                        }
-                    }
-                }
-            }
-
             // 从 tauri-plugin-store 加载安全设置并同步到 AppState
             let sec = security::get_security_settings(&app.handle());
             security::apply_settings(&state, &sec);
+
+            // 从 tauri-plugin-store 加载 RAG 设置并同步到 AppState
+            let rag = knowledge::settings::get_rag_settings(&app.handle());
+            knowledge::settings::apply_settings(&state, &rag);
 
             // 启动时按保留天数清理日志（失败仅记录，不阻断启动）
             if let Ok(store) = app.store("store.bin") {

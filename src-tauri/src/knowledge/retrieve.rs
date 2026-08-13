@@ -292,7 +292,7 @@ mod tests {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
         state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
-        *state.default_embedding_channel.write() = Some("ch1".into());
+        state.rag.write().default_embedding_channel = Some("ch1".into());
 
         let kb_id = "retrieve_kb";
         let mut test_kb = kb(kb_id);
@@ -351,7 +351,7 @@ mod tests {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
         state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
-        *state.default_embedding_channel.write() = Some("ch1".into());
+        state.rag.write().default_embedding_channel = Some("ch1".into());
 
         let kb_id = "empty_kb";
         let mut test_kb = kb(kb_id);
@@ -382,7 +382,7 @@ mod tests {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
         state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
-        *state.default_embedding_channel.write() = Some("ch1".into());
+        state.rag.write().default_embedding_channel = Some("ch1".into());
 
         let kb_id = "missing_chunk_kb";
         let mut test_kb = kb(kb_id);
