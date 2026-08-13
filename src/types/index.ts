@@ -187,6 +187,7 @@ export interface KnowledgeBase {
   enabled: boolean;
   created_at: number;
   updated_at: number;
+  needs_reindex: boolean;
 }
 
 export interface KbDocument {

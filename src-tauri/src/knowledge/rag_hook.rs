@@ -131,6 +131,7 @@ mod tests {
             enabled: true,
             created_at: 1,
             updated_at: 1,
+            needs_reindex: false,
         }
     }
 

@@ -977,6 +977,20 @@ impl Repository {
         tx.commit()?;
         Ok(id)
     }
+
+    /// 回写 chunk 的 embedding_id（重建索引时分配新 id 后更新）。
+    ///
+    /// kb_chunks_fts 是 content 外部内容表，更新 embedding_id 不改变 content，
+    /// 触发器重新同步同一内容，不影响 FTS 检索。
+    pub fn update_chunk_embedding_id(&self, chunk_id: &str, embedding_id: i64) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE kb_chunks SET embedding_id=?2 WHERE id=?1",
+            params![chunk_id, embedding_id],
+        )?;
+        Ok(())
+    }
 }
 
 fn fts5_escape(query: &str) -> Option<String> {
@@ -1026,6 +1040,7 @@ fn row_to_kb(r: &rusqlite::Row) -> rusqlite::Result<KnowledgeBase> {
         enabled: r.get::<_, i64>(8)? != 0,
         created_at: r.get(9)?,
         updated_at: r.get(10)?,
+        needs_reindex: false,
     })
 }
 
@@ -1866,7 +1881,7 @@ mod tests {
             id: id.into(), name: name.into(), description: None,
             embedding_channel_id: None, embedding_model: "text-embedding-3-small".into(),
             dim: 1536, doc_count: 0, chunk_count: 0, enabled: true,
-            created_at: 1, updated_at: 1,
+            created_at: 1, updated_at: 1, needs_reindex: false,
         }
     }
 

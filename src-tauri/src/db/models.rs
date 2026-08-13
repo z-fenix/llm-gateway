@@ -121,6 +121,9 @@ pub struct KnowledgeBase {
     pub enabled: bool,
     pub created_at: i64,
     pub updated_at: i64,
+    /// 派生字段（不落库）：库有分块但 usearch 索引文件缺失时置 true，UI 提示一键重建。
+    #[serde(default)]
+    pub needs_reindex: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

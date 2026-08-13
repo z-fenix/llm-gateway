@@ -38,6 +38,7 @@ const kb = (overrides: Record<string, unknown> = {}) =>
     enabled: true,
     created_at: 1,
     updated_at: 1,
+    needs_reindex: false,
     ...overrides,
   }) as any;
 
@@ -137,6 +138,35 @@ describe("KnowledgePage", () => {
     fireEvent.click(screen.getByLabelText("启用 RAG"));
     await waitFor(() =>
       expect(mockedApi.setRagSetting).toHaveBeenCalledWith("enabled", false)
+    );
+  });
+
+  it("needs_reindex=true 时显示重建索引按钮", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb({ needs_reindex: true })]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByText("重建索引")).toBeInTheDocument()
+    );
+  });
+
+  it("needs_reindex=false 时不显示重建索引按钮", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb({ needs_reindex: false })]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getAllByText("文档库").length).toBeGreaterThan(0)
+    );
+    expect(screen.queryByText("重建索引")).not.toBeInTheDocument();
+  });
+
+  it("点击重建索引调用 reindexKb", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb({ needs_reindex: true })]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByText("重建索引")).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByText("重建索引"));
+    await waitFor(() =>
+      expect(mockedApi.reindexKb).toHaveBeenCalledWith("kb1")
     );
   });
 });

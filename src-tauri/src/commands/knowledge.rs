@@ -81,14 +81,24 @@ pub fn create_kb(
         enabled: true,
         created_at: now,
         updated_at: now,
+        needs_reindex: false,
     };
     state.repo.create_kb(&kb).map_err(|e| e.to_string())?;
     Ok(kb)
 }
 
+fn list_kbs_with_state(state: &AppState) -> Result<Vec<KnowledgeBase>, String> {
+    let mut kbs = state.repo.list_kbs().map_err(|e| e.to_string())?;
+    for kb in &mut kbs {
+        let index_path = kb_index_path(state, &kb.id);
+        kb.needs_reindex = kb.chunk_count > 0 && !index_path.exists();
+    }
+    Ok(kbs)
+}
+
 #[tauri::command]
 pub fn list_kbs(state: State<AppState>) -> Result<Vec<KnowledgeBase>, String> {
-    state.repo.list_kbs().map_err(|e| e.to_string())
+    list_kbs_with_state(&state)
 }
 
 #[tauri::command]
@@ -109,7 +119,7 @@ pub fn delete_kb(state: State<AppState>, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn reindex_kb(state: State<AppState>, id: String) -> Result<(), String> {
+pub async fn reindex_kb(state: State<'_, AppState>, id: String) -> Result<(), String> {
     if state
         .repo
         .get_kb(&id)
@@ -118,17 +128,17 @@ pub fn reindex_kb(state: State<AppState>, id: String) -> Result<(), String> {
     {
         return Err(format!("knowledge base not found: {id}"));
     }
-    // 删除旧索引文件即标记为待重建：真实重建在 Task 10/11 接摄取后完成。
-    let index_path = kb_index_path(&state, &id);
-    match std::fs::remove_file(&index_path) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(format!(
-            "failed to remove kb index file {}: {}",
-            index_path.display(),
-            e
-        )),
-    }
+    // 后台重建：从 kb_chunks.content 重新 embedding 并重写 usearch 索引。
+    // 立即返回 Ok,不阻塞 UI;失败在任务内 log::error!（同 upload_document 的异步模式）。
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) =
+            crate::knowledge::ingest::reindex_kb_contents(state.clone(), id.clone()).await
+        {
+            log::error!("kb reindex failed for {}: {}", id, e);
+        }
+    });
+    Ok(())
 }
 
 #[tauri::command]
@@ -291,4 +301,84 @@ pub fn set_rag_setting(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::Db;
+    use std::path::PathBuf;
+
+    fn kb_with_chunks(id: &str, chunk_count: i64) -> KnowledgeBase {
+        KnowledgeBase {
+            id: id.into(),
+            name: format!("kb-{id}"),
+            description: None,
+            embedding_channel_id: None,
+            embedding_model: "text-embedding-3-small".into(),
+            dim: 0,
+            doc_count: if chunk_count > 0 { 1 } else { 0 },
+            chunk_count,
+            enabled: true,
+            created_at: 1,
+            updated_at: 1,
+            needs_reindex: false,
+        }
+    }
+
+    fn temp_index_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir()
+            .join("llm-gateway")
+            .join("kb")
+            .join(format!("list_kbs_{}_{}", name, uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn list_kbs_needs_reindex_when_chunks_without_index() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        *state.kb_index_dir.write() = temp_index_dir("missing");
+
+        state.repo.create_kb(&kb_with_chunks("kb1", 5)).unwrap();
+        let kbs = list_kbs_with_state(&state).unwrap();
+        assert_eq!(kbs.len(), 1);
+        assert!(
+            kbs[0].needs_reindex,
+            "chunks without index file should need reindex"
+        );
+    }
+
+    #[test]
+    fn list_kbs_no_reindex_when_index_exists() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let dir = temp_index_dir("exists");
+        *state.kb_index_dir.write() = dir.clone();
+
+        state.repo.create_kb(&kb_with_chunks("kb1", 5)).unwrap();
+        // 任意文件即可模拟索引文件存在(计算仅校验存在性)
+        std::fs::write(dir.join("kb1.usearch"), b"").unwrap();
+
+        let kbs = list_kbs_with_state(&state).unwrap();
+        assert!(
+            !kbs[0].needs_reindex,
+            "existing index file should not need reindex"
+        );
+    }
+
+    #[test]
+    fn list_kbs_no_reindex_when_no_chunks() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        *state.kb_index_dir.write() = temp_index_dir("empty");
+
+        state.repo.create_kb(&kb_with_chunks("kb1", 0)).unwrap();
+        let kbs = list_kbs_with_state(&state).unwrap();
+        assert!(
+            !kbs[0].needs_reindex,
+            "empty kb should never need reindex"
+        );
+    }
 }

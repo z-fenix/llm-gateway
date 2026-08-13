@@ -146,6 +146,69 @@ async fn run_ingest(state: &AppState, doc_id: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// 重建知识库向量索引:从 `kb_chunks.content` 重新 embedding,重写 usearch 索引并回写
+/// 每个 chunk 的 embedding_id。失败返回 Err,由调用方记录错误(后台任务内 `log::error!`)。
+pub async fn reindex_kb_contents(state: AppState, kb_id: String) -> Result<(), String> {
+    let kb = state
+        .repo
+        .get_kb(&kb_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("knowledge base not found: {kb_id}"))?;
+
+    let chunks = state.repo.list_chunks(&kb_id).map_err(|e| e.to_string())?;
+    if chunks.is_empty() {
+        return Ok(());
+    }
+
+    let embedder = Embedder::from_kb(&state, &kb)?;
+    let texts: Vec<String> = chunks.iter().map(|c| c.content.clone()).collect();
+    let vecs = embedder.embed(&texts).await?;
+    if vecs.len() != chunks.len() {
+        return Err(format!(
+            "embedding count mismatch: expected {}, got {}",
+            chunks.len(),
+            vecs.len()
+        ));
+    }
+
+    let dim = vecs
+        .first()
+        .map(|v| v.len())
+        .filter(|d| *d > 0)
+        .ok_or_else(|| "embedding returned empty vector".to_string())?;
+
+    let index_path = state.kb_index_dir.read().join(format!("{}.usearch", kb_id));
+    if let Some(parent) = index_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("failed to create kb index dir: {e}"))?;
+    }
+    // 先移除可能残留的旧索引文件:重建失败时不留与旧 embedding_id 不匹配的索引,
+    // 使库保持「索引缺失 → needs_reindex」的可恢复状态。
+    match std::fs::remove_file(&index_path) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => {
+            return Err(format!(
+                "failed to remove kb index file {}: {}",
+                index_path.display(),
+                e
+            ));
+        }
+    }
+
+    // 新建空索引覆盖,add 完成后 save 落盘。
+    let index = VectorIndex::create(&index_path, dim)?;
+    for (chunk, vec) in chunks.iter().zip(vecs.iter()) {
+        let embedding_id = state.repo.next_embedding_id().map_err(|e| e.to_string())?;
+        index.add(embedding_id as u64, vec)?;
+        state
+            .repo
+            .update_chunk_embedding_id(&chunk.id, embedding_id)
+            .map_err(|e| e.to_string())?;
+    }
+    index.save()
+}
+
 /// 摄取尾段失败后的回滚:删除刚插入的 chunk(触发器同步清理 FTS),并从向量索引
 /// 移除这些 embedding_id 后再次保存,保证「失败」文档不留任何可检索内容或孤儿向量。
 fn rollback_chunks(state: &AppState, doc_id: &str, index: &VectorIndex, chunks: &[KbChunk]) {
@@ -246,6 +309,7 @@ mod tests {
             enabled: true,
             created_at: 1,
             updated_at: 1,
+            needs_reindex: false,
         }
     }
 
@@ -495,5 +559,61 @@ mod tests {
             hits.is_empty(),
             "rolled-back vectors must not remain in the saved index: {hits:?}"
         );
+    }
+
+    #[tokio::test]
+    async fn reindex_rebuilds_index_and_updates_embedding_ids() {
+        let base_url = spawn_mock(200).await;
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let dir = test_index_dir("reindex");
+        *state.kb_index_dir.write() = dir.clone();
+
+        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        let kb_id = "kb-reindex".to_string();
+        state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
+
+        let d = doc("doc-reindex", &kb_id, "notes.md");
+        state.repo.insert_document(&d).unwrap();
+        stage_content(&state, &d.id, b"# Title\n\nquantum computing basics").unwrap();
+        spawn_ingest(state.clone(), d.id.clone());
+
+        let indexed = wait_for_status(&state, &d.id, "indexed").await;
+        assert!(indexed.chunk_count > 0, "doc should be ingested first");
+
+        let before = state.repo.list_chunks(&kb_id).unwrap();
+        assert!(!before.is_empty());
+        let old_ids: Vec<i64> = before.iter().map(|c| c.embedding_id).collect();
+
+        // 删除索引文件,模拟 usearch 索引缺失(对应 needs_reindex)。
+        let index_path = dir.join(format!("{}.usearch", kb_id));
+        std::fs::remove_file(&index_path).unwrap();
+        assert!(!index_path.exists());
+
+        reindex_kb_contents(state.clone(), kb_id.clone()).await.unwrap();
+
+        // 索引文件已重建并落盘
+        assert!(
+            index_path.exists(),
+            "reindex should persist a new index file"
+        );
+
+        // 每个 chunk 都分配了全新的 embedding_id
+        let after = state.repo.list_chunks(&kb_id).unwrap();
+        assert_eq!(after.len(), before.len());
+        for c in &after {
+            assert!(
+                !old_ids.contains(&c.embedding_id),
+                "chunk {} should have a fresh embedding_id, got {}",
+                c.id,
+                c.embedding_id
+            );
+        }
+
+        // 重建后可检索命中
+        let kb = state.repo.get_kb(&kb_id).unwrap().unwrap();
+        let results = retrieve(&state, &kb, "quantum", 5).await.unwrap();
+        assert!(!results.is_empty(), "reindexed kb should be retrievable");
+        assert!(results.iter().any(|r| r.filename == "notes.md"));
     }
 }

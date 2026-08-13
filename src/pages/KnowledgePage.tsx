@@ -8,8 +8,6 @@ import type {
   RetrievedChunk,
 } from "../types";
 
-const needsReindex = (kb: KnowledgeBase) => kb.chunk_count > 0 && kb.dim === 0;
-
 export default function KnowledgePage() {
   const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -253,7 +251,7 @@ export default function KnowledgePage() {
                 <td>{channelName(kb.embedding_channel_id)}</td>
                 <td>{kb.enabled ? "启用" : "禁用"}</td>
                 <td className="space-x-2" onClick={(e) => e.stopPropagation()}>
-                  {needsReindex(kb) && (
+                  {kb.needs_reindex && (
                     <button
                       className="text-amber-600"
                       onClick={() => reindexKb(kb)}
