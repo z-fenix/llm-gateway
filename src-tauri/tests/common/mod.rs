@@ -12,6 +12,21 @@ pub struct MockUpstream {
     pub respond_body: Arc<Mutex<Value>>,
 }
 
+/// 固定返回 4 维向量的 mock /v1/embeddings 上游。
+/// `respond_status` 可在测试运行中改为 500 以模拟 embedding 故障。
+#[derive(Clone, Default)]
+pub struct EmbeddingMock {
+    pub hits: Arc<Mutex<Vec<Value>>>,
+    pub respond_status: Arc<Mutex<u16>>,
+}
+
+/// 组合聊天上游 + embedding 上游的 mock 句柄。
+#[derive(Clone, Default)]
+pub struct MockWithEmbeddings {
+    pub chat: MockUpstream,
+    pub embeddings: EmbeddingMock,
+}
+
 /// 起一个返回固定响应的 mock /v1/chat/completions + /v1/messages，返回 base_url。
 pub async fn spawn_mock(status: u16, body: Value) -> (String, MockUpstream) {
     let state = MockUpstream {
@@ -44,6 +59,67 @@ pub async fn spawn_mock(status: u16, body: Value) -> (String, MockUpstream) {
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     (format!("http://{}", addr), state)
+}
+
+/// 起一个 mock 聊天上游(复用 `spawn_mock`)+ 一个返回固定 4 维向量的 mock `/v1/embeddings`。
+/// 返回 `(chat_base_url, embeddings_base_url, mocks)`。
+/// embeddings 路由按 `input` 数组长度返回等量 `data[{index, embedding:[0.5;4]}]`，
+/// 并记录 hits；`embedding_status != 200` 时返回错误体(供降级场景切换)。
+pub async fn spawn_mock_with_embeddings(
+    chat_status: u16,
+    chat_body: Value,
+    embedding_status: u16,
+) -> (String, String, MockWithEmbeddings) {
+    let (chat_base, chat) = spawn_mock(chat_status, chat_body).await;
+    let embeddings = EmbeddingMock {
+        hits: Arc::new(Mutex::new(vec![])),
+        respond_status: Arc::new(Mutex::new(embedding_status)),
+    };
+    let app = Router::new()
+        .route(
+            "/v1/embeddings",
+            post(move |st: State<EmbeddingMock>, Json(v): Json<Value>| {
+                let s = st.0.clone();
+                async move {
+                    s.hits.lock().unwrap().push(v.clone());
+                    let status = *s.respond_status.lock().unwrap();
+                    if status == 200 {
+                        let input = v["input"].as_array().cloned().unwrap_or_default();
+                        let data: Vec<Value> = input
+                            .iter()
+                            .enumerate()
+                            .map(|(i, _)| {
+                                serde_json::json!({
+                                    "object": "embedding",
+                                    "index": i,
+                                    "embedding": [0.5, 0.5, 0.5, 0.5]
+                                })
+                            })
+                            .collect();
+                        (
+                            axum::http::StatusCode::OK,
+                            Json(serde_json::json!({ "object": "list", "data": data })),
+                        )
+                    } else {
+                        (
+                            axum::http::StatusCode::from_u16(status).unwrap(),
+                            Json(serde_json::json!({ "error": "boom" })),
+                        )
+                    }
+                }
+            }),
+        )
+        .with_state(embeddings.clone());
+    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    (
+        chat_base,
+        format!("http://{}", addr),
+        MockWithEmbeddings { chat, embeddings },
+    )
 }
 
 /// 起一个返回 SSE 流式响应的 mock /v1/chat/completions + /v1/messages。
