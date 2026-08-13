@@ -3,6 +3,7 @@ pub mod commands;
 pub mod db;
 pub mod error;
 pub mod knowledge;
+pub mod mcp;
 pub mod provider;
 pub mod protocol;
 pub mod proxy;

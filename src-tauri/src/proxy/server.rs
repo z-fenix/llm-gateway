@@ -9,6 +9,7 @@ pub fn router(state: AppState) -> Router {
         .route("/v1/models", get(handlers::list_models))
         .route("/v1/chat/completions", post(handlers::openai_chat))
         .route("/v1/messages", post(handlers::anthropic_messages))
+        .merge(crate::mcp::mcp_router(state.clone()))
         .with_state(state)
 }
 
