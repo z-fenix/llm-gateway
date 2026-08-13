@@ -146,7 +146,7 @@ pub fn upload_document(
     {
         return Err(format!("knowledge base not found: {kb_id}"));
     }
-    // 先解码校验；不合法直接 Err。本任务仅落库，异步摄取在 Task 10 接入。
+    // 先解码校验；不合法直接 Err。
     let content = decode_base64(&content_base64)?;
     let file_type = file_type_str(&filename).to_string();
     let doc = KbDocument {
@@ -161,6 +161,12 @@ pub fn upload_document(
         created_at: chrono::Utc::now().timestamp(),
     };
     state.repo.insert_document(&doc).map_err(|e| e.to_string())?;
+    // 暂存解码后的原始内容,供异步摄取任务按 doc_id 读取(KbDocument 不含 content 字段)。
+    if let Err(e) = crate::knowledge::ingest::stage_content(&state, &doc.id, &content) {
+        let _ = state.repo.update_document_status(&doc.id, "failed", Some(&e));
+        return Err(e);
+    }
+    crate::knowledge::ingest::spawn_ingest(state.inner().clone(), doc.id.clone());
     Ok(doc)
 }
 

@@ -864,6 +864,17 @@ impl Repository {
         Ok(())
     }
 
+    /// 摄取成功后把文档标记为 indexed,并回填其 chunk_count、清空 error。
+    pub fn mark_document_indexed(&self, id: &str, chunk_count: i64) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE kb_documents SET status='indexed', chunk_count=?2, error=NULL WHERE id=?1",
+            params![id, chunk_count],
+        )?;
+        Ok(())
+    }
+
     pub fn delete_document(&self, id: &str) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();

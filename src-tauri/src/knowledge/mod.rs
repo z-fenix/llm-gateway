@@ -1,6 +1,7 @@
 pub mod chunk;
 pub mod embed;
 pub mod index;
+pub mod ingest;
 pub mod inject;
 pub mod rag_hook;
 pub mod retrieve;
