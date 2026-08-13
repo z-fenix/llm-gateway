@@ -4,10 +4,14 @@ import type {
   BuiltinRule,
   Channel,
   CustomRule,
+  KbDocument,
+  KnowledgeBase,
   LogFilter,
   LogPage,
   LogStats,
+  RagSettings,
   RequestLog,
+  RetrievedChunk,
   RolePattern,
   RoleRoute,
   SecurityFinding,
@@ -95,5 +99,31 @@ export const api = {
     invoke<void>("delete_custom_security_rule", { id }),
   getSecurityFindings: (log_id: string) =>
     invoke<SecurityFinding[]>("get_security_findings", { log_id }),
+
+  createKb: (
+    name: string,
+    description: string | null,
+    embedding_channel_id: string | null,
+    embedding_model: string
+  ) =>
+    invoke<KnowledgeBase>("create_kb", {
+      name,
+      description,
+      embedding_channel_id,
+      embedding_model,
+    }),
+  listKbs: () => invoke<KnowledgeBase[]>("list_kbs"),
+  deleteKb: (id: string) => invoke<void>("delete_kb", { id }),
+  reindexKb: (id: string) => invoke<void>("reindex_kb", { id }),
+  uploadDocument: (kb_id: string, filename: string, content_base64: string) =>
+    invoke<KbDocument>("upload_document", { kb_id, filename, content_base64 }),
+  listDocuments: (kb_id: string) =>
+    invoke<KbDocument[]>("list_documents", { kb_id }),
+  deleteDocument: (id: string) => invoke<void>("delete_document", { id }),
+  searchKb: (kb_id: string, query: string) =>
+    invoke<RetrievedChunk[]>("search_kb", { kb_id, query }),
+  getRagSettings: () => invoke<RagSettings>("get_rag_settings"),
+  setRagSetting: (key: string, value: unknown) =>
+    invoke<void>("set_rag_setting", { key, value }),
 };
 export type { RequestLog };

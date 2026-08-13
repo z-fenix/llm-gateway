@@ -174,3 +174,43 @@ export interface SecurityFinding {
   action: string | null;
   created_at: number;
 }
+
+export interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string | null;
+  embedding_channel_id: string | null;
+  embedding_model: string;
+  dim: number;
+  doc_count: number;
+  chunk_count: number;
+  enabled: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface KbDocument {
+  id: string;
+  kb_id: string;
+  filename: string;
+  file_type: string;
+  size_bytes: number;
+  chunk_count: number;
+  status: string;
+  error: string | null;
+  created_at: number;
+}
+
+export interface RetrievedChunk {
+  embedding_id: number;
+  content: string;
+  symbol: string | null;
+  filename: string;
+  score: number;
+}
+
+export interface RagSettings {
+  enabled: boolean;
+  default_kb: string | null;
+  default_embedding_channel: string | null;
+}

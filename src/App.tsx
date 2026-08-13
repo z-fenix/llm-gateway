@@ -6,6 +6,7 @@ import ApiKeysPage from "./pages/ApiKeysPage";
 import RoleRoutesPage from "./pages/RoleRoutesPage";
 import SecurityPage from "./pages/SecurityPage";
 import LogsPage from "./pages/LogsPage";
+import KnowledgePage from "./pages/KnowledgePage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/roles" element={<RoleRoutesPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/logs" element={<LogsPage />} />
+        <Route path="/knowledge" element={<KnowledgePage />} />
       </Route>
     </Routes>
   );
