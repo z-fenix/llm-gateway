@@ -2,11 +2,27 @@ fn main() {
     #[cfg(windows)]
     embed_windows_manifest();
 
+    // Keep Tauri's icon/version resource generation, but don't let it embed its own
+    // app manifest: we embed one ourselves so that the library unit-test harness also
+    // gets a Common Controls v6 manifest. Without this, `cargo test --lib` fails on
+    // Windows with the GNU toolchain with:
+    //   process didn't exit successfully (exit code: 0xc0000139, STATUS_ENTRYPOINT_NOT_FOUND)
     let attrs = tauri_build::Attributes::new()
         .windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest());
     tauri_build::try_build(attrs).expect("failed to run tauri-build");
 }
 
+/// Embeds a Common Controls v6 Windows application manifest.
+///
+/// This is required on Windows because the test binary links against crates that pull
+/// in the Common Controls v6 dependency, but Tauri's build script only embeds its
+/// manifest for binary targets (via embed-resource's `rustc-link-arg-bins`). The
+/// library unit-test harness therefore has no manifest and crashes at startup with
+/// `STATUS_ENTRYPOINT_NOT_FOUND`.
+///
+/// The `.rsrc merge failure: multiple non-default manifests` linker warning that
+/// appears for binary/integration-test targets is pre-existing: it occurs even with
+/// the original `fn main() { tauri_build::build() }` build.rs.
 #[cfg(windows)]
 fn embed_windows_manifest() {
     const MANIFEST: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

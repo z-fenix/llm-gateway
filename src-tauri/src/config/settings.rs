@@ -28,8 +28,12 @@ pub fn merge_from_store(
     mut c: AppConfig,
     values: &serde_json::Map<String, serde_json::Value>,
 ) -> AppConfig {
-    if let Some(p) = values.get("app.preferred_port").and_then(|v| v.as_u64()) {
-        c.preferred_port = clamp_port(p as u16);
+    if let Some(p) = values
+        .get("app.preferred_port")
+        .and_then(|v| v.as_u64())
+        .and_then(|p| u16::try_from(p).ok())
+    {
+        c.preferred_port = clamp_port(p);
     }
     c
 }
