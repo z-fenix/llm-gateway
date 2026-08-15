@@ -1,7 +1,9 @@
+use crate::config::settings::AppConfig;
 use crate::db::repository::Repository;
 use crate::db::Db;
 use crate::knowledge::settings::RagSettings;
 use crate::security::SecuritySettings;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use parking_lot::RwLock;
@@ -19,6 +21,10 @@ pub struct AppState {
     pub rag: Arc<RwLock<RagSettings>>,
     /// 知识库 usearch 索引文件存放目录（生产为 app_data_dir/kb，测试用临时目录）
     pub kb_index_dir: Arc<RwLock<PathBuf>>,
+    /// 网关实际绑定的地址
+    pub bound_addr: Arc<RwLock<Option<SocketAddr>>>,
+    /// 应用配置(首选端口等)
+    pub app: Arc<RwLock<AppConfig>>,
 }
 
 impl AppState {
@@ -42,6 +48,8 @@ impl AppState {
             security: Arc::new(RwLock::new(SecuritySettings::default())),
             rag: Arc::new(RwLock::new(RagSettings::default())),
             kb_index_dir: Arc::new(RwLock::new(kb_index_dir)),
+            bound_addr: Arc::new(RwLock::new(None)),
+            app: Arc::new(RwLock::new(AppConfig::default())),
         }
     }
 }

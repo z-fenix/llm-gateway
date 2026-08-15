@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod commands;
+pub mod config;
 pub mod db;
 pub mod error;
 pub mod knowledge;
@@ -51,6 +52,10 @@ pub fn run() {
             let rag = knowledge::settings::get_rag_settings(&app.handle());
             knowledge::settings::apply_settings(&state, &rag);
 
+            // 从 tauri-plugin-store 加载应用配置（首选端口）并同步到 AppState
+            let appcfg = config::settings::get_app_config(&app.handle());
+            config::settings::apply_settings(&state, &appcfg);
+
             // 启动时按保留天数清理日志（失败仅记录，不阻断启动）
             if let Ok(store) = app.store("store.bin") {
                 if let Some(days) = store.get("log_retention_days").and_then(|v| v.as_i64()) {
@@ -94,12 +99,14 @@ pub fn run() {
             std::thread::spawn(move || {
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 rt.block_on(async move {
-                    match proxy::server::start(state.clone(), 8777).await {
-                        Ok((handle, _addr)) => {
+                    let start_port = state.app.read().preferred_port;
+                    match proxy::server::start(state.clone(), start_port).await {
+                        Ok((handle, addr)) => {
+                            *state.bound_addr.write() = Some(addr);
                             handle.await.expect("serve gateway");
                         }
                         Err(e) => {
-                            log::error!("no available port in 8777..=8787: {}", e);
+                            log::error!("no available port in {}..=8787: {}", start_port, e);
                         }
                     }
                 });
