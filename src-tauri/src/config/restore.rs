@@ -154,11 +154,8 @@ pub fn import(
     for k in &bundle.api_keys {
         if ak.contains(&k.id) {
             if overwrite {
-                if let Err(e) = state.repo.delete_api_key(&k.id) {
-                    log::error!("import: failed to delete api_key {} before overwrite: {}", k.id, e);
-                    res.skipped += 1;
-                } else if let Err(e) = state.repo.insert_api_key(k) {
-                    log::error!("import: failed to insert api_key {} during overwrite: {}", k.id, e);
+                if let Err(e) = state.repo.update_api_key(k) {
+                    log::error!("import: failed to overwrite api_key {}: {}", k.id, e);
                     res.skipped += 1;
                 } else {
                     res.overwritten += 1;
@@ -218,11 +215,8 @@ pub fn import(
         for rule in &sec.custom_rules {
             if cr.contains(&rule.id) {
                 if overwrite {
-                    if let Err(e) = state.repo.delete_custom_rule(&rule.id) {
-                        log::error!("import: failed to delete custom_rule {} before overwrite: {}", rule.id, e);
-                        res.skipped += 1;
-                    } else if let Err(e) = state.repo.create_custom_rule(rule) {
-                        log::error!("import: failed to insert custom_rule {} during overwrite: {}", rule.id, e);
+                    if let Err(e) = state.repo.update_custom_rule(rule) {
+                        log::error!("import: failed to overwrite custom_rule {}: {}", rule.id, e);
                         res.skipped += 1;
                     } else {
                         res.overwritten += 1;
@@ -254,9 +248,8 @@ pub fn import(
     }
 
     if let Some(ac) = &bundle.app_config {
-        *state.app.write() = crate::config::settings::AppConfig {
-            preferred_port: ac.preferred_port,
-        };
+        let p = ac.preferred_port.clamp(crate::config::settings::MIN_PORT, crate::config::settings::MAX_PORT);
+        *state.app.write() = crate::config::settings::AppConfig { preferred_port: p };
     }
 
     Ok(res)
@@ -265,9 +258,11 @@ pub fn import(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::models::{Channel, RoleRoute};
+    use crate::config::backup::{AppConfigExport, SecurityExport};
+    use crate::db::models::{ApiKey, Channel, CustomRule, RoleRoute};
     use crate::db::Db;
     use crate::proxy::state::AppState;
+    use crate::security::SecuritySettings;
 
     fn test_state() -> AppState {
         AppState::new(Db::new_in_memory().unwrap())
@@ -337,6 +332,61 @@ mod tests {
         }
     }
 
+    fn empty_bundle() -> ConfigBundle {
+        ConfigBundle {
+            format: FORMAT.into(),
+            version: VERSION,
+            exported_at: 1,
+            app_config: None,
+            channels: vec![],
+            api_keys: vec![],
+            role_routes: vec![],
+            role_patterns: vec![],
+            fallback: None,
+            security: None,
+        }
+    }
+
+    fn bundle_with_overwrite_data() -> ConfigBundle {
+        ConfigBundle {
+            format: FORMAT.into(),
+            version: VERSION,
+            exported_at: 1,
+            app_config: None,
+            channels: vec![],
+            api_keys: vec![ApiKey {
+                id: "k1".into(),
+                key: "sk-imported".into(),
+                name: "imported".into(),
+                enabled: false,
+                quota_total: Some(2000),
+                quota_used: 100,
+                total_calls: 5,
+                total_tokens: 1000,
+                created_at: 2,
+                last_used_at: Some(2),
+            }],
+            role_routes: vec![],
+            role_patterns: vec![],
+            fallback: None,
+            security: Some(SecurityExport {
+                settings: SecuritySettings::default(),
+                builtin_rules: vec![],
+                custom_rules: vec![CustomRule {
+                    id: "cr1".into(),
+                    rule_type: "keyword".into(),
+                    category: "secret".into(),
+                    pattern: "imported-pattern".into(),
+                    severity: "high".into(),
+                    action: "block".into(),
+                    enabled: false,
+                    description: Some("imported desc".into()),
+                    created_at: 2,
+                }],
+            }),
+        }
+    }
+
     #[test]
     fn preview_counts_conflicts() {
         let state = test_state_with_channel("c1");
@@ -387,5 +437,69 @@ mod tests {
         let p = dir.path().join("bad.json");
         std::fs::write(&p, r#"{"format":"llm-gateway-config","version":99}"#).unwrap();
         assert!(parse_bundle(&p).is_err());
+    }
+
+    #[test]
+    fn import_clamps_preferred_port_low() {
+        let state = test_state();
+        let mut bundle = empty_bundle();
+        bundle.app_config = Some(AppConfigExport { preferred_port: 0 });
+        import(&state, &bundle, "overwrite").unwrap();
+        assert_eq!(state.app.read().preferred_port, crate::config::settings::MIN_PORT);
+    }
+
+    #[test]
+    fn import_clamps_preferred_port_high() {
+        let state = test_state();
+        let mut bundle = empty_bundle();
+        bundle.app_config = Some(AppConfigExport { preferred_port: 9000 });
+        import(&state, &bundle, "overwrite").unwrap();
+        assert_eq!(state.app.read().preferred_port, crate::config::settings::MAX_PORT);
+    }
+
+    #[test]
+    fn import_overwrite_api_key_and_custom_rule_atomic() {
+        let state = test_state();
+        state.repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-old".into(),
+            name: "old".into(),
+            enabled: true,
+            quota_total: Some(100),
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        }).unwrap();
+        state.repo.create_custom_rule(&CustomRule {
+            id: "cr1".into(),
+            rule_type: "regex".into(),
+            category: "prompt_injection".into(),
+            pattern: "old-pattern".into(),
+            severity: "medium".into(),
+            action: "warn".into(),
+            enabled: true,
+            description: Some("old desc".into()),
+            created_at: 1,
+        }).unwrap();
+
+        let r = import(&state, &bundle_with_overwrite_data(), "overwrite").unwrap();
+        assert_eq!(r.imported, 0);
+        assert_eq!(r.skipped, 0);
+        assert_eq!(r.overwritten, 2);
+
+        let key = state.repo.get_api_key_by_key("sk-imported").unwrap().unwrap();
+        assert_eq!(key.id, "k1");
+        assert_eq!(key.name, "imported");
+        assert!(!key.enabled);
+        assert_eq!(key.quota_total, Some(2000));
+
+        let rules = state.repo.list_custom_rules().unwrap();
+        assert_eq!(rules.len(), 1);
+        assert_eq!(rules[0].id, "cr1");
+        assert_eq!(rules[0].pattern, "imported-pattern");
+        assert_eq!(rules[0].action, "block");
+        assert!(!rules[0].enabled);
     }
 }

@@ -122,7 +122,9 @@ pub fn set_preferred_port(
     state.app.write().preferred_port = port;
     if let Ok(store) = app.store("store.bin") {
         let _ = store.set("app.preferred_port", json!(port));
-        let _ = store.save();
+        if let Err(e) = store.save() {
+            log::error!("failed to save preferred_port store: {}", e);
+        }
     }
     Ok(())
 }

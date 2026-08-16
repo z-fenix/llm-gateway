@@ -176,6 +176,19 @@ impl Repository {
         Ok(())
     }
 
+    pub fn update_api_key(&self, k: &ApiKey) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE api_keys SET key=?2,name=?3,enabled=?4,quota_total=?5,quota_used=?6,total_calls=?7,total_tokens=?8,created_at=?9,last_used_at=?10 WHERE id=?1",
+            params![
+                k.id, k.key, k.name, k.enabled as i64, k.quota_total, k.quota_used,
+                k.total_calls, k.total_tokens, k.created_at, k.last_used_at
+            ],
+        )?;
+        Ok(())
+    }
+
     pub fn get_api_key_by_key(&self, key: &str) -> AppResult<Option<ApiKey>> {
         let conn = self.db.conn();
         let conn = conn.lock();
@@ -682,6 +695,16 @@ impl Repository {
         let conn = conn.lock();
         conn.execute(
             "INSERT INTO security_custom_rules (id,rule_type,category,pattern,severity,action,enabled,description,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+            params![r.id, r.rule_type, r.category, r.pattern, r.severity, r.action, r.enabled as i64, r.description, r.created_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_custom_rule(&self, r: &CustomRule) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE security_custom_rules SET rule_type=?2,category=?3,pattern=?4,severity=?5,action=?6,enabled=?7,description=?8,created_at=?9 WHERE id=?1",
             params![r.id, r.rule_type, r.category, r.pattern, r.severity, r.action, r.enabled as i64, r.description, r.created_at],
         )?;
         Ok(())
