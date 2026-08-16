@@ -39,29 +39,34 @@ pub fn import_config(
     let bundle = restore::parse_bundle(&PathBuf::from(&path))?;
     let result = restore::import(&state, &bundle, &strategy)?;
 
-    if let Ok(store) = app.store("store.bin") {
-        let sec = state.security.read().clone();
-        let _ = store.set("security.enabled", json!(sec.enabled));
-        let _ = store.set("security.mode", json!(sec.mode));
-        let _ = store.set("security.scan_request", json!(sec.scan_request));
-        let _ = store.set("security.scan_response", json!(sec.scan_response));
-        let _ = store.set("security.scan_unicode", json!(sec.scan_unicode));
-        let _ = store.set("security.scan_tools", json!(sec.scan_tools));
-        let _ = store.set("security.scan_network", json!(sec.scan_network));
-        let _ = store.set("security.redact_secrets", json!(sec.redact_secrets));
-        let _ = store.set("security.block_on_critical", json!(sec.block_on_critical));
-        let _ = store.set("security.max_scan_bytes", json!(sec.max_scan_bytes));
-        match state.fallback.read().clone() {
-            Some((channel_id, model)) => {
-                let _ = store.set("fallback", json!({"channel_id": channel_id, "model": model}));
+    match app.store("store.bin") {
+        Ok(store) => {
+            let sec = state.security.read().clone();
+            let _ = store.set("security.enabled", json!(sec.enabled));
+            let _ = store.set("security.mode", json!(sec.mode));
+            let _ = store.set("security.scan_request", json!(sec.scan_request));
+            let _ = store.set("security.scan_response", json!(sec.scan_response));
+            let _ = store.set("security.scan_unicode", json!(sec.scan_unicode));
+            let _ = store.set("security.scan_tools", json!(sec.scan_tools));
+            let _ = store.set("security.scan_network", json!(sec.scan_network));
+            let _ = store.set("security.redact_secrets", json!(sec.redact_secrets));
+            let _ = store.set("security.block_on_critical", json!(sec.block_on_critical));
+            let _ = store.set("security.max_scan_bytes", json!(sec.max_scan_bytes));
+            match state.fallback.read().clone() {
+                Some((channel_id, model)) => {
+                    let _ = store.set("fallback", json!({"channel_id": channel_id, "model": model}));
+                }
+                None => {
+                    let _ = store.set("fallback", serde_json::Value::Null);
+                }
             }
-            None => {
-                let _ = store.set("fallback", serde_json::Value::Null);
+            let _ = store.set("app.preferred_port", json!(state.app.read().preferred_port));
+            if let Err(e) = store.save() {
+                log::error!("failed to save store after import: {}", e);
             }
         }
-        let _ = store.set("app.preferred_port", json!(state.app.read().preferred_port));
-        if let Err(e) = store.save() {
-            log::error!("failed to save store after import: {}", e);
+        Err(e) => {
+            log::error!("import: cannot open store.bin to persist settings: {}", e);
         }
     }
 

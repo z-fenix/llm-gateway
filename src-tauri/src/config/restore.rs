@@ -224,9 +224,10 @@ pub fn import(
 
         if overwrite {
             for br in &sec.builtin_rules {
-                let _ = state
+                state
                     .repo
-                    .update_builtin_rule(&br.id, br.enabled, &br.severity);
+                    .update_builtin_rule(&br.id, br.enabled, &br.severity)
+                    .map_err(|e| e.to_string())?;
             }
         }
 
