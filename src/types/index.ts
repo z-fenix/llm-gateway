@@ -215,3 +215,36 @@ export interface RagSettings {
   default_kb: string | null;
   default_embedding_channel: string | null;
 }
+
+export interface AppConfigInfo {
+  preferred_port: number;
+  bound_addr: string | null;
+}
+
+export interface CliTargetInfo {
+  target: string;
+  configured: boolean;
+  path: string;
+}
+
+export interface CliWriteResult {
+  path: string;
+  changed_keys: string[];
+  backup_path: string | null;
+  env_instructions: string | null;
+}
+
+export interface ImportPreview {
+  channels: number;
+  api_keys: number;
+  role_routes: number;
+  role_patterns: number;
+  custom_rules: number;
+  conflicts: number;
+}
+
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  overwritten: number;
+}

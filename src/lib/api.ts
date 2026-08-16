@@ -1,9 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   ApiKey,
+  AppConfigInfo,
   BuiltinRule,
   Channel,
+  CliTargetInfo,
+  CliWriteResult,
   CustomRule,
+  ImportPreview,
+  ImportResult,
   KbDocument,
   KnowledgeBase,
   LogFilter,
@@ -125,5 +130,17 @@ export const api = {
   getRagSettings: () => invoke<RagSettings>("get_rag_settings"),
   setRagSetting: (key: string, value: unknown) =>
     invoke<void>("set_rag_setting", { key, value }),
+
+  getAppConfig: () => invoke<AppConfigInfo>("get_app_config"),
+  setPreferredPort: (port: number) =>
+    invoke<void>("set_preferred_port", { port }),
+  getCliTargets: () => invoke<CliTargetInfo[]>("get_cli_targets"),
+  writeCliConfig: (target: string, apiKeyId: string, writeEnv: boolean) =>
+    invoke<CliWriteResult[]>("write_cli_config", { target, apiKeyId, writeEnv }),
+  exportConfig: (path: string) => invoke<number>("export_config", { path }),
+  defaultExportPath: () => invoke<string>("default_export_path"),
+  previewImport: (path: string) => invoke<ImportPreview>("preview_import", { path }),
+  importConfig: (path: string, strategy: string) =>
+    invoke<ImportResult>("import_config", { path, strategy }),
 };
 export type { RequestLog };

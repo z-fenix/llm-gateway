@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen } from "lucide-react";
+import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen, Settings } from "lucide-react";
 
 const nav = [
   { to: "/", label: "概览", icon: LayoutDashboard },
@@ -9,6 +9,7 @@ const nav = [
   { to: "/security", label: "安全审计", icon: ShieldCheck },
   { to: "/logs", label: "日志", icon: ScrollText },
   { to: "/knowledge", label: "知识库", icon: BookOpen },
+  { to: "/settings", label: "设置", icon: Settings },
 ];
 
 export default function Layout() {
