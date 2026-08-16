@@ -162,6 +162,8 @@ pub fn run() {
             commands::knowledge::search_kb,
             commands::knowledge::get_rag_settings,
             commands::knowledge::set_rag_setting,
+            commands::config::export_config,
+            commands::config::default_export_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

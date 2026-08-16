@@ -1,5 +1,6 @@
 pub mod api_key;
 pub mod channel;
+pub mod config;
 pub mod knowledge;
 pub mod log;
 pub mod role_route;
