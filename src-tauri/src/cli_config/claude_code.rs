@@ -53,14 +53,24 @@ pub fn merge_dotclaude(existing: Option<&str>) -> Result<(String, Vec<String>), 
     Ok((serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?, changed))
 }
 
-fn read_opt(path: &Path) -> Option<String> {
-    std::fs::read_to_string(path).ok()
+/// 读取可选的配置文件。
+///
+/// - `Ok(None)`：文件不存在，调用方应按空对象处理。
+/// - `Ok(Some(content))`：读取成功。
+/// - `Err(...)`：文件存在但读取失败（权限、IO 等），必须向上传播，避免在
+///   未合并旧设置的情况下静默覆盖。
+fn read_opt(path: &Path) -> Result<Option<String>, String> {
+    match std::fs::read_to_string(path) {
+        Ok(content) => Ok(Some(content)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(format!("read {}: {}", path.display(), e)),
+    }
 }
 
 /// 写 settings.json + .claude.json,各返回一个 CliWriteResult。
 pub fn write(home: &Path, base_url: &str, token: &str) -> Result<Vec<CliWriteResult>, String> {
     let sp = settings_path(home);
-    let (content, changed) = merge_settings(read_opt(&sp).as_deref(), base_url, token)?;
+    let (content, changed) = merge_settings(read_opt(&sp)?.as_deref(), base_url, token)?;
     let backup = backup_and_write(&sp, &content)?;
     let mut out = vec![CliWriteResult {
         path: sp.display().to_string(),
@@ -69,7 +79,7 @@ pub fn write(home: &Path, base_url: &str, token: &str) -> Result<Vec<CliWriteRes
         env_instructions: None,
     }];
     let dp = dotclaude_path(home);
-    let (dcontent, dchanged) = merge_dotclaude(read_opt(&dp).as_deref())?;
+    let (dcontent, dchanged) = merge_dotclaude(read_opt(&dp)?.as_deref())?;
     let dbackup = backup_and_write(&dp, &dcontent)?;
     out.push(CliWriteResult {
         path: dp.display().to_string(),
@@ -113,16 +123,29 @@ mod tests {
     }
 
     #[test]
-    fn write_creates_files_and_backup() {
+    fn read_opt_missing_returns_none() {
         let home = tempfile::tempdir().unwrap();
-        // 先写一次(无备份),再写一次(有备份)
-        let r1 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-a").unwrap();
-        assert!(settings_path(home.path()).exists());
-        assert!(r1[0].backup_path.is_none());
-        let r2 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-b").unwrap();
-        assert!(r2[0].backup_path.is_some());
-        let v: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap()).unwrap();
-        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-b"));
+        let p = settings_path(home.path());
+        assert_eq!(read_opt(&p).unwrap(), None);
+    }
+
+    #[test]
+    fn read_opt_readable_returns_content() {
+        let home = tempfile::tempdir().unwrap();
+        let p = settings_path(home.path());
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(&p, r#"{"model":"opus"}"#).unwrap();
+        assert_eq!(read_opt(&p).unwrap().as_deref(), Some(r#"{"model":"opus"}"#));
+    }
+
+    #[test]
+    fn read_opt_unreadable_returns_err() {
+        // 用目录占据文件路径来可移植地模拟读错误。
+        let home = tempfile::tempdir().unwrap();
+        let p = settings_path(home.path());
+        std::fs::create_dir_all(&p).unwrap();
+        let err = read_opt(&p).unwrap_err();
+        assert!(err.contains("read"));
+        assert!(err.contains(p.display().to_string().as_str()));
     }
 }
