@@ -135,8 +135,8 @@ export const api = {
   setPreferredPort: (port: number) =>
     invoke<void>("set_preferred_port", { port }),
   getCliTargets: () => invoke<CliTargetInfo[]>("get_cli_targets"),
-  writeCliConfig: (target: string, apiKeyId: string, writeEnv: boolean) =>
-    invoke<CliWriteResult[]>("write_cli_config", { target, apiKeyId, writeEnv }),
+  writeCliConfig: (target: string, api_key_id: string, write_env: boolean) =>
+    invoke<CliWriteResult[]>("write_cli_config", { target, api_key_id, write_env }),
   exportConfig: (path: string) => invoke<number>("export_config", { path }),
   defaultExportPath: () => invoke<string>("default_export_path"),
   previewImport: (path: string) => invoke<ImportPreview>("preview_import", { path }),
