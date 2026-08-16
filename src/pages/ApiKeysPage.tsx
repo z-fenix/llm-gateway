@@ -17,7 +17,8 @@ export default function ApiKeysPage() {
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
     const q = quota.trim();
     let quotaNum: number | null = null;
     if (q) {
@@ -27,7 +28,7 @@ export default function ApiKeysPage() {
     }
     setError(null);
     try {
-      await api.createApiKey(name, quotaNum);
+      await api.createApiKey(trimmed, quotaNum);
       setName(""); setQuota(""); load();
     } catch (err) {
       handleError(err);
@@ -41,7 +42,7 @@ export default function ApiKeysPage() {
       <div className="mb-4 flex gap-2">
         <input className="border rounded px-2 py-1" placeholder="用户/应用名" value={name} onChange={(e) => setName(e.target.value)} />
         <input className="border rounded px-2 py-1" placeholder="Token 配额（留空不限）" value={quota} onChange={(e) => setQuota(e.target.value)} />
-        <button className="rounded bg-blue-600 px-3 py-1 text-white" onClick={create}>生成密钥</button>
+        <button className="rounded bg-blue-600 px-3 py-1 text-white disabled:cursor-not-allowed disabled:opacity-50" onClick={create} disabled={!name.trim()}>生成密钥</button>
       </div>
       <table className="w-full border bg-white text-sm">
         <thead><tr className="border-b text-left">

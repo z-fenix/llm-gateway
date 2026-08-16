@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Channel {
+    // id/时间戳/统计字段由服务端生成或维护，反序列化时允许缺省（如新建渠道表单）
+    #[serde(default)]
     pub id: String,
     pub name: String,
     pub provider_type: String,
@@ -12,11 +14,17 @@ pub struct Channel {
     pub weight: i64,
     pub enabled: bool,
     pub timeout_secs: i64,
+    #[serde(default)]
     pub total_calls: i64,
+    #[serde(default)]
     pub total_tokens: i64,
+    #[serde(default)]
     pub success_rate: f64,
+    #[serde(default)]
     pub avg_latency_ms: i64,
+    #[serde(default)]
     pub created_at: i64,
+    #[serde(default)]
     pub updated_at: i64,
 }
 
@@ -149,4 +157,30 @@ pub struct KbChunk {
     pub content: String,
     pub token_count: i64,
     pub embedding_id: i64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Channel;
+
+    #[test]
+    fn channel_deserializes_from_create_form_payload() {
+        // 前端新建渠道表单只提交用户可填字段；服务端生成的 id/时间戳/统计字段应可缺省
+        let json = r#"{
+            "name": "deepseek",
+            "provider_type": "deepseek",
+            "base_url": "https://api.deepseek.com",
+            "api_key": "sk-real-key",
+            "models": ["deepseek-chat"],
+            "priority": 0,
+            "weight": 1,
+            "enabled": true,
+            "timeout_secs": 60
+        }"#;
+        let c: Channel = serde_json::from_str(json).expect("create payload should deserialize");
+        assert_eq!(c.name, "deepseek");
+        assert!(c.id.is_empty());
+        assert_eq!(c.total_calls, 0);
+        assert_eq!(c.created_at, 0);
+    }
 }
