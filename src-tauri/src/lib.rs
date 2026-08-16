@@ -166,6 +166,10 @@ pub fn run() {
             commands::config::default_export_path,
             commands::config::preview_import,
             commands::config::import_config,
+            commands::config::get_app_config,
+            commands::config::set_preferred_port,
+            commands::config::get_cli_targets,
+            commands::config::write_cli_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
