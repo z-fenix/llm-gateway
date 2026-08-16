@@ -1,6 +1,6 @@
 use crate::auth::{self, AuthError};
 use crate::db::models::RequestLog;
-use crate::protocol::{anthropic, openai, types::ChatRequest};
+use crate::protocol::{anthropic, openai, responses, types::ChatRequest};
 use crate::proxy::forwarder::{self, ForwardError};
 use crate::proxy::security_hook::{self, RequestVerdict};
 use crate::proxy::state::AppState;
@@ -69,10 +69,19 @@ pub async fn anthropic_messages(
     handle(state, headers, body, Protocol::Anthropic).await
 }
 
+pub async fn responses_messages(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    handle(state, headers, body, Protocol::Responses).await
+}
+
 #[derive(Clone, Copy, PartialEq)]
 enum Protocol {
     OpenAI,
     Anthropic,
+    Responses,
 }
 
 fn log_failure(
@@ -171,8 +180,22 @@ async fn handle(
                 )
             }
         },
+        Protocol::Responses => match responses::request_to_chat(&body) {
+            Ok(c) => c,
+            Err(e) => {
+                return log_failure(
+                    &state, &trace_id, Some(&api_key), proto, StatusCode::BAD_REQUEST,
+                    &e, None, &body,
+                )
+            }
+        },
     };
     let request_model = chat.model.clone();
+
+    // Responses: 内部统一非流式转发;流式由响应侧合成(后续任务)
+    if proto == Protocol::Responses {
+        chat.stream = false;
+    }
 
     // 2.5 RAG 注入（必须在请求侧安检之前，注入内容同样过安检；故障静默降级）
     crate::knowledge::rag_hook::maybe_inject(&state, &headers, &mut chat).await;
@@ -182,6 +205,7 @@ async fn handle(
     let proto_str = match proto {
         Protocol::OpenAI => "openai",
         Protocol::Anthropic => "anthropic",
+        Protocol::Responses => "responses",
     };
     let scan = match security_hook::inspect_request(
         &state, &trace_id, &api_key, proto_str, &request_model, &unified,
@@ -307,6 +331,9 @@ async fn handle(
                         Protocol::Anthropic => {
                             anthropic::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
                         }
+                        Protocol::Responses => {
+                            responses::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
+                        }
                     };
                     (StatusCode::OK, Json(resp_body)).into_response()
                 }
@@ -317,6 +344,9 @@ async fn handle(
                         }
                         Protocol::Anthropic => {
                             anthropic::chat_to_response(&to_chat_response(o, &request_model))
+                        }
+                        Protocol::Responses => {
+                            responses::chat_to_response(&to_chat_response(o, &request_model))
                         }
                     };
                     (StatusCode::OK, Json(resp_body)).into_response()
@@ -455,6 +485,7 @@ async fn handle_stream(
                     protocol: match proto {
                         Protocol::OpenAI => "openai".into(),
                         Protocol::Anthropic => "anthropic".into(),
+                        Protocol::Responses => "responses".into(),
                     },
                     status_code,
                     input_tokens: usage.input_tokens as i64,
@@ -530,6 +561,7 @@ async fn handle_stream(
                 protocol: match proto {
                     Protocol::OpenAI => "openai".into(),
                     Protocol::Anthropic => "anthropic".into(),
+                    Protocol::Responses => "responses".into(),
                 },
                 status_code: Some(status.as_u16() as i64),
                 input_tokens: 0,
@@ -676,6 +708,7 @@ fn write_log(
         protocol: match proto {
             Protocol::OpenAI => "openai".into(),
             Protocol::Anthropic => "anthropic".into(),
+            Protocol::Responses => "responses".into(),
         },
         status_code: status_code.or_else(|| o.map(|x| x.status as i64)),
         input_tokens: o.map(|x| x.usage.input_tokens as i64).unwrap_or(0),
