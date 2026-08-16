@@ -148,4 +148,22 @@ mod tests {
         assert!(err.contains("read"));
         assert!(err.contains(p.display().to_string().as_str()));
     }
+
+    #[test]
+    fn write_creates_files_and_backup() {
+        let home = tempfile::tempdir().unwrap();
+        // 先写一次（无备份），再写一次（有备份）。
+        let r1 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-a").unwrap();
+        assert!(settings_path(home.path()).exists());
+        assert!(dotclaude_path(home.path()).exists());
+        assert_eq!(r1.len(), 2);
+        assert!(r1[0].backup_path.is_none());
+
+        let r2 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-b").unwrap();
+        assert!(r2[0].backup_path.is_some());
+
+        let v: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap()).unwrap();
+        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-b"));
+    }
 }
