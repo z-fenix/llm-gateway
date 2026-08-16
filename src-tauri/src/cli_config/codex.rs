@@ -80,11 +80,16 @@ pub fn write_env_var(home: &Path, token: &str) -> Result<(), String> {
     #[cfg(not(windows))]
     {
         let profile = home.join(".profile");
-        let existing = std::fs::read_to_string(&profile).unwrap_or_default();
+        let existing = match std::fs::read_to_string(&profile) {
+            Ok(content) => content,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+            Err(e) => return Err(format!("read {}: {}", profile.display(), e)),
+        };
         let line = format!("export {ENV_KEY}=\"{token}\"");
+        let export_prefix = format!("export {ENV_KEY}=");
         let mut kept: Vec<String> = existing
             .lines()
-            .filter(|l| !l.trim_start().starts_with(&format!("export {ENV_KEY}=")))
+            .filter(|l| !l.trim_start().starts_with(&export_prefix))
             .map(|l| l.to_string())
             .collect();
         kept.push(line);
