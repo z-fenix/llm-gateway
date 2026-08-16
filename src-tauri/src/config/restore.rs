@@ -134,13 +134,19 @@ pub fn import(
     for c in &bundle.channels {
         if ch.contains(&c.id) {
             if overwrite {
-                state.repo.update_channel(c).map_err(|e| e.to_string())?;
-                res.overwritten += 1;
+                if let Err(e) = state.repo.update_channel(c) {
+                    log::error!("import: failed to overwrite channel {}: {}", c.id, e);
+                    res.skipped += 1;
+                } else {
+                    res.overwritten += 1;
+                }
             } else {
                 res.skipped += 1;
             }
+        } else if let Err(e) = state.repo.insert_channel(c) {
+            log::error!("import: failed to insert channel {}: {}", c.id, e);
+            res.skipped += 1;
         } else {
-            state.repo.insert_channel(c).map_err(|e| e.to_string())?;
             res.imported += 1;
         }
     }
@@ -148,17 +154,22 @@ pub fn import(
     for k in &bundle.api_keys {
         if ak.contains(&k.id) {
             if overwrite {
-                state
-                    .repo
-                    .delete_api_key(&k.id)
-                    .map_err(|e| e.to_string())?;
-                state.repo.insert_api_key(k).map_err(|e| e.to_string())?;
-                res.overwritten += 1;
+                if let Err(e) = state.repo.delete_api_key(&k.id) {
+                    log::error!("import: failed to delete api_key {} before overwrite: {}", k.id, e);
+                    res.skipped += 1;
+                } else if let Err(e) = state.repo.insert_api_key(k) {
+                    log::error!("import: failed to insert api_key {} during overwrite: {}", k.id, e);
+                    res.skipped += 1;
+                } else {
+                    res.overwritten += 1;
+                }
             } else {
                 res.skipped += 1;
             }
+        } else if let Err(e) = state.repo.insert_api_key(k) {
+            log::error!("import: failed to insert api_key {}: {}", k.id, e);
+            res.skipped += 1;
         } else {
-            state.repo.insert_api_key(k).map_err(|e| e.to_string())?;
             res.imported += 1;
         }
     }
@@ -166,13 +177,19 @@ pub fn import(
     for r in &bundle.role_routes {
         if rr.contains(&r.role) {
             if overwrite {
-                state.repo.upsert_role_route(r).map_err(|e| e.to_string())?;
-                res.overwritten += 1;
+                if let Err(e) = state.repo.upsert_role_route(r) {
+                    log::error!("import: failed to overwrite role_route {}: {}", r.role, e);
+                    res.skipped += 1;
+                } else {
+                    res.overwritten += 1;
+                }
             } else {
                 res.skipped += 1;
             }
+        } else if let Err(e) = state.repo.upsert_role_route(r) {
+            log::error!("import: failed to insert role_route {}: {}", r.role, e);
+            res.skipped += 1;
         } else {
-            state.repo.upsert_role_route(r).map_err(|e| e.to_string())?;
             res.imported += 1;
         }
     }
@@ -180,19 +197,19 @@ pub fn import(
     for p in &bundle.role_patterns {
         if rp.contains(&p.id) {
             if overwrite {
-                state
-                    .repo
-                    .upsert_role_pattern(p)
-                    .map_err(|e| e.to_string())?;
-                res.overwritten += 1;
+                if let Err(e) = state.repo.upsert_role_pattern(p) {
+                    log::error!("import: failed to overwrite role_pattern {}: {}", p.id, e);
+                    res.skipped += 1;
+                } else {
+                    res.overwritten += 1;
+                }
             } else {
                 res.skipped += 1;
             }
+        } else if let Err(e) = state.repo.upsert_role_pattern(p) {
+            log::error!("import: failed to insert role_pattern {}: {}", p.id, e);
+            res.skipped += 1;
         } else {
-            state
-                .repo
-                .upsert_role_pattern(p)
-                .map_err(|e| e.to_string())?;
             res.imported += 1;
         }
     }
@@ -201,33 +218,31 @@ pub fn import(
         for rule in &sec.custom_rules {
             if cr.contains(&rule.id) {
                 if overwrite {
-                    state
-                        .repo
-                        .delete_custom_rule(&rule.id)
-                        .map_err(|e| e.to_string())?;
-                    state
-                        .repo
-                        .create_custom_rule(rule)
-                        .map_err(|e| e.to_string())?;
-                    res.overwritten += 1;
+                    if let Err(e) = state.repo.delete_custom_rule(&rule.id) {
+                        log::error!("import: failed to delete custom_rule {} before overwrite: {}", rule.id, e);
+                        res.skipped += 1;
+                    } else if let Err(e) = state.repo.create_custom_rule(rule) {
+                        log::error!("import: failed to insert custom_rule {} during overwrite: {}", rule.id, e);
+                        res.skipped += 1;
+                    } else {
+                        res.overwritten += 1;
+                    }
                 } else {
                     res.skipped += 1;
                 }
+            } else if let Err(e) = state.repo.create_custom_rule(rule) {
+                log::error!("import: failed to insert custom_rule {}: {}", rule.id, e);
+                res.skipped += 1;
             } else {
-                state
-                    .repo
-                    .create_custom_rule(rule)
-                    .map_err(|e| e.to_string())?;
                 res.imported += 1;
             }
         }
 
         if overwrite {
             for br in &sec.builtin_rules {
-                state
-                    .repo
-                    .update_builtin_rule(&br.id, br.enabled, &br.severity)
-                    .map_err(|e| e.to_string())?;
+                if let Err(e) = state.repo.update_builtin_rule(&br.id, br.enabled, &br.severity) {
+                    log::error!("import: failed to update builtin_rule {}: {}", br.id, e);
+                }
             }
         }
 
@@ -250,7 +265,7 @@ pub fn import(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::models::Channel;
+    use crate::db::models::{Channel, RoleRoute};
     use crate::db::Db;
     use crate::proxy::state::AppState;
 
@@ -341,6 +356,29 @@ mod tests {
         let r2 = import(&state, &bundle, "overwrite").unwrap();
         assert_eq!(r2.overwritten, 1);
         assert_eq!(state.repo.get_channel("c1").unwrap().unwrap().name, "new");
+    }
+
+    #[test]
+    fn import_resilient_to_per_record_errors() {
+        let state = test_state();
+        let mut bundle = bundle_with_channel("good-channel");
+        // 引用不存在的 channel，触发外键约束失败。
+        bundle.role_routes.push(RoleRoute {
+            id: "bad-route".into(),
+            role: "bad-role".into(),
+            channel_id: "missing-channel".into(),
+            target_model: "gpt-4o".into(),
+            enabled: true,
+            updated_at: 1,
+        });
+
+        let r = import(&state, &bundle, "overwrite").unwrap();
+
+        assert_eq!(r.imported, 1);
+        assert_eq!(r.skipped, 1);
+        assert_eq!(r.overwritten, 0);
+        assert!(state.repo.get_channel("good-channel").unwrap().is_some());
+        assert!(state.repo.get_role_route("bad-role").unwrap().is_none());
     }
 
     #[test]
