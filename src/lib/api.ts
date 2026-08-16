@@ -34,25 +34,25 @@ export const api = {
   testChannel: (id: string) => invoke<TestResult>("test_channel", { id }),
 
   listApiKeys: () => invoke<ApiKey[]>("list_api_keys"),
-  createApiKey: (name: string, quota_total: number | null) =>
-    invoke<ApiKey>("create_api_key", { name, quota_total }),
+  createApiKey: (name: string, quotaTotal: number | null) =>
+    invoke<ApiKey>("create_api_key", { name, quotaTotal }),
   setApiKeyEnabled: (id: string, enabled: boolean) =>
     invoke<void>("set_api_key_enabled", { id, enabled }),
   deleteApiKey: (id: string) => invoke<void>("delete_api_key", { id }),
-  updateQuota: (id: string, quota_total: number | null) =>
-    invoke<void>("update_quota", { id, quota_total }),
+  updateQuota: (id: string, quotaTotal: number | null) =>
+    invoke<void>("update_quota", { id, quotaTotal }),
 
   listRoleRoutes: () => invoke<RoleRoute[]>("list_role_routes"),
-  setRoleRoute: (role: string, channel_id: string, target_model: string) =>
-    invoke<void>("set_role_route", { role, channel_id, target_model }),
+  setRoleRoute: (role: string, channelId: string, targetModel: string) =>
+    invoke<void>("set_role_route", { role, channelId, targetModel }),
   deleteRoleRoute: (role: string) => invoke<void>("delete_role_route", { role }),
   listRolePatterns: () => invoke<RolePattern[]>("list_role_patterns"),
   upsertRolePattern: (p: RolePattern) =>
     invoke<void>("upsert_role_pattern", { p }),
   deleteRolePattern: (id: string) => invoke<void>("delete_role_pattern", { id }),
   getFallback: () => invoke<[string, string] | null>("get_fallback"),
-  setFallback: (channel_id: string, model: string) =>
-    invoke<void>("set_fallback", { channel_id, model }),
+  setFallback: (channelId: string, model: string) =>
+    invoke<void>("set_fallback", { channelId, model }),
   clearFallback: () => invoke<void>("clear_fallback"),
 
   listLogs: (filter: LogFilter) => invoke<LogPage>("list_logs", { filter }),
@@ -83,7 +83,7 @@ export const api = {
     invoke<void>("reset_builtin_security_rules"),
   getCustomSecurityRules: () => invoke<CustomRule[]>("get_custom_security_rules"),
   createCustomSecurityRule: (
-    rule_type: string,
+    ruleType: string,
     category: string,
     pattern: string,
     severity: string,
@@ -91,7 +91,7 @@ export const api = {
     description: string | null
   ) =>
     invoke<void>("create_custom_security_rule", {
-      rule_type,
+      ruleType,
       category,
       pattern,
       severity,
@@ -102,31 +102,31 @@ export const api = {
     invoke<void>("toggle_custom_security_rule", { id, enabled }),
   deleteCustomSecurityRule: (id: string) =>
     invoke<void>("delete_custom_security_rule", { id }),
-  getSecurityFindings: (log_id: string) =>
-    invoke<SecurityFinding[]>("get_security_findings", { log_id }),
+  getSecurityFindings: (logId: string) =>
+    invoke<SecurityFinding[]>("get_security_findings", { logId }),
 
   createKb: (
     name: string,
     description: string | null,
-    embedding_channel_id: string | null,
-    embedding_model: string
+    embeddingChannelId: string | null,
+    embeddingModel: string
   ) =>
     invoke<KnowledgeBase>("create_kb", {
       name,
       description,
-      embedding_channel_id,
-      embedding_model,
+      embeddingChannelId,
+      embeddingModel,
     }),
   listKbs: () => invoke<KnowledgeBase[]>("list_kbs"),
   deleteKb: (id: string) => invoke<void>("delete_kb", { id }),
   reindexKb: (id: string) => invoke<void>("reindex_kb", { id }),
-  uploadDocument: (kb_id: string, filename: string, content_base64: string) =>
-    invoke<KbDocument>("upload_document", { kb_id, filename, content_base64 }),
-  listDocuments: (kb_id: string) =>
-    invoke<KbDocument[]>("list_documents", { kb_id }),
+  uploadDocument: (kbId: string, filename: string, contentBase64: string) =>
+    invoke<KbDocument>("upload_document", { kbId, filename, contentBase64 }),
+  listDocuments: (kbId: string) =>
+    invoke<KbDocument[]>("list_documents", { kbId }),
   deleteDocument: (id: string) => invoke<void>("delete_document", { id }),
-  searchKb: (kb_id: string, query: string) =>
-    invoke<RetrievedChunk[]>("search_kb", { kb_id, query }),
+  searchKb: (kbId: string, query: string) =>
+    invoke<RetrievedChunk[]>("search_kb", { kbId, query }),
   getRagSettings: () => invoke<RagSettings>("get_rag_settings"),
   setRagSetting: (key: string, value: unknown) =>
     invoke<void>("set_rag_setting", { key, value }),
@@ -135,8 +135,8 @@ export const api = {
   setPreferredPort: (port: number) =>
     invoke<void>("set_preferred_port", { port }),
   getCliTargets: () => invoke<CliTargetInfo[]>("get_cli_targets"),
-  writeCliConfig: (target: string, api_key_id: string, write_env: boolean) =>
-    invoke<CliWriteResult[]>("write_cli_config", { target, api_key_id, write_env }),
+  writeCliConfig: (target: string, apiKeyId: string, writeEnv: boolean) =>
+    invoke<CliWriteResult[]>("write_cli_config", { target, apiKeyId, writeEnv }),
   exportConfig: (path: string) => invoke<number>("export_config", { path }),
   defaultExportPath: () => invoke<string>("default_export_path"),
   previewImport: (path: string) => invoke<ImportPreview>("preview_import", { path }),
