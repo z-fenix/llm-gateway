@@ -70,7 +70,7 @@ describe("SecurityPage", () => {
     );
     fireEvent.click(screen.getByLabelText("阻断模式"));
     await waitFor(() =>
-      expect(api.setSecuritySetting).toHaveBeenCalledWith("security.mode", "block")
+      expect(api.setSecuritySetting).toHaveBeenCalledWith("mode", "block")
     );
   });
 

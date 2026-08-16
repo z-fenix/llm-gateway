@@ -55,7 +55,7 @@ export default function SecurityPage() {
 
   const updateSetting = (field: keyof SecuritySettings, value: unknown) => {
     setError(null);
-    api.setSecuritySetting(`security.${field}`, value)
+    api.setSecuritySetting(field, value)
       .then(() => setSettings((prev) => ({ ...prev, [field]: value })))
       .catch(handleError);
   };
