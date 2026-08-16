@@ -1,0 +1,352 @@
+use super::backup::{ConfigBundle, FORMAT, VERSION};
+use crate::proxy::state::AppState;
+use serde::Serialize;
+use std::collections::HashSet;
+use std::path::Path;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ImportPreview {
+    pub channels: usize,
+    pub api_keys: usize,
+    pub role_routes: usize,
+    pub role_patterns: usize,
+    pub custom_rules: usize,
+    pub conflicts: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ImportResult {
+    pub imported: usize,
+    pub skipped: usize,
+    pub overwritten: usize,
+}
+
+pub fn parse_bundle(path: &Path) -> Result<ConfigBundle, String> {
+    let text =
+        std::fs::read_to_string(path).map_err(|e| format!("read {}: {}", path.display(), e))?;
+    let bundle: ConfigBundle =
+        serde_json::from_str(&text).map_err(|e| format!("parse config json: {e}"))?;
+    if bundle.format != FORMAT {
+        return Err("非 llm-gateway 配置文件".into());
+    }
+    if bundle.version != VERSION {
+        return Err(format!("不支持的配置版本 {}", bundle.version));
+    }
+    Ok(bundle)
+}
+
+fn existing_ids(
+    state: &AppState,
+) -> (
+    HashSet<String>,
+    HashSet<String>,
+    HashSet<String>,
+    HashSet<String>,
+    HashSet<String>,
+) {
+    let channels = state
+        .repo
+        .list_channels()
+        .map(|v| v.into_iter().map(|c| c.id).collect())
+        .unwrap_or_default();
+    let api_keys = state
+        .repo
+        .list_api_keys()
+        .map(|v| v.into_iter().map(|k| k.id).collect())
+        .unwrap_or_default();
+    let role_routes = state
+        .repo
+        .list_role_routes()
+        .map(|v| v.into_iter().map(|r| r.role).collect())
+        .unwrap_or_default();
+    let role_patterns = state
+        .repo
+        .list_role_patterns()
+        .map(|v| v.into_iter().map(|p| p.id).collect())
+        .unwrap_or_default();
+    let custom_rules = state
+        .repo
+        .list_custom_rules()
+        .map(|v| v.into_iter().map(|r| r.id).collect())
+        .unwrap_or_default();
+    (channels, api_keys, role_routes, role_patterns, custom_rules)
+}
+
+pub fn preview(state: &AppState, bundle: &ConfigBundle) -> ImportPreview {
+    let (ch, ak, rr, rp, cr) = existing_ids(state);
+    let mut conflicts = 0;
+    conflicts += bundle
+        .channels
+        .iter()
+        .filter(|c| ch.contains(&c.id))
+        .count();
+    conflicts += bundle
+        .api_keys
+        .iter()
+        .filter(|k| ak.contains(&k.id))
+        .count();
+    conflicts += bundle
+        .role_routes
+        .iter()
+        .filter(|r| rr.contains(&r.role))
+        .count();
+    conflicts += bundle
+        .role_patterns
+        .iter()
+        .filter(|p| rp.contains(&p.id))
+        .count();
+    let n_custom = bundle
+        .security
+        .as_ref()
+        .map(|s| s.custom_rules.iter().filter(|r| cr.contains(&r.id)).count())
+        .unwrap_or(0);
+    conflicts += n_custom;
+    ImportPreview {
+        channels: bundle.channels.len(),
+        api_keys: bundle.api_keys.len(),
+        role_routes: bundle.role_routes.len(),
+        role_patterns: bundle.role_patterns.len(),
+        custom_rules: bundle
+            .security
+            .as_ref()
+            .map(|s| s.custom_rules.len())
+            .unwrap_or(0),
+        conflicts,
+    }
+}
+
+pub fn import(
+    state: &AppState,
+    bundle: &ConfigBundle,
+    strategy: &str,
+) -> Result<ImportResult, String> {
+    if strategy != "skip" && strategy != "overwrite" {
+        return Err(format!("strategy 须为 skip 或 overwrite, got {strategy}"));
+    }
+    let overwrite = strategy == "overwrite";
+    let (ch, ak, rr, rp, cr) = existing_ids(state);
+    let mut res = ImportResult {
+        imported: 0,
+        skipped: 0,
+        overwritten: 0,
+    };
+
+    for c in &bundle.channels {
+        if ch.contains(&c.id) {
+            if overwrite {
+                state.repo.update_channel(c).map_err(|e| e.to_string())?;
+                res.overwritten += 1;
+            } else {
+                res.skipped += 1;
+            }
+        } else {
+            state.repo.insert_channel(c).map_err(|e| e.to_string())?;
+            res.imported += 1;
+        }
+    }
+
+    for k in &bundle.api_keys {
+        if ak.contains(&k.id) {
+            if overwrite {
+                state
+                    .repo
+                    .delete_api_key(&k.id)
+                    .map_err(|e| e.to_string())?;
+                state.repo.insert_api_key(k).map_err(|e| e.to_string())?;
+                res.overwritten += 1;
+            } else {
+                res.skipped += 1;
+            }
+        } else {
+            state.repo.insert_api_key(k).map_err(|e| e.to_string())?;
+            res.imported += 1;
+        }
+    }
+
+    for r in &bundle.role_routes {
+        if rr.contains(&r.role) {
+            if overwrite {
+                state.repo.upsert_role_route(r).map_err(|e| e.to_string())?;
+                res.overwritten += 1;
+            } else {
+                res.skipped += 1;
+            }
+        } else {
+            state.repo.upsert_role_route(r).map_err(|e| e.to_string())?;
+            res.imported += 1;
+        }
+    }
+
+    for p in &bundle.role_patterns {
+        if rp.contains(&p.id) {
+            if overwrite {
+                state
+                    .repo
+                    .upsert_role_pattern(p)
+                    .map_err(|e| e.to_string())?;
+                res.overwritten += 1;
+            } else {
+                res.skipped += 1;
+            }
+        } else {
+            state
+                .repo
+                .upsert_role_pattern(p)
+                .map_err(|e| e.to_string())?;
+            res.imported += 1;
+        }
+    }
+
+    if let Some(sec) = &bundle.security {
+        for rule in &sec.custom_rules {
+            if cr.contains(&rule.id) {
+                if overwrite {
+                    state
+                        .repo
+                        .delete_custom_rule(&rule.id)
+                        .map_err(|e| e.to_string())?;
+                    state
+                        .repo
+                        .create_custom_rule(rule)
+                        .map_err(|e| e.to_string())?;
+                    res.overwritten += 1;
+                } else {
+                    res.skipped += 1;
+                }
+            } else {
+                state
+                    .repo
+                    .create_custom_rule(rule)
+                    .map_err(|e| e.to_string())?;
+                res.imported += 1;
+            }
+        }
+
+        if overwrite {
+            for br in &sec.builtin_rules {
+                let _ = state
+                    .repo
+                    .update_builtin_rule(&br.id, br.enabled, &br.severity);
+            }
+        }
+
+        *state.security.write() = sec.settings.clone();
+    }
+
+    if let Some(fb) = &bundle.fallback {
+        *state.fallback.write() = Some((fb.channel_id.clone(), fb.model.clone()));
+    }
+
+    if let Some(ac) = &bundle.app_config {
+        *state.app.write() = crate::config::settings::AppConfig {
+            preferred_port: ac.preferred_port,
+        };
+    }
+
+    Ok(res)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::models::Channel;
+    use crate::db::Db;
+    use crate::proxy::state::AppState;
+
+    fn test_state() -> AppState {
+        AppState::new(Db::new_in_memory().unwrap())
+    }
+
+    fn test_state_with_channel(id: &str) -> AppState {
+        test_state_with_channel_named(id, id)
+    }
+
+    fn test_state_with_channel_named(id: &str, name: &str) -> AppState {
+        let state = test_state();
+        let channel = Channel {
+            id: id.into(),
+            name: name.into(),
+            provider_type: "openai".into(),
+            base_url: "https://api.openai.com/v1".into(),
+            api_key: "sk-test".into(),
+            models: vec!["gpt-4o".into()],
+            priority: 10,
+            weight: 1,
+            enabled: true,
+            timeout_secs: 60,
+            total_calls: 0,
+            total_tokens: 0,
+            success_rate: 1.0,
+            avg_latency_ms: 0,
+            created_at: 1,
+            updated_at: 1,
+        };
+        state.repo.insert_channel(&channel).unwrap();
+        state
+    }
+
+    fn bundle_with_channel(id: &str) -> ConfigBundle {
+        bundle_with_channel_named(id, id)
+    }
+
+    fn bundle_with_channel_named(id: &str, name: &str) -> ConfigBundle {
+        ConfigBundle {
+            format: FORMAT.into(),
+            version: VERSION,
+            exported_at: 1,
+            app_config: None,
+            channels: vec![Channel {
+                id: id.into(),
+                name: name.into(),
+                provider_type: "openai".into(),
+                base_url: "https://api.openai.com/v1".into(),
+                api_key: "".into(),
+                models: vec!["gpt-4o".into()],
+                priority: 10,
+                weight: 1,
+                enabled: true,
+                timeout_secs: 60,
+                total_calls: 0,
+                total_tokens: 0,
+                success_rate: 1.0,
+                avg_latency_ms: 0,
+                created_at: 1,
+                updated_at: 1,
+            }],
+            api_keys: vec![],
+            role_routes: vec![],
+            role_patterns: vec![],
+            fallback: None,
+            security: None,
+        }
+    }
+
+    #[test]
+    fn preview_counts_conflicts() {
+        let state = test_state_with_channel("c1");
+        let bundle = bundle_with_channel("c1");
+        let p = preview(&state, &bundle);
+        assert_eq!(p.channels, 1);
+        assert_eq!(p.conflicts, 1);
+    }
+
+    #[test]
+    fn import_skip_keeps_existing_overwrite_replaces() {
+        let state = test_state_with_channel_named("c1", "old");
+        let bundle = bundle_with_channel_named("c1", "new");
+        let r = import(&state, &bundle, "skip").unwrap();
+        assert_eq!(r.skipped, 1);
+        assert_eq!(state.repo.get_channel("c1").unwrap().unwrap().name, "old");
+        let r2 = import(&state, &bundle, "overwrite").unwrap();
+        assert_eq!(r2.overwritten, 1);
+        assert_eq!(state.repo.get_channel("c1").unwrap().unwrap().name, "new");
+    }
+
+    #[test]
+    fn parse_bundle_rejects_bad_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("bad.json");
+        std::fs::write(&p, r#"{"format":"llm-gateway-config","version":99}"#).unwrap();
+        assert!(parse_bundle(&p).is_err());
+    }
+}
