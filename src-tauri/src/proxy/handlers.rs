@@ -192,7 +192,8 @@ async fn handle(
     };
     let request_model = chat.model.clone();
 
-    // Responses: 内部统一非流式转发;流式由响应侧合成(后续任务)
+    // Responses:记录客户端是否请求流式;内部统一非流式转发,流式由响应侧合成
+    let client_wants_stream = chat.stream;
     if proto == Protocol::Responses {
         chat.stream = false;
     }
@@ -338,6 +339,15 @@ async fn handle(
                     (StatusCode::OK, Json(resp_body)).into_response()
                 }
                 _ => {
+                    if proto == Protocol::Responses && client_wants_stream {
+                        let sse = responses::chat_to_sse_events(&to_chat_response(o, &request_model));
+                        return (
+                            StatusCode::OK,
+                            [(axum::http::header::CONTENT_TYPE, "text/event-stream")],
+                            sse,
+                        )
+                            .into_response();
+                    }
                     let resp_body = match proto {
                         Protocol::OpenAI => {
                             openai::chat_to_response(&to_chat_response(o, &request_model))
