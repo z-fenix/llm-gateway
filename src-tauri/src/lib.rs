@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cli_config;
 pub mod commands;
 pub mod config;
 pub mod db;
