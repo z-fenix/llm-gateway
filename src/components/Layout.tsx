@@ -15,34 +15,38 @@ const nav = [
 
 export default function Layout() {
   return (
-    <div className="flex h-screen">
-      <aside className="w-52 border-r bg-card">
-        <div className="flex h-14 items-center border-b px-4 text-base font-bold text-foreground">
+    <div className="flex h-screen flex-col">
+      <header className="fixed z-50 h-16 w-full border-b bg-background/80 backdrop-blur-md">
+        <div className="flex h-full items-center px-6 text-base font-bold text-foreground">
           llm-gateway
         </div>
-        <nav className="space-y-1 p-3">
-          {nav.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                  isActive
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )
-              }
-            >
-              <Icon size={16} /> {label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-      <main className="flex-1 overflow-auto bg-background p-6">
-        <Outlet />
-      </main>
+      </header>
+      <div className="flex flex-1 overflow-hidden pt-16">
+        <aside className="w-52 shrink-0 border-r bg-card">
+          <nav className="space-y-1 p-3 pt-4">
+            {nav.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                    isActive
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )
+                }
+              >
+                <Icon size={16} /> {label}
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+        <main className="flex-1 overflow-auto bg-background px-6 pt-6 pb-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
