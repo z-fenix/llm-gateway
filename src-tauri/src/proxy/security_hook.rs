@@ -258,7 +258,78 @@ pub(crate) fn insert_finding(
         location: Some(finding.location.clone()),
         evidence_masked: finding.evidence_masked.clone(),
         evidence_hash: None,
-        action: None,
+        action: finding.action.as_ref().map(|a| a.as_str().to_string()),
         created_at: chrono::Utc::now().timestamp(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::insert_finding;
+    use crate::db::models::RequestLog;
+    use crate::db::Db;
+    use crate::proxy::state::AppState;
+    use crate::security::{RiskLevel, SecurityAction, SecurityFinding};
+
+    #[test]
+    fn insert_finding_persists_custom_rule_action() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+
+        // request_security_findings.log_id is an FK to request_logs, so a log row must exist.
+        let log = RequestLog {
+            id: "test-log-id".to_string(),
+            seq: 0,
+            trace_id: "trace-1".to_string(),
+            api_key_id: None,
+            key_name: None,
+            channel_id: None,
+            channel_name: None,
+            role: None,
+            request_model: None,
+            upstream_model: None,
+            protocol: "openai".to_string(),
+            status_code: Some(451),
+            input_tokens: 0,
+            output_tokens: 0,
+            latency_ms: 0,
+            is_stream: false,
+            error: Some("blocked_by_security".to_string()),
+            fallback: false,
+            tool_calls: None,
+            request_body: None,
+            response_body: None,
+            risk_level: super::risk_level_to_string(&RiskLevel::Critical),
+            risk_score: 100,
+            risk_summary: Some("blocked".to_string()),
+            security_action: "block".to_string(),
+            sanitized: false,
+            blocked_reason: Some("blocked".to_string()),
+            created_at: chrono::Utc::now().timestamp(),
+        };
+        state.repo.insert_log(&log).unwrap();
+
+        let finding = SecurityFinding {
+            rule_id: "custom-block-rule".to_string(),
+            category: "custom_blacklist".to_string(),
+            severity: RiskLevel::Critical,
+            title: "blocked token".to_string(),
+            description: None,
+            location: "$.content".to_string(),
+            evidence_masked: None,
+            evidence_hash: None,
+            action: Some(SecurityAction::Block),
+        };
+
+        insert_finding(&state.repo, &log.id, "request", &finding).unwrap();
+
+        let stored = state.repo.get_findings(&log.id).unwrap();
+        assert_eq!(stored.len(), 1, "expected exactly one persisted finding");
+        assert_eq!(
+            stored[0].action.as_deref(),
+            Some("block"),
+            "finding action must be persisted, not dropped"
+        );
+        assert_eq!(stored[0].rule_id, "custom-block-rule");
+    }
 }
