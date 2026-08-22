@@ -90,7 +90,8 @@ pub fn plan_route(
 #[cfg(test)]
 pub fn tests_helper_channel(id: &str) -> crate::db::models::Channel {
     crate::db::models::Channel {
-        id: id.into(), name: id.into(), provider_type: "openai".into(),
+        id: id.into(), name: id.into(), supplier: "openai".into(),
+        upstream_protocol: "openai-chat".into(),
         base_url: "http://x".into(), api_key: "k".into(), models: vec![],
         priority: 0, weight: 1, enabled: true, timeout_secs: 60,
         total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,
@@ -104,7 +105,8 @@ mod tests {
 
     fn ch(id: &str, prio: i64, weight: i64) -> Channel {
         Channel {
-            id: id.into(), name: id.into(), provider_type: "openai".into(),
+            id: id.into(), name: id.into(), supplier: "openai".into(),
+        upstream_protocol: "openai-chat".into(),
             base_url: "http://x".into(), api_key: "k".into(), models: vec![],
             priority: prio, weight, enabled: true, timeout_secs: 60,
             total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,

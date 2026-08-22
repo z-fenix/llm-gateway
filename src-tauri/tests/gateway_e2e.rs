@@ -7,7 +7,8 @@ use llm_gateway_lib::proxy::{server, state::AppState};
 
 fn channel(id: &str, base: &str) -> Channel {
     Channel {
-        id: id.into(), name: id.into(), provider_type: "openai".into(),
+        id: id.into(), name: id.into(), supplier: "openai".into(),
+        upstream_protocol: "openai-chat".into(),
         base_url: base.into(), api_key: "sk-real".into(), models: vec![],
         priority: 0, weight: 1, enabled: true, timeout_secs: 5,
         total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,

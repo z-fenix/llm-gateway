@@ -110,7 +110,8 @@ mod tests {
         let channel = Channel {
             id: "ch1".into(),
             name: "OpenAI".into(),
-            provider_type: "openai".into(),
+            supplier: "openai".into(),
+            upstream_protocol: "openai-chat".into(),
             base_url: "https://api.openai.com/v1".into(),
             api_key: "sk-real-secret".into(),
             models: vec!["gpt-4o".into()],

@@ -69,7 +69,7 @@ impl Embedder {
             "model": self.model,
             "input": chunk,
         });
-        let (header_name, header_value) = auth_header(&self.channel.provider_type, &self.channel.api_key);
+        let (header_name, header_value) = auth_header(&self.channel.upstream_protocol, &self.channel.api_key).ok_or_else(|| "unsupported auth for upstream protocol".to_string())?;
         let resp = self
             .client
             .post(&url)
@@ -163,7 +163,8 @@ mod tests {
         Channel {
             id: id.into(),
             name: "embed-channel".into(),
-            provider_type: "openai".into(),
+            supplier: "openai".into(),
+            upstream_protocol: "openai-chat".into(),
             base_url: base_url.into(),
             api_key: "sk-embed-test".into(),
             models: vec!["text-embedding-3-small".into()],

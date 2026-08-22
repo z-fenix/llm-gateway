@@ -8,8 +8,14 @@ use llm_gateway_lib::proxy::forwarder::{forward, ForwardError};
 use llm_gateway_lib::proxy::state::AppState;
 
 fn channel(id: &str, base: &str, ptype: &str) -> Channel {
+    let upstream_protocol = match ptype {
+        "claude" | "anthropic" => "anthropic-messages",
+        "gemini" => "gemini-native",
+        _ => "openai-chat",
+    };
     Channel {
-        id: id.into(), name: id.into(), provider_type: ptype.into(),
+        id: id.into(), name: id.into(), supplier: ptype.into(),
+        upstream_protocol: upstream_protocol.into(),
         base_url: base.into(), api_key: "sk-real".into(), models: vec![],
         priority: 0, weight: 1, enabled: true, timeout_secs: 5,
         total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,

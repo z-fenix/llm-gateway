@@ -24,7 +24,8 @@ fn channel(id: &str, base_url: &str) -> Channel {
     Channel {
         id: id.into(),
         name: id.into(),
-        provider_type: "openai".into(),
+        supplier: "openai".into(),
+        upstream_protocol: "openai-chat".into(),
         base_url: base_url.into(),
         api_key: "sk-real".into(),
         models: vec!["gpt-4o".into()],

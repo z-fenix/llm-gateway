@@ -1,12 +1,5 @@
 [env]
 RUST_TEST_THREADS = "1"
 
-# mingw-w64 的 windows-default-manifest 包会给每个 exe 自动链接 default-manifest.o(gcc 链接
-# spec: `%{!shared:%:if-exists(default-manifest.o%s)}`),与 build.rs 嵌入的 Common Controls v6
-# manifest 在 .rsrc 合并时产生良性警告 ".rsrc merge failure: multiple non-default manifests"。
-# 实证:我们的 manifest 正确胜出(最终 exe 含 Common-Controls v6)、链接成功、测试全绿;lib 的
-# cdylib(DLL)不注入默认清单故不告警。此为工具链既有行为(tauri 默认嵌 manifest 同样触发),项目级
-# 无法根除冲突本身;ld 亦无 --manifest 关闭开关。故按用户决定在此屏蔽 linker 消息保持输出干净。
-# 注意:linker_messages 是 rustc 把 linker 非致命 stderr 转成 warning 的 lint;屏蔽它不影响真实链接错误(仍失败)。
 [build]
 rustflags = ["-A", "linker_messages"]

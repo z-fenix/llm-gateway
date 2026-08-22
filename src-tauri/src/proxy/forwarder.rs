@@ -1,7 +1,7 @@
 use crate::db::models::{ApiKey, Channel};
 use crate::protocol::types::ChatRequest;
 use crate::provider::adapter::{auth_header, build_upstream_body, upstream_url};
-use crate::proxy::sse::{Protocol, SseAccumulator, Usage};
+use crate::proxy::sse::Usage;
 use crate::proxy::state::AppState;
 use bytes::Bytes;
 use futures::Stream;
@@ -148,25 +148,26 @@ pub async fn forward_stream(
     let mut last_err = None;
     for (ch, model, via_fallback) in candidates.into_iter().take(max) {
         let start = std::time::Instant::now();
-        let url = upstream_url(&ch.provider_type, &ch.base_url, true);
-        let mut body = build_upstream_body(chat, &ch.provider_type, &model);
+        let url = upstream_url(&ch.upstream_protocol, &ch.base_url, &model, &ch.api_key, true);
+        let mut body = build_upstream_body(chat, &ch.upstream_protocol, &model);
         body["stream"] = serde_json::json!(true);
-        let (hname, hval) = auth_header(&ch.provider_type, &ch.api_key);
-        let resp = state.http.post(&url)
-            .header(hname, hval)
+        let mut req = state.http.post(&url)
             .header("content-type", "application/json")
-            .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64))
-            .json(&body).send().await;
+            .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64));
+        if let Some((hname, hval)) = auth_header(&ch.upstream_protocol, &ch.api_key) {
+            req = req.header(hname, hval);
+        }
+        let resp = req.json(&body).send().await;
         match resp {
             Ok(r) if r.status().is_success() => {
                 let latency = start.elapsed().as_millis() as i64;
                 if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, true) {
                     log::error!("failed to record channel stats: {}", e);
                 }
-                let usage_protocol = if ch.provider_type == "claude" || ch.provider_type == "anthropic" {
-                    crate::proxy::sse::Protocol::Anthropic
-                } else {
-                    crate::proxy::sse::Protocol::OpenAI
+                let usage_protocol = match ch.upstream_protocol.as_str() {
+                    "anthropic-messages" => crate::proxy::sse::Protocol::Anthropic,
+                    "gemini-native" => crate::proxy::sse::Protocol::Gemini,
+                    _ => crate::proxy::sse::Protocol::OpenAI,
                 };
                 return Ok(StreamHandle {
                     channel: ch, model, via_fallback, usage_protocol,
@@ -202,35 +203,40 @@ async fn try_channel(
     model: &str,
     chat: &ChatRequest,
 ) -> Result<(u16, serde_json::Value, Usage), ForwardError> {
-    let url = upstream_url(&ch.provider_type, &ch.base_url, chat.stream);
-    let body = build_upstream_body(chat, &ch.provider_type, model);
-    let (hname, hval) = auth_header(&ch.provider_type, &ch.api_key);
-    let resp = state
+    let url = upstream_url(&ch.upstream_protocol, &ch.base_url, model, &ch.api_key, chat.stream);
+    let body = build_upstream_body(chat, &ch.upstream_protocol, model);
+    let mut req = state
         .http
         .post(&url)
-        .header(hname, hval)
         .header("content-type", "application/json")
-        .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64))
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| ForwardError::Http(e.to_string()))?;
+        .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64));
+    if let Some((hname, hval)) = auth_header(&ch.upstream_protocol, &ch.api_key) {
+        req = req.header(hname, hval);
+    }
+    let resp = req.json(&body).send().await.map_err(|e| ForwardError::Http(e.to_string()))?;
     let status = resp.status().as_u16();
     let text = resp.text().await.map_err(|e| ForwardError::Http(e.to_string()))?;
     if status != 200 {
         return Err(ForwardError::Upstream { status, body: text });
     }
     let v: serde_json::Value = serde_json::from_str(&text).unwrap_or(serde_json::json!({"raw": text}));
-    // 非流式：直接从 body 提取 usage
-    let usage = if ch.provider_type == "claude" || ch.provider_type == "anthropic" {
-        let acc = SseAccumulator::new(Protocol::Anthropic);
-        let u = v.get("usage").cloned().unwrap_or(serde_json::json!({}));
-        let mut us = Usage::default();
-        us.input_tokens = u.get("input_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
-        us.output_tokens = u.get("output_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
-        let _ = acc; us
-    } else {
-        crate::proxy::sse::extract_openai_usage(&v).unwrap_or_default()
+    // 非流式：按 upstream_protocol 从 body 提取 usage
+    let usage = match ch.upstream_protocol.as_str() {
+        "anthropic-messages" => {
+            let u = v.get("usage").cloned().unwrap_or(serde_json::json!({}));
+            let mut us = Usage::default();
+            us.input_tokens = u.get("input_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            us.output_tokens = u.get("output_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            us
+        }
+        "gemini-native" => {
+            let u = v.get("usageMetadata").cloned().unwrap_or(serde_json::json!({}));
+            let mut us = Usage::default();
+            us.input_tokens = u.get("promptTokenCount").and_then(|t| t.as_u64()).unwrap_or(0);
+            us.output_tokens = u.get("candidatesTokenCount").and_then(|t| t.as_u64()).unwrap_or(0);
+            us
+        }
+        _ => crate::proxy::sse::extract_openai_usage(&v).unwrap_or_default(),
     };
     Ok((status, v, usage))
 }

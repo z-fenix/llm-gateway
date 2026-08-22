@@ -89,7 +89,8 @@ fn make_state(base_url: String) -> AppState {
     let db = Db::new_in_memory().unwrap();
     let repo = Repository::new(db.clone());
     repo.insert_channel(&Channel {
-        id: "c1".into(), name: "c1".into(), provider_type: "openai".into(),
+        id: "c1".into(), name: "c1".into(), supplier: "openai".into(),
+        upstream_protocol: "openai-chat".into(),
         base_url: base_url, api_key: "sk-real".into(), models: vec![], priority: 0,
         weight: 1, enabled: true, timeout_secs: 5, total_calls: 0, total_tokens: 0,
         success_rate: 1.0, avg_latency_ms: 0, created_at: 1, updated_at: 1,

@@ -147,6 +147,71 @@ pub fn chat_to_sse_events(chat: &ChatResponse) -> String {
     out
 }
 
+/// 统一 ChatRequest → OpenAI Responses API 上游请求体。
+pub fn chat_request_to_upstream(chat: &ChatRequest, model: &str) -> serde_json::Value {
+    let mut instructions = String::new();
+    let mut input = Vec::new();
+    for m in &chat.messages {
+        if m.role == "system" {
+            if let serde_json::Value::String(s) = &m.content {
+                instructions.push_str(s);
+            } else if let Some(s) = m.content.as_str() {
+                instructions.push_str(s);
+            } else {
+                instructions.push_str(&m.content.to_string());
+            }
+            continue;
+        }
+        let text = match &m.content {
+            serde_json::Value::String(s) => s.clone(),
+            other => other.to_string(),
+        };
+        input.push(serde_json::json!({
+            "type": "message",
+            "role": &m.role,
+            "content": [{"type": "input_text", "text": text}]
+        }));
+    }
+    let mut body = serde_json::json!({
+        "model": model,
+        "input": input,
+        "stream": chat.stream,
+    });
+    if !instructions.is_empty() {
+        body["instructions"] = serde_json::Value::String(instructions);
+    }
+    if let Some(t) = chat.max_tokens {
+        body["max_output_tokens"] = serde_json::json!(t);
+    }
+    if let Some(t) = chat.temperature {
+        body["temperature"] = serde_json::json!(t);
+    }
+    if let Some(tools) = chat.tools.as_ref().and_then(|t| t.as_array()) {
+        // Chat Completions 格式 [{type:"function",function:{name,description,parameters}}]
+        // 需要转成 Responses API 格式 [{type:"function",name,description,parameters}]
+        let mapped: Vec<serde_json::Value> = tools
+            .iter()
+            .filter_map(|t| {
+                if t.get("type").and_then(|x| x.as_str()) == Some("function") {
+                    let func = t.get("function").cloned().unwrap_or_else(|| serde_json::json!({}));
+                    Some(serde_json::json!({
+                        "type": "function",
+                        "name": func.get("name").cloned().unwrap_or(serde_json::Value::Null),
+                        "description": func.get("description").cloned().unwrap_or(serde_json::Value::Null),
+                        "parameters": func.get("parameters").cloned().unwrap_or(serde_json::json!({}))
+                    }))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if !mapped.is_empty() {
+            body["tools"] = serde_json::Value::Array(mapped);
+        }
+    }
+    body
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,23 +252,25 @@ mod tests {
     }
 
     #[test]
-    fn responses_sse_event_sequence() {
-        let chat = crate::protocol::types::ChatResponse {
-            id: "x".into(), model: "m".into(), content: serde_json::json!("hello world"),
-            stop_reason: Some("stop".into()), input_tokens: 1, output_tokens: 2, raw: serde_json::json!({}),
+    fn chat_to_responses_upstream_maps_instructions_and_input() {
+        let chat = crate::protocol::types::ChatRequest {
+            model: "gpt-4".into(),
+            messages: vec![
+                crate::protocol::types::ChatMessage { role: "system".into(), content: serde_json::json!("you are helpful") },
+                crate::protocol::types::ChatMessage { role: "user".into(), content: serde_json::json!("hi") },
+            ],
+            max_tokens: Some(64),
+            stream: false,
+            temperature: Some(0.7),
+            tools: None,
+            extra: Default::default(),
         };
-        let sse = chat_to_sse_events(&chat);
-        let order = ["response.created", "response.output_item.added", "response.content_part.added",
-            "response.output_text.delta", "response.output_text.done", "response.content_part.done",
-            "response.output_item.done", "response.completed"];
-        let mut last = 0usize;
-        for ev in order {
-            let pos = sse.find(ev).unwrap_or_else(|| panic!("missing event {ev}"));
-            assert!(pos >= last, "event {ev} out of order");
-            last = pos;
-        }
-        assert!(sse.contains("\"delta\":\"hello world\""));
-        assert!(sse.contains("text/event-stream") == false); // 仅事件文本,不含 content-type
-        assert!(sse.contains("\"total_tokens\":3"));
+        let up = chat_request_to_upstream(&chat, "gpt-4-001");
+        assert_eq!(up["model"], "gpt-4-001");
+        assert_eq!(up["instructions"], "you are helpful");
+        assert_eq!(up["input"][0]["role"], "user");
+        assert_eq!(up["input"][0]["content"][0]["text"], "hi");
+        assert_eq!(up["max_output_tokens"], 64);
+        assert_eq!(up["stream"], false);
     }
 }

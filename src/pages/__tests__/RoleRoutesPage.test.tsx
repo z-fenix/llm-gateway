@@ -12,7 +12,7 @@ vi.mock("../../lib/api", () => ({
       { id: "p1", pattern: "*sonnet*", role: "sonnet", priority: 100, enabled: true },
     ]),
     listChannels: vi.fn().mockResolvedValue([
-      { id: "c1", name: "DeepSeek", provider_type: "deepseek", base_url: "http://x", api_key: "k", models: [], priority: 0, weight: 1, enabled: true, timeout_secs: 60, total_calls: 0, total_tokens: 0, success_rate: 1, avg_latency_ms: 0, created_at: 1, updated_at: 1 },
+      { id: "c1", name: "DeepSeek", supplier: "deepseek", upstream_protocol: "openai-chat", base_url: "http://x", api_key: "k", models: [], priority: 0, weight: 1, enabled: true, timeout_secs: 60, total_calls: 0, total_tokens: 0, success_rate: 1, avg_latency_ms: 0, created_at: 1, updated_at: 1 },
     ]),
     getFallback: vi.fn().mockResolvedValue(["c2", "kimi-k3"]),
     setRoleRoute: vi.fn().mockResolvedValue(undefined),

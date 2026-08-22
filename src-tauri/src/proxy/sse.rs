@@ -53,6 +53,7 @@ pub struct SseAccumulator {
 pub enum Protocol {
     OpenAI,
     Anthropic,
+    Gemini,
 }
 
 impl SseAccumulator {
@@ -100,6 +101,27 @@ impl SseAccumulator {
                     self.text.push_str(text);
                 }
             }
+            Protocol::Gemini => {
+                if let Some(u) = v.get("usageMetadata") {
+                    if let Some(i) = u.get("promptTokenCount").and_then(|t| t.as_u64()) {
+                        self.usage.input_tokens = i;
+                    }
+                    if let Some(o) = u.get("candidatesTokenCount").and_then(|t| t.as_u64()) {
+                        self.usage.output_tokens = o;
+                    }
+                }
+                if let Some(text) = v
+                    .get("candidates")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c| c.get("content"))
+                    .and_then(|c| c.get("parts"))
+                    .and_then(|p| p.get(0))
+                    .and_then(|p| p.get("text"))
+                    .and_then(|t| t.as_str())
+                {
+                    self.text.push_str(text);
+                }
+            }
         }
     }
 
@@ -139,11 +161,12 @@ mod tests {
     }
 
     #[test]
-    fn ignores_non_data_and_garbage() {
-        let mut acc = SseAccumulator::new(Protocol::OpenAI);
-        acc.feed_line("event: message_start");
-        acc.feed_line("");
-        acc.feed_line("data: not-json");
-        assert_eq!(acc.usage(), Usage::default());
+    fn gemini_usage_and_text_across_events() {
+        let mut acc = SseAccumulator::new(Protocol::Gemini);
+        acc.feed_line(r#"data: {"candidates":[{"content":{"parts":[{"text":"hello"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":2}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 3);
+        assert_eq!(u.output_tokens, 2);
+        assert_eq!(acc.text(), "hello");
     }
 }

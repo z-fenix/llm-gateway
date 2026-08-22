@@ -51,13 +51,14 @@ export default function ChannelsPage() {
       )}
       <table className="w-full border bg-white text-sm">
         <thead><tr className="border-b text-left">
-          <th className="p-2">名称</th><th>类型</th><th>Base URL</th><th>优先级/权重</th><th>模型</th><th>状态</th><th>操作</th>
+          <th className="p-2">名称</th><th>供应商</th><th>上游协议</th><th>Base URL</th><th>优先级/权重</th><th>模型</th><th>状态</th><th>操作</th>
         </tr></thead>
         <tbody>
           {list.map((c) => (
             <tr key={c.id} className="border-b">
               <td className="p-2">{c.name}</td>
-              <td>{c.provider_type}</td>
+              <td>{c.supplier}</td>
+              <td>{c.upstream_protocol}</td>
               <td className="max-w-[180px] truncate">{c.base_url}</td>
               <td>{c.priority}/{c.weight}</td>
               <td className="max-w-[160px] truncate">{c.models.join(",")}</td>
