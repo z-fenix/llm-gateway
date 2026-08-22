@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import KnowledgePage from "../KnowledgePage";
+import KnowledgePage, { formatBytes } from "../KnowledgePage";
 import { api } from "../../lib/api";
 
 vi.mock("../../lib/api", () => ({
@@ -14,6 +14,9 @@ vi.mock("../../lib/api", () => ({
       default_embedding_channel: null,
     }),
     createKb: vi.fn().mockResolvedValue({}),
+    setKbStatus: vi.fn().mockResolvedValue(undefined),
+    renameKb: vi.fn().mockResolvedValue(undefined),
+    updateKbEmbeddingChannel: vi.fn().mockResolvedValue(undefined),
     deleteKb: vi.fn().mockResolvedValue(undefined),
     reindexKb: vi.fn().mockResolvedValue(undefined),
     uploadDocument: vi.fn().mockResolvedValue({}),
@@ -41,6 +44,16 @@ const kb = (overrides: Record<string, unknown> = {}) =>
     needs_reindex: false,
     ...overrides,
   }) as any;
+
+describe("formatBytes", () => {
+  it("格式化文件大小为人类可读形式", () => {
+    expect(formatBytes(0)).toBe("< 1KB");
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(1024)).toBe("1.0 KB");
+    expect(formatBytes(1258)).toBe("1.2 KB");
+    expect(formatBytes(3565158)).toBe("3.4 MB");
+  });
+});
 
 describe("KnowledgePage", () => {
   beforeEach(() => {
@@ -167,6 +180,86 @@ describe("KnowledgePage", () => {
     fireEvent.click(screen.getByText("重建索引"));
     await waitFor(() =>
       expect(mockedApi.reindexKb).toHaveBeenCalledWith("kb1")
+    );
+  });
+
+  it("切换启用开关调用 setKbStatus", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb({ enabled: true })]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getAllByRole("switch").length).toBeGreaterThan(0)
+    );
+    // 第一个 switch 是知识库启用开关（RAG 开关在其后）
+    fireEvent.click(screen.getAllByRole("switch")[0]);
+    await waitFor(() =>
+      expect(mockedApi.setKbStatus).toHaveBeenCalledWith("kb1", false)
+    );
+  });
+
+  it("编辑知识库对话框预填并保存调用 renameKb + updateKbEmbeddingChannel", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb()]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    expect(
+      await screen.findByRole("heading", { name: "编辑知识库" })
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("文档库")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("text-embedding-3-small")
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("文档库"), {
+      target: { value: "新名字" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() =>
+      expect(mockedApi.renameKb).toHaveBeenCalledWith("kb1", "新名字")
+    );
+    expect(mockedApi.updateKbEmbeddingChannel).toHaveBeenCalledWith(
+      "kb1",
+      null,
+      "text-embedding-3-small"
+    );
+  });
+
+  it("编辑仅改模型时只调用 updateKbEmbeddingChannel", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb()]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    await screen.findByRole("heading", { name: "编辑知识库" });
+    fireEvent.change(screen.getByDisplayValue("text-embedding-3-small"), {
+      target: { value: "text-embedding-3-large" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() =>
+      expect(mockedApi.updateKbEmbeddingChannel).toHaveBeenCalledWith(
+        "kb1",
+        null,
+        "text-embedding-3-large"
+      )
+    );
+    expect(mockedApi.renameKb).not.toHaveBeenCalled();
+  });
+
+  it("删除知识库走确认对话框并调用 deleteKb", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb()]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    expect(
+      await screen.findByRole("heading", { name: "删除知识库" })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "确认" }));
+    await waitFor(() =>
+      expect(mockedApi.deleteKb).toHaveBeenCalledWith("kb1")
     );
   });
 });

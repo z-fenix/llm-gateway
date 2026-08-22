@@ -1,4 +1,13 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  Download,
+  FileJson,
+  Import,
+  RefreshCw,
+  Server,
+  TerminalSquare,
+} from "lucide-react";
 import { api } from "../lib/api";
 import type {
   ApiKey,
@@ -8,8 +17,31 @@ import type {
   ImportPreview,
   ImportResult,
 } from "../types";
+import PageHeader from "../components/PageHeader";
+import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 const CLI_TARGETS = ["claude_code", "codex"];
+
+const CLI_TARGET_LABELS: Record<string, string> = {
+  claude_code: "Claude Code",
+  codex: "Codex",
+};
 
 export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +147,7 @@ export default function SettingsPage() {
     try {
       const results = await api.writeCliConfig(target, apiKeyId, writeEnv);
       setCliResults(results);
+      toast.success("CLI 配置写入完成");
     } catch (err) {
       handleError(err);
     }
@@ -131,6 +164,7 @@ export default function SettingsPage() {
     try {
       const bytes = await api.exportConfig(path);
       setExportBytes(bytes);
+      toast.success("配置导出成功");
     } catch (err) {
       handleError(err);
     }
@@ -164,6 +198,7 @@ export default function SettingsPage() {
       const result = await api.importConfig(path, strategy);
       setImportResult(result);
       setPreview(null);
+      toast.success("配置导入完成");
     } catch (err) {
       handleError(err);
     }
@@ -172,280 +207,333 @@ export default function SettingsPage() {
   const targetInfo = cliTargets.find((t) => t.target === target);
 
   return (
-    <div className="space-y-6">
+    <div>
+      <PageHeader
+        title="设置"
+        description="应用配置、CLI 一键写入与配置导入导出"
+      />
+
       {error && (
-        <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-          <div className="flex items-start justify-between gap-3">
-            <span>{error}</span>
-            <button
-              className="text-red-700 hover:underline"
-              onClick={clearError}
-              aria-label="关闭错误"
-            >
-              关闭
-            </button>
-          </div>
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <span>{error}</span>
+          <button
+            className="shrink-0 text-destructive/80 hover:underline"
+            onClick={clearError}
+            aria-label="关闭错误"
+          >
+            关闭
+          </button>
         </div>
       )}
 
-      <div>
-        <h1 className="mb-2 text-xl font-bold">设置</h1>
-        <p className="text-sm text-gray-500">应用配置、CLI 一键写入与配置导入导出。</p>
-      </div>
-
       {/* 端口配置 */}
-      <div className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">端口配置</h2>
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">当前绑定地址:</span>
-            <span className="font-mono">
-              {config?.bound_addr ?? "未启动"}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="preferred-port" className="text-gray-500">
-              首选端口
-            </label>
-            <input
-              id="preferred-port"
-              type="number"
-              min={8777}
-              max={8787}
-              className="border rounded px-2 py-1"
-              value={preferredPort}
-              onChange={(e) => setPreferredPort(e.target.value)}
-            />
-            <button
-              className="rounded bg-blue-600 px-3 py-1 text-white"
-              onClick={savePreferredPort}
-            >
-              保存
-            </button>
-            {portSaved && (
-              <button
-                className="rounded bg-green-600 px-3 py-1 text-white disabled:opacity-50"
-                onClick={restartGateway}
-                disabled={restarting}
-              >
-                {restarting ? "重启中..." : "立即重启"}
-              </button>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Server className="h-4 w-4 text-muted-foreground" />
+            端口配置
+          </CardTitle>
+          <CardDescription>
+            修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为
+            8777-8787
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">当前绑定地址:</span>
+              <span className="font-mono">
+                {config?.bound_addr ?? "未启动"}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-40 space-y-1.5">
+                <Label htmlFor="preferred-port">首选端口</Label>
+                <Input
+                  id="preferred-port"
+                  type="number"
+                  min={8777}
+                  max={8787}
+                  value={preferredPort}
+                  onChange={(e) => setPreferredPort(e.target.value)}
+                />
+              </div>
+              <Button onClick={savePreferredPort}>保存</Button>
+              {portSaved && (
+                <Button
+                  className="bg-emerald-600 text-white hover:bg-emerald-600/90"
+                  onClick={restartGateway}
+                  disabled={restarting}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${restarting ? "animate-spin" : ""}`}
+                  />
+                  {restarting ? "重启中..." : "立即重启"}
+                </Button>
+              )}
+            </div>
+            {portSaved && !restarted && (
+              <p className="text-sm text-emerald-600">
+                已保存，点击“立即重启”使新端口生效。
+              </p>
+            )}
+            {restarted && (
+              <p className="text-sm text-emerald-600">网关已重启。</p>
             )}
           </div>
-          {portSaved && !restarted && (
-            <p className="text-sm text-green-600">
-              已保存，点击“立即重启”使新端口生效。
-            </p>
-          )}
-          {restarted && (
-            <p className="text-sm text-green-600">网关已重启。</p>
-          )}
-          <p className="text-xs text-gray-400">
-            修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为
-            8777-8787。
-          </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* CLI 一键写入 */}
-      <div className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">CLI 一键写入</h2>
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm text-gray-500">目标 CLI</label>
-            <select
-              className="w-full border rounded px-2 py-1"
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-            >
-              {CLI_TARGETS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            {targetInfo && (
-              <div className="mt-2 text-xs text-gray-500">
-                <p>
-                  状态: {targetInfo.configured ? "已配置" : "未配置"}
-                </p>
-                <p className="truncate">路径: {targetInfo.path}</p>
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-gray-500">API 密钥</label>
-            <select
-              className="w-full border rounded px-2 py-1"
-              value={apiKeyId}
-              onChange={(e) => setApiKeyId(e.target.value)}
-            >
-              {apiKeys.length === 0 && (
-                <option value="">暂无密钥</option>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TerminalSquare className="h-4 w-4 text-muted-foreground" />
+            CLI 一键写入
+          </CardTitle>
+          <CardDescription>
+            将本地网关地址与密钥写入 Claude Code / Codex 配置，让 CLI 工具直连网关
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="cli-target">目标 CLI</Label>
+              <Select value={target} onValueChange={setTarget}>
+                <SelectTrigger id="cli-target" aria-label="目标 CLI">
+                  <SelectValue placeholder="选择目标 CLI" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLI_TARGETS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {CLI_TARGET_LABELS[t] ?? t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {targetInfo && (
+                <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                  <p>
+                    状态: {targetInfo.configured ? "已配置" : "未配置"}
+                  </p>
+                  <p className="truncate" title={targetInfo.path}>
+                    路径: {targetInfo.path}
+                  </p>
+                </div>
               )}
-              {apiKeys.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.name}
-                </option>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cli-api-key">API 密钥</Label>
+              <Select
+                value={apiKeyId}
+                onValueChange={setApiKeyId}
+                disabled={apiKeys.length === 0}
+              >
+                <SelectTrigger id="cli-api-key" aria-label="API 密钥">
+                  <SelectValue placeholder="选择 API 密钥" />
+                </SelectTrigger>
+                <SelectContent>
+                  {apiKeys.length === 0 && (
+                    <SelectItem value="__none__">暂无密钥</SelectItem>
+                  )}
+                  {apiKeys.map((k) => (
+                    <SelectItem key={k.id} value={k.id}>
+                      {k.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {target === "codex" && (
+            <label className="mb-4 flex w-fit items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300"
+                checked={writeEnv}
+                onChange={(e) => setWriteEnv(e.target.checked)}
+              />
+              同时写入用户环境变量
+            </label>
+          )}
+
+          <Button onClick={writeCli} disabled={!apiKeyId}>
+            <TerminalSquare className="h-4 w-4" />
+            一键写入
+          </Button>
+
+          {cliResults && (
+            <div className="mt-4 space-y-3">
+              {cliResults.map((r, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-lg border border-border p-3 text-sm"
+                >
+                  <p>
+                    <span className="text-muted-foreground">配置文件:</span>{" "}
+                    <span className="font-mono">{r.path}</span>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">备份文件:</span>{" "}
+                    <span className="font-mono">
+                      {r.backup_path ?? "无"}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">变更键:</p>
+                  {r.changed_keys.length === 0 ? (
+                    <p className="text-muted-foreground/70">无变更</p>
+                  ) : (
+                    <ul className="list-inside list-disc font-mono text-xs">
+                      {r.changed_keys.map((k) => (
+                        <li key={k}>{k}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {r.env_instructions && (
+                    <>
+                      <p className="mt-2 text-muted-foreground">
+                        环境变量说明:
+                      </p>
+                      <pre className="mt-1 overflow-auto rounded-md border border-border bg-muted/40 p-2 text-xs">
+                        {r.env_instructions}
+                      </pre>
+                    </>
+                  )}
+                </div>
               ))}
-            </select>
-          </div>
-        </div>
-
-        {target === "codex" && (
-          <label className="mb-3 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="rounded border-gray-300"
-              checked={writeEnv}
-              onChange={(e) => setWriteEnv(e.target.checked)}
-            />
-            同时写入用户环境变量
-          </label>
-        )}
-
-        <button
-          className="rounded bg-blue-600 px-3 py-1 text-white"
-          onClick={writeCli}
-          disabled={!apiKeyId}
-        >
-          一键写入
-        </button>
-
-        {cliResults && (
-          <div className="mt-4 space-y-3">
-            {cliResults.map((r, idx) => (
-              <div key={idx} className="rounded border p-3 text-sm">
-                <p>
-                  <span className="text-gray-500">配置文件:</span>{" "}
-                  <span className="font-mono">{r.path}</span>
-                </p>
-                <p>
-                  <span className="text-gray-500">备份文件:</span>{" "}
-                  <span className="font-mono">
-                    {r.backup_path ?? "无"}
-                  </span>
-                </p>
-                <p className="text-gray-500">变更键:</p>
-                {r.changed_keys.length === 0 ? (
-                  <p className="text-gray-400">无变更</p>
-                ) : (
-                  <ul className="list-inside list-disc font-mono text-xs">
-                    {r.changed_keys.map((k) => (
-                      <li key={k}>{k}</li>
-                    ))}
-                  </ul>
-                )}
-                {r.env_instructions && (
-                  <>
-                    <p className="mt-2 text-gray-500">环境变量说明:</p>
-                    <pre className="mt-1 overflow-auto rounded bg-gray-50 p-2 text-xs">
-                      {r.env_instructions}
-                    </pre>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 导出 */}
-      <div className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">导出配置</h2>
-        <div className="mb-3 flex flex-wrap gap-2">
-          <input
-            type="text"
-            className="flex-1 min-w-[200px] border rounded px-2 py-1"
-            placeholder="导出文件路径"
-            value={exportPath}
-            onChange={(e) => setExportPath(e.target.value)}
-          />
-          <button
-            className="rounded bg-blue-600 px-3 py-1 text-white"
-            onClick={exportConfig}
-          >
-            导出
-          </button>
-        </div>
-        <p className="text-xs text-amber-600">
-          导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
-          已脱敏，导入后需重新补填。
-        </p>
-        {exportBytes !== null && (
-          <p className="mt-2 text-sm text-green-600">
-            导出成功：{exportBytes} 字节
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Download className="h-4 w-4 text-muted-foreground" />
+            导出配置
+          </CardTitle>
+          <CardDescription>
+            将渠道、API 密钥、角色路由等配置导出为 JSON 文件
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Input
+              type="text"
+              className="min-w-[220px] flex-1"
+              placeholder="导出文件路径"
+              value={exportPath}
+              onChange={(e) => setExportPath(e.target.value)}
+            />
+            <Button onClick={exportConfig}>
+              <Download className="h-4 w-4" />
+              导出
+            </Button>
+          </div>
+          <p className="flex items-start gap-1.5 text-xs text-amber-600">
+            <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
+            已脱敏，导入后需重新补填。
           </p>
-        )}
-      </div>
+          {exportBytes !== null && (
+            <p className="mt-2 text-sm text-emerald-600">
+              导出成功：{exportBytes} 字节
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 导入 */}
-      <div className="rounded border bg-white p-4">
-        <h2 className="mb-3 font-semibold">导入配置</h2>
-        <div className="mb-3 flex flex-wrap gap-2">
-          <input
-            type="text"
-            className="flex-1 min-w-[200px] border rounded px-2 py-1"
-            placeholder="待导入文件路径"
-            value={importPath}
-            onChange={(e) => setImportPath(e.target.value)}
-          />
-          <button
-            className="rounded bg-blue-600 px-3 py-1 text-white"
-            onClick={previewImportFile}
-          >
-            预览
-          </button>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Import className="h-4 w-4 text-muted-foreground" />
+            导入配置
+          </CardTitle>
+          <CardDescription>
+            从导出的 JSON 文件恢复配置，可预览冲突后选择跳过或覆盖
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Input
+              type="text"
+              className="min-w-[220px] flex-1"
+              placeholder="待导入文件路径"
+              value={importPath}
+              onChange={(e) => setImportPath(e.target.value)}
+            />
+            <Button variant="outline" onClick={previewImportFile}>
+              预览
+            </Button>
+          </div>
 
-        {preview && (
-          <div className="mb-3 rounded border bg-gray-50 p-3 text-sm">
-            <p className="font-medium">导入预览</p>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <p>渠道: {preview.channels}</p>
-              <p>API 密钥: {preview.api_keys}</p>
-              <p>角色路由: {preview.role_routes}</p>
-              <p>角色模式: {preview.role_patterns}</p>
-              <p>自定义规则: {preview.custom_rules}</p>
-              <p>冲突: {preview.conflicts}</p>
+          {preview && (
+            <div className="mb-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+              <p className="font-medium">导入预览</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <p className="text-muted-foreground">
+                  渠道: <span className="text-foreground">{preview.channels}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  API 密钥:{" "}
+                  <span className="text-foreground">{preview.api_keys}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  角色路由:{" "}
+                  <span className="text-foreground">{preview.role_routes}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  角色模式:{" "}
+                  <span className="text-foreground">
+                    {preview.role_patterns}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  自定义规则:{" "}
+                  <span className="text-foreground">
+                    {preview.custom_rules}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  冲突:{" "}
+                  <span className="text-foreground">{preview.conflicts}</span>
+                </p>
+              </div>
+              {preview.conflicts > 0 ? (
+                <div className="mt-3 flex gap-2">
+                  <Button onClick={() => doImport("skip")}>
+                    跳过已存在
+                  </Button>
+                  <Button
+                    className="bg-amber-600 text-white hover:bg-amber-600/90"
+                    onClick={() => doImport("overwrite")}
+                  >
+                    覆盖已存在
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <Button onClick={() => doImport("skip")}>
+                    确认导入
+                  </Button>
+                </div>
+              )}
             </div>
-            {preview.conflicts > 0 ? (
-              <div className="mt-3 flex gap-2">
-                <button
-                  className="rounded bg-blue-600 px-3 py-1 text-white"
-                  onClick={() => doImport("skip")}
-                >
-                  跳过已存在
-                </button>
-                <button
-                  className="rounded bg-amber-600 px-3 py-1 text-white"
-                  onClick={() => doImport("overwrite")}
-                >
-                  覆盖已存在
-                </button>
-              </div>
-            ) : (
-              <div className="mt-3">
-                <button
-                  className="rounded bg-blue-600 px-3 py-1 text-white"
-                  onClick={() => doImport("skip")}
-                >
-                  确认导入
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+          )}
 
-        {importResult && (
-          <div className="rounded border bg-green-50 p-3 text-sm text-green-700">
-            <p>导入完成</p>
-            <p>已导入: {importResult.imported}</p>
-            <p>已跳过: {importResult.skipped}</p>
-            <p>已覆盖: {importResult.overwritten}</p>
-          </div>
-        )}
-      </div>
+          {importResult && (
+            <div className="rounded-lg border border-emerald-600/30 bg-emerald-600/5 p-3 text-sm text-emerald-700">
+              <p className="font-medium">导入完成</p>
+              <p>已导入: {importResult.imported}</p>
+              <p>已跳过: {importResult.skipped}</p>
+              <p>已覆盖: {importResult.overwritten}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
