@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen, Settings } from "lucide-react";
+import { cn } from "../lib/utils";
 
 const nav = [
   { to: "/", label: "概览", icon: LayoutDashboard },
@@ -15,19 +16,31 @@ const nav = [
 export default function Layout() {
   return (
     <div className="flex h-screen">
-      <aside className="w-52 border-r bg-white p-3">
-        <div className="mb-6 px-2 text-lg font-bold">llm-gateway</div>
-        <nav className="space-y-1">
+      <aside className="w-52 border-r bg-card">
+        <div className="flex h-14 items-center border-b px-4 text-base font-bold text-foreground">
+          llm-gateway
+        </div>
+        <nav className="space-y-1 p-3">
           {nav.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end={to === "/"}
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
               className={({ isActive }) =>
-                `flex items-center gap-2 rounded px-3 py-2 text-sm ${isActive ? "bg-blue-600 text-white" : "hover:bg-gray-100"}`}>
+                cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )
+              }
+            >
               <Icon size={16} /> {label}
             </NavLink>
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto bg-background p-6">
         <Outlet />
       </main>
     </div>
