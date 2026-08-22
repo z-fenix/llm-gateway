@@ -26,8 +26,39 @@ pub fn list_channels(state: State<AppState>) -> Result<Vec<Channel>, String> {
     Ok(cs)
 }
 
+/// 渠道表单校验（前端与后端同一套规则，后端为准）。
+/// 校验 name 非空、base_url 为 http/https、api_key 非空、models 至少 1 个、timeout_secs ≥ 1。
+fn validate_channel(c: &Channel) -> Result<(), String> {
+    if c.name.trim().is_empty() {
+        return Err("渠道名称不能为空".into());
+    }
+    let base_url = c.base_url.trim();
+    if base_url.is_empty() {
+        return Err("Base URL 不能为空".into());
+    }
+    match reqwest::Url::parse(base_url) {
+        Ok(u) if u.scheme() == "http" || u.scheme() == "https" => {}
+        _ => return Err("Base URL 必须是有效的 http/https 地址".into()),
+    }
+    if c.api_key.trim().is_empty() {
+        return Err("API Key 不能为空".into());
+    }
+    if c.models.is_empty() || c.models.iter().all(|m| m.trim().is_empty()) {
+        return Err("至少需要一个模型".into());
+    }
+    if c.timeout_secs < 1 {
+        return Err("超时时间必须大于等于 1 秒".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
-pub fn create_channel(state: State<AppState>, mut c: Channel) -> Result<Channel, String> {
+pub fn create_channel(state: State<AppState>, c: Channel) -> Result<Channel, String> {
+    create_channel_with_state(&state, c)
+}
+
+fn create_channel_with_state(state: &AppState, mut c: Channel) -> Result<Channel, String> {
+    validate_channel(&c)?;
     c.id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().timestamp();
     c.created_at = now;
@@ -39,7 +70,11 @@ pub fn create_channel(state: State<AppState>, mut c: Channel) -> Result<Channel,
 }
 
 #[tauri::command]
-pub fn update_channel(state: State<AppState>, mut c: Channel) -> Result<(), String> {
+pub fn update_channel(state: State<AppState>, c: Channel) -> Result<(), String> {
+    update_channel_with_state(&state, c)
+}
+
+fn update_channel_with_state(state: &AppState, mut c: Channel) -> Result<(), String> {
     c.updated_at = chrono::Utc::now().timestamp();
     // api_key 若是打码形式则不更新（保留原值）
     if c.api_key.starts_with("sk-***") {
@@ -47,6 +82,8 @@ pub fn update_channel(state: State<AppState>, mut c: Channel) -> Result<(), Stri
             c.api_key = orig.api_key;
         }
     }
+    // 在还原打码 api_key 之后再校验最终生效值，保证编辑时保留原 key 也能通过
+    validate_channel(&c)?;
     state.repo.update_channel(&c).map_err(|e| e.to_string())
 }
 
@@ -63,13 +100,21 @@ pub async fn test_channel(state: State<'_, AppState>, id: String) -> Result<Test
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "channel not found".to_string())?;
     let model = ch.models.get(0).cloned().unwrap_or("test".into());
-    let url = crate::provider::adapter::upstream_url(&ch.upstream_protocol, &ch.base_url, &model, &ch.api_key, false);
+    let url = crate::provider::adapter::upstream_url(
+        &ch.upstream_protocol,
+        &ch.base_url,
+        &model,
+        &ch.api_key,
+        false,
+    );
     let mut req = state
         .http
         .post(&url)
         .header("content-type", "application/json")
         .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64));
-    if let Some((hname, hval)) = crate::provider::adapter::auth_header(&ch.upstream_protocol, &ch.api_key) {
+    if let Some((hname, hval)) =
+        crate::provider::adapter::auth_header(&ch.upstream_protocol, &ch.api_key)
+    {
         req = req.header(hname, hval);
     }
     let chat = crate::protocol::types::ChatRequest {
@@ -114,11 +159,7 @@ pub fn set_model_map(
     source_model: String,
     target_model: String,
 ) -> Result<(), String> {
-    set_model_map_with_state(&state,
-        channel_id,
-        source_model,
-        target_model,
-    )
+    set_model_map_with_state(&state, channel_id, source_model, target_model)
 }
 
 fn set_model_map_with_state(
@@ -217,10 +258,20 @@ mod tests {
         let state = AppState::new(db);
         state.repo.insert_channel(&test_channel("ch1")).unwrap();
 
-        set_model_map_with_state(&state, "ch1".into(), "gpt-4o".into(), "gpt-4o-2024-08-06".into())
-            .unwrap();
-        set_model_map_with_state(&state, "ch1".into(), "claude-sonnet".into(), "claude-3-5-sonnet".into())
-            .unwrap();
+        set_model_map_with_state(
+            &state,
+            "ch1".into(),
+            "gpt-4o".into(),
+            "gpt-4o-2024-08-06".into(),
+        )
+        .unwrap();
+        set_model_map_with_state(
+            &state,
+            "ch1".into(),
+            "claude-sonnet".into(),
+            "claude-3-5-sonnet".into(),
+        )
+        .unwrap();
 
         let maps = get_model_map_with_state(&state, "ch1".into()).unwrap();
         assert_eq!(maps.len(), 2);
@@ -245,8 +296,13 @@ mod tests {
         let state = AppState::new(db);
         state.repo.insert_channel(&test_channel("ch1")).unwrap();
 
-        set_model_map_with_state(&state, "ch1".into(), "gpt-4o".into(), "gpt-4o-2024-05".into())
-            .unwrap();
+        set_model_map_with_state(
+            &state,
+            "ch1".into(),
+            "gpt-4o".into(),
+            "gpt-4o-2024-05".into(),
+        )
+        .unwrap();
         set_model_map_with_state(
             &state,
             "ch1".into(),
@@ -266,17 +322,125 @@ mod tests {
         let state = AppState::new(db);
         state.repo.insert_channel(&test_channel("ch1")).unwrap();
 
-        let err = set_model_map_with_state(&state, "ch1".into(), "".into(), "gpt-4o".into())
-            .unwrap_err();
+        let err =
+            set_model_map_with_state(&state, "ch1".into(), "".into(), "gpt-4o".into()).unwrap_err();
         assert_eq!(err, "源模型与目标模型不能为空");
 
-        let err = set_model_map_with_state(
-            &state,
-            "ch1".into(),
-            "gpt-4o".into(),
-            "   ".into(),
-        )
-        .unwrap_err();
+        let err = set_model_map_with_state(&state, "ch1".into(), "gpt-4o".into(), "   ".into())
+            .unwrap_err();
         assert_eq!(err, "源模型与目标模型不能为空");
+    }
+
+    #[test]
+    fn validate_blank_name_rejected() {
+        let mut c = test_channel("ch1");
+        c.name = "   ".into();
+        assert_eq!(validate_channel(&c), Err("渠道名称不能为空".into()));
+    }
+
+    #[test]
+    fn validate_invalid_base_url_rejected() {
+        for bad in [
+            "",
+            "   ",
+            "not-a-url",
+            "ftp://example.com",
+            "javascript:alert(1)",
+        ] {
+            let mut c = test_channel("ch1");
+            c.base_url = bad.into();
+            assert!(validate_channel(&c).is_err(), "should reject {bad:?}");
+        }
+    }
+
+    #[test]
+    fn validate_missing_api_key_rejected() {
+        let mut c = test_channel("ch1");
+        c.api_key = "   ".into();
+        assert_eq!(validate_channel(&c), Err("API Key 不能为空".into()));
+    }
+
+    #[test]
+    fn validate_empty_models_rejected() {
+        let mut c = test_channel("ch1");
+        c.models = vec![];
+        assert!(validate_channel(&c).is_err());
+        c.models = vec!["   ".into()];
+        assert!(validate_channel(&c).is_err());
+    }
+
+    #[test]
+    fn validate_timeout_below_1_rejected() {
+        let mut c = test_channel("ch1");
+        c.timeout_secs = 0;
+        assert!(validate_channel(&c).is_err());
+        c.timeout_secs = -5;
+        assert!(validate_channel(&c).is_err());
+    }
+
+    #[test]
+    fn validate_valid_channel_passes() {
+        assert!(validate_channel(&test_channel("ch1")).is_ok());
+        // 最小合法值：timeout=1、http URL 也应通过
+        let mut c = test_channel("ch1");
+        c.timeout_secs = 1;
+        c.base_url = "http://localhost:8000".into();
+        assert!(validate_channel(&c).is_ok());
+    }
+
+    #[test]
+    fn create_channel_rejects_invalid_and_inserts_valid() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+
+        let mut invalid = test_channel("id-ignored");
+        invalid.name = "".into();
+        assert!(create_channel_with_state(&state, invalid).is_err());
+
+        let created = create_channel_with_state(&state, test_channel("id-ignored")).unwrap();
+        // 返回打码后的 key，数据库里保存原 key
+        assert!(created.api_key.starts_with("sk-***"));
+        assert_eq!(
+            state
+                .repo
+                .get_channel(&created.id)
+                .unwrap()
+                .unwrap()
+                .api_key,
+            "sk-test"
+        );
+    }
+
+    #[test]
+    fn update_channel_with_masked_key_preserves_original() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.insert_channel(&test_channel("ch1")).unwrap();
+
+        // 编辑时前端可能回传打码 key，应还原原值并通过校验
+        let mut c = test_channel("ch1");
+        c.name = "  重命名 ".into();
+        c.api_key = "sk-***test".into();
+        update_channel_with_state(&state, c).unwrap();
+
+        let stored = state.repo.get_channel("ch1").unwrap().unwrap();
+        assert_eq!(stored.api_key, "sk-test");
+        assert_eq!(stored.name, "  重命名 ");
+    }
+
+    #[test]
+    fn update_channel_validates_after_unmask() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.insert_channel(&test_channel("ch1")).unwrap();
+
+        // 空模型即使 api_key 已还原也应被拒绝
+        let mut c = test_channel("ch1");
+        c.api_key = "sk-***test".into();
+        c.models = vec![];
+        assert_eq!(
+            update_channel_with_state(&state, c),
+            Err("至少需要一个模型".into())
+        );
     }
 }
