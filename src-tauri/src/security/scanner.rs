@@ -65,13 +65,22 @@ pub(crate) fn truncate_to_bytes(text: &str, max_bytes: usize) -> &str {
     if text.len() <= max_bytes {
         return text;
     }
-    match text.char_indices().take_while(|(i, _)| *i < max_bytes).last() {
+    match text
+        .char_indices()
+        .take_while(|(i, _)| *i < max_bytes)
+        .last()
+    {
         Some((idx, c)) => &text[..idx + c.len_utf8()],
         None => "",
     }
 }
 
-fn scan_string(text: &str, location: &str, s: &SecuritySettings, findings: &mut Vec<SecurityFinding>) {
+fn scan_string(
+    text: &str,
+    location: &str,
+    s: &SecuritySettings,
+    findings: &mut Vec<SecurityFinding>,
+) {
     let text = truncate_to_bytes(text, s.max_scan_bytes);
     scan_credentials(text, location, findings);
     scan_paths(text, location, findings);
@@ -110,6 +119,7 @@ fn push_finding(
         location: location.to_string(),
         evidence_masked: evidence.map(mask_evidence),
         evidence_hash: None,
+        action: None,
     });
 }
 
@@ -154,9 +164,7 @@ fn scan_credentials(text: &str, location: &str, findings: &mut Vec<SecurityFindi
 fn detect_secret_token(s: &str) -> bool {
     let lower = s.to_lowercase();
     // 前缀均为小写，对 lowercase 后的文本做大小写不敏感匹配。
-    let prefixes = [
-        "sk-ant-", "ghp_", "gho_", "xoxb-", "akia", "aiza",
-    ];
+    let prefixes = ["sk-ant-", "ghp_", "gho_", "xoxb-", "akia", "aiza"];
     if prefixes.iter().any(|p| lower.contains(p)) {
         return true;
     }
@@ -499,7 +507,11 @@ fn scan_local_path(text: &str, location: &str, findings: &mut Vec<SecurityFindin
 // ── 评分与摘要 ─────────────────────────────────────────────────────────────
 
 pub(crate) fn compute_result(findings: Vec<SecurityFinding>) -> SecurityScanResult {
-    let max_rank = findings.iter().map(|f| f.severity.rank()).max().unwrap_or(0);
+    let max_rank = findings
+        .iter()
+        .map(|f| f.severity.rank())
+        .max()
+        .unwrap_or(0);
     let base_score = match max_rank {
         0 => 0,
         1 => 5,
@@ -651,7 +663,8 @@ mod tests {
 
     #[test]
     fn scan_credentials_private_key_hit() {
-        let v = json!("-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n-----END OPENSSH PRIVATE KEY-----");
+        let v =
+            json!("-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n-----END OPENSSH PRIVATE KEY-----");
         let r = scan_json(&v, "request", &settings());
         let f = find(&r, "credential.private_key").expect("private key hit");
         assert_eq!(f.severity, RiskLevel::Critical);
@@ -837,7 +850,10 @@ mod tests {
     fn max_findings_truncation() {
         let mut map = serde_json::Map::new();
         for i in 0..120 {
-            map.insert(format!("k{}", i), json!(format!("sk-123456789012345678901234{}", i)));
+            map.insert(
+                format!("k{}", i),
+                json!(format!("sk-123456789012345678901234{}", i)),
+            );
         }
         let v = Value::Object(map);
         let r = scan_json(&v, "request", &settings());

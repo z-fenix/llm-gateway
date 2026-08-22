@@ -334,6 +334,9 @@ export default function SecurityPage() {
             value={form.action}
             onChange={(e) => setForm({ ...form, action: e.target.value })}
           />
+          <p className="text-xs text-gray-400">
+            规则动作与全局模式取严：Allow &lt; Warn &lt; Redact &lt; Block
+          </p>
           <input
             className="border rounded px-2 py-1"
             placeholder="描述（可选）"

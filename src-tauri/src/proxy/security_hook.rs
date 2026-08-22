@@ -2,15 +2,19 @@ use crate::db::models::{ApiKey, RequestLog, RequestSecurityFinding};
 use crate::db::repository::Repository;
 use crate::proxy::state::AppState;
 use crate::security::{
-    decide_action, redact::redact_json_for_logging, redact_request_body, rules,
-    SecurityAction, SecurityFinding, SecurityScanResult, SecuritySettings,
+    decide_action, escalate_with_custom_actions, redact::redact_json_for_logging,
+    redact_request_body, rules, SecurityAction, SecurityFinding, SecurityScanResult,
+    SecuritySettings,
 };
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde_json::json;
 
 pub enum RequestVerdict {
     /// 继续转发；携带（可能被脱敏的）统一格式 body + 扫描结果供日志使用
-    Proceed { body: serde_json::Value, scan: SecurityScanResult },
+    Proceed {
+        body: serde_json::Value,
+        scan: SecurityScanResult,
+    },
     /// 阻断；已写好 request_log + findings，直接返回该 451 响应
     Blocked(axum::response::Response),
 }
@@ -57,6 +61,9 @@ fn run_scan_with_custom(
     // 自定义规则或白名单可能改变风险等级，重新评分并决策
     scan = crate::security::scanner::compute_result(filtered);
     decide_action(&mut scan, settings);
+    // 命中自定义黑名单规则的 action 参与最终动作决策（取全局 mode 与规则 action 中较严者）。
+    // 白名单抑制的 finding 已被过滤，不参与升级。
+    escalate_with_custom_actions(&mut scan);
     scan
 }
 
@@ -134,7 +141,10 @@ pub async fn inspect_request(
         SecurityAction::Redact => {
             let (new_body, changed) = redact_request_body(chat_body, &settings);
             scan.sanitized = changed;
-            RequestVerdict::Proceed { body: new_body, scan }
+            RequestVerdict::Proceed {
+                body: new_body,
+                scan,
+            }
         }
         _ => RequestVerdict::Proceed {
             body: chat_body.clone(),
@@ -185,10 +195,7 @@ fn walk_and_apply_custom(
     }
 }
 
-fn value_at_path<'a>(
-    root: &'a serde_json::Value,
-    path: &str,
-) -> Option<&'a serde_json::Value> {
+fn value_at_path<'a>(root: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
     if path == "$" {
         return Some(root);
     }

@@ -1,8 +1,7 @@
 //! 内置规则 seed + 自定义黑白名单匹配（Task 5 实现）。
 
 use super::scanner::mask_evidence;
-use super::RiskLevel;
-use super::SecurityFinding;
+use super::{parse_rule_action, RiskLevel, SecurityFinding};
 use crate::db::models::{BuiltinRule, CustomRule};
 
 /// 内置规则元数据：`(rule_id, category, severity, title, toggle_key)`。
@@ -127,21 +126,23 @@ pub const BUILTIN_RULES: &[(&str, &str, &str, &str, &str)] = &[
 pub fn builtin_rules_seed(created_at: i64) -> Vec<BuiltinRule> {
     BUILTIN_RULES
         .iter()
-        .map(|(rule_id, category, severity, title, toggle_key)| BuiltinRule {
-            id: rule_id.replace('.', "_"),
-            rule_id: (*rule_id).to_string(),
-            category: (*category).to_string(),
-            severity: (*severity).to_string(),
-            title: (*title).to_string(),
-            description: None,
-            toggle_key: if toggle_key.is_empty() {
-                None
-            } else {
-                Some((*toggle_key).to_string())
+        .map(
+            |(rule_id, category, severity, title, toggle_key)| BuiltinRule {
+                id: rule_id.replace('.', "_"),
+                rule_id: (*rule_id).to_string(),
+                category: (*category).to_string(),
+                severity: (*severity).to_string(),
+                title: (*title).to_string(),
+                description: None,
+                toggle_key: if toggle_key.is_empty() {
+                    None
+                } else {
+                    Some((*toggle_key).to_string())
+                },
+                enabled: true,
+                created_at,
             },
-            enabled: true,
-            created_at,
-        })
+        )
         .collect()
 }
 
@@ -174,7 +175,10 @@ pub fn apply_custom_rules(
     findings: &mut Vec<SecurityFinding>,
 ) {
     let text_lower = text.to_lowercase();
-    for rule in rules.iter().filter(|r| r.enabled && r.rule_type == "blacklist") {
+    for rule in rules
+        .iter()
+        .filter(|r| r.enabled && r.rule_type == "blacklist")
+    {
         if !category_matches(&rule.category) {
             continue;
         }
@@ -188,6 +192,7 @@ pub fn apply_custom_rules(
                 location: location.to_string(),
                 evidence_masked: Some(mask_evidence(text)),
                 evidence_hash: None,
+                action: parse_rule_action(&rule.action),
             });
         }
     }
@@ -242,6 +247,7 @@ mod tests {
             location: "$.text".into(),
             evidence_masked: Some("***".into()),
             evidence_hash: None,
+            action: None,
         }
     }
 
@@ -249,11 +255,20 @@ mod tests {
     fn custom_blacklist_case_insensitive_and_evidence_masked() {
         let rules = vec![custom_rule("blacklist", "keyword", "Secret", "high", true)];
         let mut findings = vec![];
-        apply_custom_rules("this has sEcReT inside", "request", "$.msg", &rules, &mut findings);
+        apply_custom_rules(
+            "this has sEcReT inside",
+            "request",
+            "$.msg",
+            &rules,
+            &mut findings,
+        );
         assert_eq!(findings.len(), 1);
         let ev = findings[0].evidence_masked.as_ref().unwrap();
         assert!(ev.contains("****"), "evidence should be masked: {}", ev);
-        assert!(!ev.contains("sEcReT inside"), "evidence should not contain raw match");
+        assert!(
+            !ev.contains("sEcReT inside"),
+            "evidence should not contain raw match"
+        );
     }
 
     #[test]
@@ -262,7 +277,11 @@ mod tests {
         let mut findings = vec![existing_finding()];
         let before = findings.len();
         apply_custom_rules("aaa", "request", "$", &rules, &mut findings);
-        assert_eq!(findings.len(), before + 1, "should append rather than replace");
+        assert_eq!(
+            findings.len(),
+            before + 1,
+            "should append rather than replace"
+        );
         assert_eq!(findings[0].rule_id, "existing");
         assert_eq!(findings[1].rule_id, "custom.blacklist.keyword");
     }
@@ -289,7 +308,13 @@ mod tests {
 
     #[test]
     fn blacklist_disabled_rule_skipped() {
-        let rules = vec![custom_rule("blacklist", "domain", "evil.com", "high", false)];
+        let rules = vec![custom_rule(
+            "blacklist",
+            "domain",
+            "evil.com",
+            "high",
+            false,
+        )];
         let mut findings = Vec::new();
         apply_custom_rules(
             "visit https://evil.com/path",
@@ -311,7 +336,13 @@ mod tests {
 
     #[test]
     fn whitelist_hit() {
-        let rules = vec![custom_rule("whitelist", "domain", "trusted.org", "info", true)];
+        let rules = vec![custom_rule(
+            "whitelist",
+            "domain",
+            "trusted.org",
+            "info",
+            true,
+        )];
         assert!(is_whitelisted("domain", "https://trusted.org/api", &rules));
     }
 
@@ -323,7 +354,13 @@ mod tests {
 
     #[test]
     fn whitelist_disabled_rule_skipped() {
-        let rules = vec![custom_rule("whitelist", "domain", "trusted.org", "info", false)];
+        let rules = vec![custom_rule(
+            "whitelist",
+            "domain",
+            "trusted.org",
+            "info",
+            false,
+        )];
         assert!(!is_whitelisted("domain", "https://trusted.org/api", &rules));
     }
 
@@ -338,6 +375,38 @@ mod tests {
         assert_eq!(parse_risk_level("unknown"), RiskLevel::Medium);
         assert_eq!(parse_risk_level("MEDIUM"), RiskLevel::Medium);
         assert_eq!(parse_risk_level("critical"), RiskLevel::Critical);
+    }
+
+    #[test]
+    fn blacklist_match_carries_rule_action_block() {
+        let rules = vec![custom_rule("blacklist", "keyword", "forbidden", "high", true)];
+        let mut findings = Vec::new();
+        apply_custom_rules("forbidden word", "request", "$.msg", &rules, &mut findings);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(
+            findings[0].action,
+            Some(super::super::SecurityAction::Block)
+        );
+    }
+
+    #[test]
+    fn blacklist_match_empty_action_yields_none() {
+        let mut rules = vec![custom_rule("blacklist", "keyword", "forbidden", "high", true)];
+        rules[0].action = "".to_string();
+        let mut findings = Vec::new();
+        apply_custom_rules("forbidden word", "request", "$.msg", &rules, &mut findings);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].action, None);
+    }
+
+    #[test]
+    fn blacklist_match_unknown_action_yields_none() {
+        let mut rules = vec![custom_rule("blacklist", "keyword", "forbidden", "high", true)];
+        rules[0].action = "totally-bogus".to_string();
+        let mut findings = Vec::new();
+        apply_custom_rules("forbidden word", "request", "$.msg", &rules, &mut findings);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].action, None);
     }
 
     #[test]
