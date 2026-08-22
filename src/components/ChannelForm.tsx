@@ -1,5 +1,22 @@
-import { useState } from "react";
-import type { Channel } from "../types";
+import { useEffect, useState } from "react";
+import { api } from "../lib/api";
+import type { Channel, ModelMapEntry } from "../types";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "./ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 const SUPPLIERS = ["openai", "claude", "deepseek", "gemini", "custom"];
 const UPSTREAM_PROTOCOLS = [
@@ -46,10 +63,58 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   // 提交过一次后才展示错误，之后随输入实时更新
   const errors = attempted ? validateForm(f) : {};
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
+
+  // ---- 模型映射（仅编辑已有渠道时展示） ----
+  const channelId = initial?.id;
+  const [maps, setMaps] = useState<ModelMapEntry[] | null>(null);
+  const [mapSrc, setMapSrc] = useState("");
+  const [mapTgt, setMapTgt] = useState("");
+  const [mapError, setMapError] = useState<string | null>(null);
+
+  const reloadMaps = () => {
+    if (!channelId) return;
+    api.getModelMap(channelId).then(setMaps).catch(() => setMaps([]));
+  };
+
+  useEffect(() => {
+    reloadMaps();
+    // 渠道 id 变化时重新加载映射；依赖仅取 channelId
+  }, [channelId]);
+
+  const addMap = async () => {
+    if (!channelId) return;
+    const src = mapSrc.trim();
+    const tgt = mapTgt.trim();
+    if (!src || !tgt) {
+      setMapError("源模型与目标模型不能为空");
+      return;
+    }
+    setMapError(null);
+    try {
+      await api.setModelMap(channelId, src, tgt);
+      setMapSrc("");
+      setMapTgt("");
+      reloadMaps();
+    } catch (err) {
+      setMapError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const deleteMap = async (source: string) => {
+    if (!channelId) return;
+    setMapError(null);
+    try {
+      await api.deleteModelMap(channelId, source);
+      reloadMaps();
+    } catch (err) {
+      setMapError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const inputCls = (k: keyof Channel) =>
-    `w-full border rounded px-2 py-1${errors[k] ? " border-red-500 bg-red-50" : ""}`;
+    errors[k] ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : undefined;
   const errMsg = (k: keyof Channel) =>
-    errors[k] ? <p className="mt-1 text-xs text-red-600">{errors[k]}</p> : null;
+    errors[k] ? <p className="mt-1 text-xs text-destructive">{errors[k]}</p> : null;
 
   const submit = () => {
     setAttempted(true);
@@ -58,47 +123,129 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   };
 
   return (
-    <div className="space-y-3 rounded-lg border bg-white p-4">
-      <div>
-        <input className={inputCls("name")} placeholder="名称" value={f.name ?? ""} onChange={(e) => set("name", e.target.value)} />
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="channel-name">名称</Label>
+        <Input id="channel-name" className={inputCls("name")} placeholder="名称"
+          value={f.name ?? ""} onChange={(e) => set("name", e.target.value)} />
         {errMsg("name")}
       </div>
-      <select className="w-full border rounded px-2 py-1" value={f.supplier} onChange={(e) => set("supplier", e.target.value)}>
-        {SUPPLIERS.map((p) => <option key={p} value={p}>{p}</option>)}
-      </select>
-      <select className="w-full border rounded px-2 py-1" value={f.upstream_protocol} onChange={(e) => set("upstream_protocol", e.target.value)}>
-        {UPSTREAM_PROTOCOLS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-      </select>
-      <div>
-        <input className={inputCls("base_url")} placeholder="Base URL，如 https://api.deepseek.com" value={f.base_url ?? ""} onChange={(e) => set("base_url", e.target.value)} />
+
+      <div className="space-y-1.5">
+        <Label>供应商</Label>
+        <Select value={f.supplier} onValueChange={(v) => set("supplier", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {SUPPLIERS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>上游协议</Label>
+        <Select value={f.upstream_protocol} onValueChange={(v) => set("upstream_protocol", v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {UPSTREAM_PROTOCOLS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="channel-base-url">Base URL</Label>
+        <Input id="channel-base-url" className={inputCls("base_url")}
+          placeholder="Base URL，如 https://api.deepseek.com"
+          value={f.base_url ?? ""} onChange={(e) => set("base_url", e.target.value)} />
         {errMsg("base_url")}
       </div>
-      <div>
-        <input className={inputCls("api_key")} placeholder="真实上游 API Key" value={f.api_key ?? ""} onChange={(e) => set("api_key", e.target.value)} />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="channel-api-key">API Key</Label>
+        <Input id="channel-api-key" className={inputCls("api_key")}
+          placeholder="真实上游 API Key"
+          value={f.api_key ?? ""} onChange={(e) => set("api_key", e.target.value)} />
         {errMsg("api_key")}
       </div>
-      <div>
-        <input className={inputCls("models")} placeholder="支持模型（逗号分隔）" value={(f.models ?? []).join(",")} onChange={(e) => set("models", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))} />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="channel-models">支持模型</Label>
+        <Input id="channel-models" className={inputCls("models")}
+          placeholder="支持模型（逗号分隔）"
+          value={(f.models ?? []).join(",")}
+          onChange={(e) => set("models", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))} />
         {errMsg("models")}
       </div>
-      <div className="flex gap-2">
-        <div className="w-1/2">
-          <input type="number" className={inputCls("priority")} placeholder="优先级" value={f.priority ?? 0} onChange={(e) => set("priority", Number(e.target.value))} />
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="channel-priority">优先级</Label>
+          <Input id="channel-priority" type="number" className={inputCls("priority")}
+            placeholder="优先级" value={f.priority ?? 0}
+            onChange={(e) => set("priority", Number(e.target.value))} />
           {errMsg("priority")}
         </div>
-        <div className="w-1/2">
-          <input type="number" className={inputCls("weight")} placeholder="权重" value={f.weight ?? 1} onChange={(e) => set("weight", Number(e.target.value))} />
+        <div className="space-y-1.5">
+          <Label htmlFor="channel-weight">权重</Label>
+          <Input id="channel-weight" type="number" className={inputCls("weight")}
+            placeholder="权重" value={f.weight ?? 1}
+            onChange={(e) => set("weight", Number(e.target.value))} />
           {errMsg("weight")}
         </div>
       </div>
-      <div>
-        <input type="number" className={inputCls("timeout_secs")} placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0} onChange={(e) => set("timeout_secs", Number(e.target.value))} />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="channel-timeout">超时秒数</Label>
+        <Input id="channel-timeout" type="number" className={inputCls("timeout_secs")}
+          placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0}
+          onChange={(e) => set("timeout_secs", Number(e.target.value))} />
         {errMsg("timeout_secs")}
       </div>
-      <div className="flex justify-end gap-2">
-        <button className="rounded border px-3 py-1" onClick={onCancel}>取消</button>
-        <button className="rounded bg-blue-600 px-3 py-1 text-white"
-          onClick={submit}>保存</button>
+
+      {channelId && (
+        <Accordion type="single" collapsible defaultValue="model-map" className="rounded-lg border border-border px-3">
+          <AccordionItem value="model-map" className="border-b-0">
+            <AccordionTrigger>模型映射</AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                把请求中的源模型名映射为上游使用的目标模型名，保存后立即生效。
+              </p>
+              {mapError && <p className="text-xs text-destructive">{mapError}</p>}
+              <div className="space-y-2">
+                {maps === null ? (
+                  <p className="text-xs text-muted-foreground">加载中…</p>
+                ) : maps.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">暂无模型映射</p>
+                ) : (
+                  maps.map((m) => (
+                    <div key={m.source_model}
+                      className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">{m.source_model}</code>
+                        <span className="text-muted-foreground">→</span>
+                        <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">{m.target_model}</code>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => deleteMap(m.source_model)}>删除</Button>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input className="flex-1" placeholder="源模型" value={mapSrc}
+                  onChange={(e) => setMapSrc(e.target.value)} />
+                <Input className="flex-1" placeholder="目标模型" value={mapTgt}
+                  onChange={(e) => setMapTgt(e.target.value)} />
+                <Button type="button" size="sm" onClick={addMap}>添加</Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
+        <Button type="button" onClick={submit}>保存</Button>
       </div>
     </div>
   );
