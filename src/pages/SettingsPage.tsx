@@ -87,10 +87,17 @@ export default function SettingsPage() {
     setRestarted(false);
     try {
       await api.restartGateway();
+      // 绑定是异步的:轮询 getAppConfig 直到 bound_addr 变化(最多 ~2s)
+      const before = config?.bound_addr ?? null;
+      for (let i = 0; i < 20; i++) {
+        const c = await api.getAppConfig();
+        if (c.bound_addr && c.bound_addr !== before) {
+          setConfig(c);
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 100));
+      }
       setRestarted(true);
-      // 重启后刷新当前绑定地址
-      const c = await api.getAppConfig();
-      setConfig(c);
     } catch (err) {
       handleError(err);
     } finally {
