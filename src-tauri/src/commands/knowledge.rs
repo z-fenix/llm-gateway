@@ -91,7 +91,7 @@ fn list_kbs_with_state(state: &AppState) -> Result<Vec<KnowledgeBase>, String> {
     let mut kbs = state.repo.list_kbs().map_err(|e| e.to_string())?;
     for kb in &mut kbs {
         let index_path = kb_index_path(state, &kb.id);
-        kb.needs_reindex = kb.chunk_count > 0 && !index_path.exists();
+        kb.needs_reindex = kb.needs_reindex || (kb.chunk_count > 0 && !index_path.exists());
     }
     Ok(kbs)
 }
@@ -99,6 +99,65 @@ fn list_kbs_with_state(state: &AppState) -> Result<Vec<KnowledgeBase>, String> {
 #[tauri::command]
 pub fn list_kbs(state: State<AppState>) -> Result<Vec<KnowledgeBase>, String> {
     list_kbs_with_state(&state)
+}
+
+fn set_kb_status_inner(state: &AppState, id: &str, enabled: bool) -> Result<(), String> {
+    state.repo.set_kb_status(id, enabled).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_kb_status(state: State<AppState>, id: String, enabled: bool) -> Result<(), String> {
+    set_kb_status_inner(&state, &id, enabled)
+}
+
+fn rename_kb_inner(state: &AppState, id: &str, name: &str) -> Result<(), String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err("名称不能为空".into());
+    }
+    state.repo.rename_kb(id, name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn rename_kb(state: State<AppState>, id: String, name: String) -> Result<(), String> {
+    rename_kb_inner(&state, &id, &name)
+}
+
+fn update_kb_embedding_channel_inner(
+    state: &AppState,
+    id: &str,
+    embedding_channel_id: Option<String>,
+    embedding_model: &str,
+) -> Result<(), String> {
+    let embedding_model = embedding_model.trim();
+    if embedding_model.is_empty() {
+        return Err("embedding model must not be empty".into());
+    }
+    if let Some(ref channel_id) = embedding_channel_id {
+        if state
+            .repo
+            .get_channel(channel_id)
+            .map_err(|e| e.to_string())?
+            .is_none()
+        {
+            return Err(format!("channel not found: {channel_id}"));
+        }
+    }
+    state
+        .repo
+        .update_kb_embedding_channel(id, embedding_channel_id, embedding_model)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_kb_embedding_channel(
+    state: State<AppState>,
+    id: String,
+    embedding_channel_id: Option<String>,
+    embedding_model: String,
+) -> Result<(), String> {
+    update_kb_embedding_channel_inner(&state, &id, embedding_channel_id, &embedding_model)
 }
 
 #[tauri::command]
@@ -306,8 +365,31 @@ pub fn set_rag_setting(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::models::Channel;
     use crate::db::Db;
     use std::path::PathBuf;
+
+    fn test_channel(id: &str) -> Channel {
+        Channel {
+            id: id.into(),
+            name: format!("channel-{id}"),
+            supplier: "openai".into(),
+            upstream_protocol: "openai-chat".into(),
+            base_url: "http://localhost".into(),
+            api_key: "sk-test".into(),
+            models: vec!["text-embedding-3-small".into()],
+            priority: 0,
+            weight: 1,
+            enabled: true,
+            timeout_secs: 60,
+            total_calls: 0,
+            total_tokens: 0,
+            success_rate: 1.0,
+            avg_latency_ms: 0,
+            created_at: 1,
+            updated_at: 1,
+        }
+    }
 
     fn kb_with_chunks(id: &str, chunk_count: i64) -> KnowledgeBase {
         KnowledgeBase {
@@ -380,5 +462,126 @@ mod tests {
             !kbs[0].needs_reindex,
             "empty kb should never need reindex"
         );
+    }
+
+    #[test]
+    fn set_kb_status_toggles_enabled() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.create_kb(&kb_with_chunks("kb1", 0)).unwrap();
+
+        set_kb_status_inner(&state, "kb1", false).unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert!(!kb.enabled);
+
+        set_kb_status_inner(&state, "kb1", true).unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert!(kb.enabled);
+    }
+
+    #[test]
+    fn rename_kb_validates_and_updates_name() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.create_kb(&kb_with_chunks("kb1", 0)).unwrap();
+
+        assert!(rename_kb_inner(&state, "kb1", "   ").is_err());
+
+        rename_kb_inner(&state, "kb1", " 新名称 ").unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert_eq!(kb.name, "新名称");
+    }
+
+    #[test]
+    fn update_kb_embedding_channel_validates_and_sets_needs_reindex() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.insert_channel(&test_channel("ch1")).unwrap();
+        state.repo.insert_channel(&test_channel("ch2")).unwrap();
+
+        let mut kb = kb_with_chunks("kb1", 0);
+        kb.embedding_channel_id = Some("ch1".into());
+        kb.embedding_model = "old-model".into();
+        state.repo.create_kb(&kb).unwrap();
+
+        // empty model rejected
+        assert!(
+            update_kb_embedding_channel_inner(
+                &state,
+                "kb1",
+                Some("ch1".into()),
+                "   ",
+            )
+            .is_err()
+        );
+
+        // non-existent channel rejected
+        assert!(
+            update_kb_embedding_channel_inner(
+                &state,
+                "kb1",
+                Some("missing".into()),
+                "new-model",
+            )
+            .is_err()
+        );
+
+        // same config: no needs_reindex flag set
+        update_kb_embedding_channel_inner(
+            &state,
+            "kb1",
+            Some("ch1".into()),
+            "old-model",
+        )
+        .unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert!(!kb.needs_reindex);
+
+        // channel change: needs_reindex set
+        update_kb_embedding_channel_inner(
+            &state,
+            "kb1",
+            Some("ch2".into()),
+            "old-model",
+        )
+        .unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert_eq!(kb.embedding_channel_id, Some("ch2".into()));
+        assert!(kb.needs_reindex);
+
+        // model change: needs_reindex remains true
+        update_kb_embedding_channel_inner(
+            &state,
+            "kb1",
+            Some("ch2".into()),
+            "new-model",
+        )
+        .unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert_eq!(kb.embedding_model, "new-model");
+        assert!(kb.needs_reindex);
+    }
+
+    #[test]
+    fn update_kb_embedding_channel_allows_null_channel() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.insert_channel(&test_channel("ch1")).unwrap();
+        let mut kb = kb_with_chunks("kb1", 0);
+        kb.embedding_channel_id = Some("ch1".into());
+        kb.embedding_model = "old-model".into();
+        state.repo.create_kb(&kb).unwrap();
+
+        update_kb_embedding_channel_inner(
+            &state,
+            "kb1",
+            None,
+            "new-model",
+        )
+        .unwrap();
+        let kb = state.repo.get_kb("kb1").unwrap().unwrap();
+        assert_eq!(kb.embedding_channel_id, None);
+        assert_eq!(kb.embedding_model, "new-model");
+        assert!(kb.needs_reindex);
     }
 }

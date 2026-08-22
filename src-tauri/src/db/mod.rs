@@ -13,6 +13,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../../migrations/003_logs.sql"),
     include_str!("../../migrations/004_knowledge.sql"),
     include_str!("../../migrations/005_channel_protocol.sql"),
+    include_str!("../../migrations/006_kb_needs_reindex.sql"),
 ];
 
 #[derive(Clone)]

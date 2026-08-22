@@ -770,11 +770,12 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
-            "INSERT INTO knowledge_bases (id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
+            "INSERT INTO knowledge_bases (id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,needs_reindex,created_at,updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
             params![
                 kb.id, kb.name, kb.description, kb.embedding_channel_id, kb.embedding_model,
-                kb.dim, kb.doc_count, kb.chunk_count, kb.enabled as i64, kb.created_at, kb.updated_at
+                kb.dim, kb.doc_count, kb.chunk_count, kb.enabled as i64, kb.needs_reindex as i64,
+                kb.created_at, kb.updated_at
             ],
         )?;
         Ok(())
@@ -784,7 +785,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at FROM knowledge_bases ORDER BY created_at DESC",
+            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,needs_reindex,created_at,updated_at FROM knowledge_bases ORDER BY created_at DESC",
         )?;
         let rows = stmt.query_map([], row_to_kb)?;
         let mut out = Vec::new();
@@ -796,7 +797,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at FROM knowledge_bases WHERE name=?1",
+            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,needs_reindex,created_at,updated_at FROM knowledge_bases WHERE name=?1",
         )?;
         let mut rows = stmt.query(params![name])?;
         if let Some(r) = rows.next()? {
@@ -810,7 +811,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,created_at,updated_at FROM knowledge_bases WHERE id=?1",
+            "SELECT id,name,description,embedding_channel_id,embedding_model,dim,doc_count,chunk_count,enabled,needs_reindex,created_at,updated_at FROM knowledge_bases WHERE id=?1",
         )?;
         let mut rows = stmt.query(params![id])?;
         if let Some(r) = rows.next()? {
@@ -835,6 +836,38 @@ impl Repository {
             params![id, enabled as i64],
         )?;
         Ok(())
+    }
+
+    pub fn rename_kb(&self, id: &str, name: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE knowledge_bases SET name=?2, updated_at=?3 WHERE id=?1",
+            params![id, name, chrono::Utc::now().timestamp()],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_kb_embedding_channel(&self, id: &str, channel_id: Option<String>, model: &str) -> AppResult<bool> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT embedding_channel_id, embedding_model FROM knowledge_bases WHERE id=?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        let (old_channel_id, old_model): (Option<String>, String) = if let Some(r) = rows.next()? {
+            (r.get(0)?, r.get(1)?)
+        } else {
+            return Ok(false);
+        };
+        let changed = old_channel_id != channel_id || old_model != model;
+        if changed {
+            conn.execute(
+                "UPDATE knowledge_bases SET embedding_channel_id=?2, embedding_model=?3, needs_reindex=?4, updated_at=?5 WHERE id=?1",
+                params![id, channel_id, model, true as i64, chrono::Utc::now().timestamp()],
+            )?;
+        }
+        Ok(changed)
     }
 
     pub fn update_kb_counts(&self, id: &str, doc_count: i64, chunk_count: i64) -> AppResult<()> {
@@ -1072,9 +1105,9 @@ fn row_to_kb(r: &rusqlite::Row) -> rusqlite::Result<KnowledgeBase> {
         doc_count: r.get(6)?,
         chunk_count: r.get(7)?,
         enabled: r.get::<_, i64>(8)? != 0,
-        created_at: r.get(9)?,
-        updated_at: r.get(10)?,
-        needs_reindex: false,
+        needs_reindex: r.get::<_, i64>(9)? != 0,
+        created_at: r.get(10)?,
+        updated_at: r.get(11)?,
     })
 }
 

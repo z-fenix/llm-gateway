@@ -128,6 +128,20 @@ export const api = {
       embeddingModel,
     }),
   listKbs: () => invoke<KnowledgeBase[]>("list_kbs"),
+  setKbStatus: (id: string, enabled: boolean) =>
+    invoke<void>("set_kb_status", { id, enabled }),
+  renameKb: (id: string, name: string) =>
+    invoke<void>("rename_kb", { id, name }),
+  updateKbEmbeddingChannel: (
+    id: string,
+    embeddingChannelId: string | null,
+    embeddingModel: string
+  ) =>
+    invoke<void>("update_kb_embedding_channel", {
+      id,
+      embeddingChannelId,
+      embeddingModel,
+    }),
   deleteKb: (id: string) => invoke<void>("delete_kb", { id }),
   reindexKb: (id: string) => invoke<void>("reindex_kb", { id }),
   uploadDocument: (kbId: string, filename: string, contentBase64: string) =>

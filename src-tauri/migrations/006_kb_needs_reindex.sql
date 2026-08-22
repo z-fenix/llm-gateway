@@ -1,0 +1,1 @@
+ALTER TABLE knowledge_bases ADD COLUMN needs_reindex INTEGER NOT NULL DEFAULT 0;
