@@ -16,6 +16,9 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
 
 const TREND_BUCKET_SECS = 3600;
 
+// “今日趋势”只统计最近 24h,避免把全部历史都画成 1px 竖条还标注“今日”。
+const TREND_WINDOW_SECS = 86400;
+
 export default function DashboardPage() {
   const [s, setS] = useState<Stats | null>(null);
   const [buckets, setBuckets] = useState<TimeBucket[] | null>(null);
@@ -23,7 +26,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     api.getStats().then(setS).catch(console.error);
-    api.getLogTimeseries({}, TREND_BUCKET_SECS).then(setBuckets).catch(console.error);
+    api
+      .getLogTimeseries({ after: Math.floor(Date.now() / 1000) - TREND_WINDOW_SECS }, TREND_BUCKET_SECS)
+      .then(setBuckets)
+      .catch(console.error);
   }, []);
 
   if (!s) return <LoadingState />;

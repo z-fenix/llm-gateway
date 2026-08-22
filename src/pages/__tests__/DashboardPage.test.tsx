@@ -62,10 +62,14 @@ describe("DashboardPage", () => {
     expect(screen.getByText("活跃渠道")).toBeInTheDocument();
   });
 
-  it("挂载时请求 getStats 与 getLogTimeseries({}, 3600)", async () => {
+  it("挂载时请求 getStats 与 getLogTimeseries(今日时间窗, 3600)", async () => {
     render(<DashboardPage />);
     await waitFor(() => expect(mockedApi.getStats).toHaveBeenCalled());
-    expect(mockedApi.getLogTimeseries).toHaveBeenCalledWith({}, 3600);
+    const [filter, bucketSecs] = mockedApi.getLogTimeseries.mock.calls[0];
+    expect(bucketSecs).toBe(3600);
+    const expectedAfter = Math.floor(Date.now() / 1000) - 86400;
+    expect(filter.after).toBeDefined();
+    expect(Math.abs((filter.after ?? 0) - expectedAfter)).toBeLessThan(5);
   });
 
   it("趋势图以 hourly bucket 渲染并支持维度切换", async () => {
