@@ -100,13 +100,36 @@ describe("SecurityPage", () => {
     );
   });
 
-  it("renders a builtin rule enable toggle", async () => {
+  it("renders a builtin rule enable toggle as a switch", async () => {
     render(<SecurityPage />);
     await waitFor(() =>
       expect(screen.getByText("API key leak")).toBeInTheDocument()
     );
-    const toggle = screen.getByRole("checkbox", { name: /API key leak/ }) as HTMLInputElement;
+    const toggle = screen.getByRole("switch", { name: /API key leak/ });
     expect(toggle).toBeInTheDocument();
+  });
+
+  it("scan 开关使用 Switch 并调用 setSecuritySetting", async () => {
+    render(<SecurityPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("switch", { name: "扫描请求" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "扫描请求" }));
+    await waitFor(() =>
+      expect(api.setSecuritySetting).toHaveBeenCalledWith("scan_request", false)
+    );
+  });
+
+  it("自定义规则删除通过 ConfirmDialog 确认后调用 deleteCustomSecurityRule", async () => {
+    render(<SecurityPage />);
+    await waitFor(() =>
+      expect(screen.getByText("badword")).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    fireEvent.click(await screen.findByRole("button", { name: "确认" }));
+    await waitFor(() =>
+      expect(api.deleteCustomSecurityRule).toHaveBeenCalledWith("c1")
+    );
   });
 
   it("重置默认需要确认", async () => {

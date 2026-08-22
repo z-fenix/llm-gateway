@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import LogsPage from "../LogsPage";
 import { api } from "../../lib/api";
@@ -33,6 +33,38 @@ vi.mock("../../lib/api", () => ({
 }));
 
 const mockedApi = vi.mocked(api);
+
+const makeLog = (over: Partial<any>): any => ({
+  id: "l1",
+  seq: 1,
+  trace_id: "trace-abc",
+  api_key_id: null,
+  key_name: "key",
+  channel_id: null,
+  channel_name: "ch",
+  role: "sonnet",
+  request_model: "model-a",
+  upstream_model: "model-b",
+  protocol: "openai",
+  status_code: 200,
+  input_tokens: 10,
+  output_tokens: 5,
+  latency_ms: 100,
+  is_stream: false,
+  error: null,
+  fallback: false,
+  tool_calls: null,
+  request_body: null,
+  response_body: null,
+  risk_level: "clean",
+  risk_score: 0,
+  risk_summary: null,
+  security_action: "allow",
+  sanitized: false,
+  blocked_reason: null,
+  created_at: 1700000000,
+  ...over,
+});
 
 describe("LogsPage", () => {
   beforeEach(() => {
@@ -195,5 +227,96 @@ describe("LogsPage", () => {
     await waitFor(() => {
       expect(mockedApi.setLogRetentionDays).toHaveBeenCalledWith(7);
     });
+  });
+
+  it("日志表格时间列显示完整日期时间（含日期）", async () => {
+    const ts = 1700000000;
+    mockedApi.listLogs.mockResolvedValue({
+      total: 1,
+      items: [makeLog({ id: "l1", trace_id: "trace-abc", created_at: ts })],
+    });
+
+    render(<LogsPage />);
+    await waitFor(() =>
+      expect(screen.getByText(new Date(ts * 1000).toLocaleString())).toBeInTheDocument()
+    );
+  });
+
+  it("按会话分组视图：按 trace_id 分组并展示会话汇总", async () => {
+    mockedApi.listLogs.mockResolvedValue({
+      total: 3,
+      items: [
+        makeLog({ id: "l1", trace_id: "trace-abc", created_at: 1700000000 }),
+        makeLog({ id: "l2", trace_id: "trace-abc", created_at: 1700000005 }),
+        makeLog({ id: "l3", trace_id: "trace-def", created_at: 1700000010 }),
+      ],
+    });
+
+    render(<LogsPage />);
+    await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("按会话分组"));
+
+    // 两个 trace 的会话汇总行可见
+    await waitFor(() => expect(screen.getByText("trace-abc")).toBeInTheDocument());
+    expect(screen.getByText("trace-def")).toBeInTheDocument();
+
+    const abcRow = screen.getByText("trace-abc").closest("tr")!;
+    expect(within(abcRow).getByText("2")).toBeInTheDocument();
+    expect(within(abcRow).getByText("sonnet")).toBeInTheDocument();
+    expect(within(abcRow).getByText("200")).toBeInTheDocument();
+  });
+
+  it("展开会话后显示该 trace 的全部日志", async () => {
+    mockedApi.listLogs.mockResolvedValue({
+      total: 2,
+      items: [
+        makeLog({ id: "l1", trace_id: "trace-abc", created_at: 1700000000 }),
+        makeLog({ id: "l2", trace_id: "trace-abc", created_at: 1700000005 }),
+      ],
+    });
+
+    render(<LogsPage />);
+    await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("按会话分组"));
+
+    fireEvent.click(await screen.findByText("trace-abc"));
+
+    // 会话内的两条日志都渲染出请求模型单元格
+    await waitFor(() => expect(screen.getAllByText("model-a")).toHaveLength(2));
+  });
+
+  it("会话内日志可展开详情（含 TraceID）", async () => {
+    mockedApi.listLogs.mockResolvedValue({
+      total: 1,
+      items: [makeLog({ id: "l1", trace_id: "trace-abc", created_at: 1700000000 })],
+    });
+
+    render(<LogsPage />);
+    await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("按会话分组"));
+    fireEvent.click(await screen.findByText("trace-abc"));
+
+    // 点击会话内日志行展开详情
+    await waitFor(() => expect(screen.getAllByText("model-a").length).toBeGreaterThan(0));
+    fireEvent.click(screen.getAllByText("model-a")[0].closest("tr")!);
+
+    await waitFor(() => expect(screen.getByText(/TraceID: trace-abc/)).toBeInTheDocument());
+  });
+
+  it("切换回平铺列表视图", async () => {
+    mockedApi.listLogs.mockResolvedValue({
+      total: 1,
+      items: [makeLog({ id: "l1", trace_id: "trace-abc", created_at: 1700000000 })],
+    });
+
+    render(<LogsPage />);
+    await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("按会话分组"));
+    await waitFor(() => expect(screen.getByText("trace-abc")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("平铺列表"));
+    // 平铺视图下 trace 短名不再作为会话行展示
+    expect(screen.queryByText("trace-abc")).not.toBeInTheDocument();
   });
 });
