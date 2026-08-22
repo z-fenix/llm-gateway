@@ -105,21 +105,7 @@ pub fn run() {
             }
 
             // 启动网关（独立 tokio runtime 线程，避免阻塞 Tauri）
-            std::thread::spawn(move || {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-                rt.block_on(async move {
-                    let start_port = state.app.read().preferred_port;
-                    match proxy::server::start(state.clone(), start_port).await {
-                        Ok((handle, addr)) => {
-                            *state.bound_addr.write() = Some(addr);
-                            handle.await.expect("serve gateway");
-                        }
-                        Err(e) => {
-                            log::error!("no available port in {}..=8787: {}", start_port, e);
-                        }
-                    }
-                });
-            });
+            commands::config::spawn_gateway(&state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -183,6 +169,7 @@ pub fn run() {
             commands::config::import_config,
             commands::config::get_app_config,
             commands::config::set_preferred_port,
+            commands::config::restart_gateway,
             commands::config::get_cli_targets,
             commands::config::write_cli_config,
         ])

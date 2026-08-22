@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const [config, setConfig] = useState<AppConfigInfo | null>(null);
   const [preferredPort, setPreferredPort] = useState<string>("");
   const [portSaved, setPortSaved] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const [restarted, setRestarted] = useState(false);
 
   const [cliTargets, setCliTargets] = useState<CliTargetInfo[]>([]);
   const [target, setTarget] = useState<string>(CLI_TARGETS[0]);
@@ -70,11 +72,29 @@ export default function SettingsPage() {
     }
     clearError();
     setPortSaved(false);
+    setRestarted(false);
     try {
       await api.setPreferredPort(port);
       setPortSaved(true);
     } catch (err) {
       handleError(err);
+    }
+  };
+
+  const restartGateway = async () => {
+    clearError();
+    setRestarting(true);
+    setRestarted(false);
+    try {
+      await api.restartGateway();
+      setRestarted(true);
+      // 重启后刷新当前绑定地址
+      const c = await api.getAppConfig();
+      setConfig(c);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setRestarting(false);
     }
   };
 
@@ -193,14 +213,29 @@ export default function SettingsPage() {
               className="rounded bg-blue-600 px-3 py-1 text-white"
               onClick={savePreferredPort}
             >
-              保存（重启生效）
+              保存
             </button>
+            {portSaved && (
+              <button
+                className="rounded bg-green-600 px-3 py-1 text-white disabled:opacity-50"
+                onClick={restartGateway}
+                disabled={restarting}
+              >
+                {restarting ? "重启中..." : "立即重启"}
+              </button>
+            )}
           </div>
-          {portSaved && (
-            <p className="text-sm text-green-600">已保存，下次启动时生效。</p>
+          {portSaved && !restarted && (
+            <p className="text-sm text-green-600">
+              已保存，点击“立即重启”使新端口生效。
+            </p>
+          )}
+          {restarted && (
+            <p className="text-sm text-green-600">网关已重启。</p>
           )}
           <p className="text-xs text-gray-400">
-            端口修改后需重启应用方可生效；有效范围为 8777-8787。
+            修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为
+            8777-8787。
           </p>
         </div>
       </div>

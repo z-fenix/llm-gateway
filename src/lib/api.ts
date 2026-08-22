@@ -158,6 +158,7 @@ export const api = {
   getAppConfig: () => invoke<AppConfigInfo>("get_app_config"),
   setPreferredPort: (port: number) =>
     invoke<void>("set_preferred_port", { port }),
+  restartGateway: () => invoke<void>("restart_gateway"),
   getCliTargets: () => invoke<CliTargetInfo[]>("get_cli_targets"),
   writeCliConfig: (target: string, apiKeyId: string, writeEnv: boolean) =>
     invoke<CliWriteResult[]>("write_cli_config", { target, apiKeyId, writeEnv }),

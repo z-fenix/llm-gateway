@@ -23,6 +23,8 @@ pub struct AppState {
     pub kb_index_dir: Arc<RwLock<PathBuf>>,
     /// 网关实际绑定的地址
     pub bound_addr: Arc<RwLock<Option<SocketAddr>>>,
+    /// 当前网关服务的 JoinHandle（重启时 abort 旧实例）
+    pub gateway_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
     /// 应用配置(首选端口等)
     pub app: Arc<RwLock<AppConfig>>,
 }
@@ -49,6 +51,7 @@ impl AppState {
             rag: Arc::new(RwLock::new(RagSettings::default())),
             kb_index_dir: Arc::new(RwLock::new(kb_index_dir)),
             bound_addr: Arc::new(RwLock::new(None)),
+            gateway_handle: Arc::new(RwLock::new(None)),
             app: Arc::new(RwLock::new(AppConfig::default())),
         }
     }
