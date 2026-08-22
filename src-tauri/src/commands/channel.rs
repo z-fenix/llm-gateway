@@ -59,6 +59,9 @@ pub fn create_channel(state: State<AppState>, c: Channel) -> Result<Channel, Str
 
 fn create_channel_with_state(state: &AppState, mut c: Channel) -> Result<Channel, String> {
     validate_channel(&c)?;
+    // 校验通过后归一化：去除 name / base_url 首尾空白，避免带空格的值在 reqwest 解析时失败
+    c.name = c.name.trim().to_string();
+    c.base_url = c.base_url.trim().to_string();
     c.id = uuid::Uuid::new_v4().to_string();
     let now = chrono::Utc::now().timestamp();
     c.created_at = now;
@@ -76,14 +79,17 @@ pub fn update_channel(state: State<AppState>, c: Channel) -> Result<(), String> 
 
 fn update_channel_with_state(state: &AppState, mut c: Channel) -> Result<(), String> {
     c.updated_at = chrono::Utc::now().timestamp();
-    // api_key 若是打码形式则不更新（保留原值）
-    if c.api_key.starts_with("sk-***") {
+    // api_key 若是打码形式（长 key 为 sk-***xxxx，短 key 为 ****）则不更新（保留原值）
+    if c.api_key.starts_with("sk-***") || c.api_key == "****" {
         if let Some(orig) = state.repo.get_channel(&c.id).map_err(|e| e.to_string())? {
             c.api_key = orig.api_key;
         }
     }
     // 在还原打码 api_key 之后再校验最终生效值，保证编辑时保留原 key 也能通过
     validate_channel(&c)?;
+    // 校验通过后归一化：去除 name / base_url 首尾空白
+    c.name = c.name.trim().to_string();
+    c.base_url = c.base_url.trim().to_string();
     state.repo.update_channel(&c).map_err(|e| e.to_string())
 }
 
@@ -420,12 +426,45 @@ mod tests {
         // 编辑时前端可能回传打码 key，应还原原值并通过校验
         let mut c = test_channel("ch1");
         c.name = "  重命名 ".into();
+        c.base_url = " https://api.openai.com ".into();
         c.api_key = "sk-***test".into();
         update_channel_with_state(&state, c).unwrap();
 
         let stored = state.repo.get_channel("ch1").unwrap().unwrap();
         assert_eq!(stored.api_key, "sk-test");
-        assert_eq!(stored.name, "  重命名 ");
+        // name / base_url 在存储前被 trim，避免带空白值在 reqwest 解析时失败
+        assert_eq!(stored.name, "重命名");
+        assert_eq!(stored.base_url, "https://api.openai.com");
+    }
+
+    #[test]
+    fn update_channel_short_masked_key_preserves_original() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.insert_channel(&test_channel("ch1")).unwrap();
+
+        // 短 key（≤4 字符）打码后为 "****"，也应还原原值而不是覆盖为打码串
+        let mut c = test_channel("ch1");
+        c.api_key = "****".into();
+        update_channel_with_state(&state, c).unwrap();
+
+        let stored = state.repo.get_channel("ch1").unwrap().unwrap();
+        assert_eq!(stored.api_key, "sk-test");
+    }
+
+    #[test]
+    fn create_channel_trims_name_and_base_url() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+
+        let mut c = test_channel("id-ignored");
+        c.name = "  带空格名称  ".into();
+        c.base_url = "  https://api.openai.com  ".into();
+        let created = create_channel_with_state(&state, c).unwrap();
+
+        let stored = state.repo.get_channel(&created.id).unwrap().unwrap();
+        assert_eq!(stored.name, "带空格名称");
+        assert_eq!(stored.base_url, "https://api.openai.com");
     }
 
     #[test]

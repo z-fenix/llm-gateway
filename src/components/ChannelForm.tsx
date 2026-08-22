@@ -73,7 +73,17 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
 
   const reloadMaps = () => {
     if (!channelId) return;
-    api.getModelMap(channelId).then(setMaps).catch(() => setMaps([]));
+    api
+      .getModelMap(channelId)
+      .then((m) => {
+        setMaps(m);
+        setMapError(null);
+      })
+      .catch(() => {
+        // 加载失败不能伪装成“空映射”，要用独立错误提示区分
+        setMaps([]);
+        setMapError("模型映射加载失败");
+      });
   };
 
   useEffect(() => {
@@ -213,7 +223,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
               <div className="space-y-2">
                 {maps === null ? (
                   <p className="text-xs text-muted-foreground">加载中…</p>
-                ) : maps.length === 0 ? (
+                ) : maps.length === 0 && !mapError ? (
                   <p className="text-xs text-muted-foreground">暂无模型映射</p>
                 ) : (
                   maps.map((m) => (

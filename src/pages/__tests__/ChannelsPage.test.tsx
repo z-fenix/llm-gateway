@@ -110,13 +110,43 @@ describe("ChannelsPage", () => {
     expect(screen.getByText(/✓ 120ms/)).toBeInTheDocument();
   });
 
-  it("删除渠道调用 deleteChannel 并刷新", async () => {
+  it("删除渠道需经过确认弹窗：确认后才调用 deleteChannel 并刷新", async () => {
     mockedApi.listChannels.mockResolvedValue([channel("c1")]);
     render(<ChannelsPage />);
     await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
 
+    // 点击删除只打开确认弹窗，不直接删除
     fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    expect(await screen.findByText(/确定删除渠道「渠道c1」/)).toBeInTheDocument();
+    expect(mockedApi.deleteChannel).not.toHaveBeenCalled();
+
+    // 点“取消”关闭弹窗且不删除
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    await waitFor(() => expect(screen.queryByText(/确定删除渠道/)).not.toBeInTheDocument());
+    expect(mockedApi.deleteChannel).not.toHaveBeenCalled();
+
+    // 再次打开并确认删除
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    fireEvent.click(await screen.findByRole("button", { name: "确认" }));
     await waitFor(() => expect(mockedApi.deleteChannel).toHaveBeenCalledWith("c1"));
     await waitFor(() => expect(mockedApi.listChannels).toHaveBeenCalledTimes(2));
+  });
+
+  it("编辑弹窗通过 onOpenChange 关闭（点 X）会清空 editing 状态", async () => {
+    mockedApi.listChannels.mockResolvedValue([channel("c1")]);
+    render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    expect(await screen.findByRole("heading", { name: "编辑渠道" })).toBeInTheDocument();
+
+    // 点击右上角 X（Radix 关闭按钮），走 onOpenChange(false)，editing 应被清空
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "编辑渠道" })).not.toBeInTheDocument());
+
+    // 再次打开“新建渠道”，不应残留之前的编辑态
+    fireEvent.click(screen.getAllByRole("button", { name: "新建渠道" })[0]);
+    expect(await screen.findByRole("heading", { name: "新建渠道" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "编辑渠道" })).not.toBeInTheDocument();
   });
 });

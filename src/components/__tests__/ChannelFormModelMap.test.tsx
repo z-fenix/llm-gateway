@@ -55,6 +55,14 @@ describe("ChannelForm 模型映射", () => {
     await waitFor(() => expect(screen.getByText("暂无模型映射")).toBeInTheDocument());
   });
 
+  it("模型映射加载失败展示错误提示而非“暂无模型映射”", async () => {
+    mockedApi.getModelMap.mockRejectedValue(new Error("load failed"));
+    render(<ChannelForm initial={editForm()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    await waitFor(() => expect(mockedApi.getModelMap).toHaveBeenCalledWith("c1"));
+    expect(screen.getByText("模型映射加载失败")).toBeInTheDocument();
+    expect(screen.queryByText("暂无模型映射")).not.toBeInTheDocument();
+  });
+
   it("添加映射调用 setModelMap 并重新加载", async () => {
     render(<ChannelForm initial={editForm()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
     await waitFor(() => expect(screen.getByText("暂无模型映射")).toBeInTheDocument());

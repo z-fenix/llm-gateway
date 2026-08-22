@@ -163,7 +163,8 @@ export default function KnowledgePage() {
     if (!editing) return;
     const name = editName.trim();
     if (!name) {
-      setError("名称不能为空");
+      // 页面级 error 横幅位于 Dialog 遮罩之下，用户在弹窗内看不到；改用 toast 在弹窗上方提示
+      toast.error("名称不能为空");
       return;
     }
     setError(null);

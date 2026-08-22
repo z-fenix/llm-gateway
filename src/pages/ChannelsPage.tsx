@@ -6,6 +6,7 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import ConfirmDialog from "../components/ConfirmDialog";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ export default function ChannelsPage() {
   const [list, setList] = useState<Channel[]>([]);
   const [editing, setEditing] = useState<Channel | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Channel | null>(null);
   const [testMsg, setTestMsg] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +54,18 @@ export default function ChannelsPage() {
       handleError(err);
     }
   };
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setError(null);
+    try {
+      await api.deleteChannel(deleteTarget.id);
+      setDeleteTarget(null);
+      load();
+    } catch (err) {
+      setDeleteTarget(null);
+      handleError(err);
+    }
+  };
 
   return (
     <div>
@@ -67,7 +81,13 @@ export default function ChannelsPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditing(null);
+        }}
+      >
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "编辑渠道" : "新建渠道"}</DialogTitle>
@@ -118,7 +138,7 @@ export default function ChannelsPage() {
                       <button className="text-primary hover:underline" onClick={() => openEdit(c)}>编辑</button>
                       <button className="text-emerald-600 hover:underline" onClick={() => test(c.id)}>测试</button>
                       <button className="text-destructive hover:underline"
-                        onClick={() => { setError(null); api.deleteChannel(c.id).then(load).catch(handleError); }}>删除</button>
+                        onClick={() => setDeleteTarget(c)}>删除</button>
                       {testMsg[c.id] && <span className="text-xs text-muted-foreground">{testMsg[c.id]}</span>}
                     </div>
                   </td>
@@ -128,6 +148,19 @@ export default function ChannelsPage() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="删除渠道"
+        message={
+          deleteTarget
+            ? `确定删除渠道「${deleteTarget.name}」?关联的角色路由与兜底引用可能失效。`
+            : undefined
+        }
+        variant="destructive"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

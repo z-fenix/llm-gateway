@@ -96,12 +96,13 @@ export default function ApiKeysPage() {
     if (!editing) return;
     const trimmed = editName.trim();
     if (!trimmed) {
-      setError("名称不能为空");
+      // 页面级 error 横幅位于 Dialog 遮罩之下，用户在弹窗内看不到；改用 toast 在弹窗上方提示
+      toast.error("名称不能为空");
       return;
     }
     const q = parseQuota(editQuota);
     if (q === "invalid") {
-      setError("请输入非负数字");
+      toast.error("请输入非负数字");
       return;
     }
     setError(null);

@@ -148,7 +148,8 @@ export default function RoleRoutesPage() {
   const savePattern = async () => {
     const pattern = pPattern.trim();
     if (!pattern) {
-      setError("匹配模式不能为空");
+      // 页面级 error 横幅位于 Dialog 遮罩之下，用户在弹窗内看不到；改用 toast 在弹窗上方提示
+      toast.error("匹配模式不能为空");
       return;
     }
     const n = Number(pPriority);
