@@ -870,6 +870,17 @@ impl Repository {
         Ok(changed)
     }
 
+    /// 重建成功后清除 needs_reindex 标记。
+    pub fn mark_kb_reindexed(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE knowledge_bases SET needs_reindex=?2, updated_at=?3 WHERE id=?1",
+            params![id, false as i64, chrono::Utc::now().timestamp()],
+        )?;
+        Ok(())
+    }
+
     pub fn update_kb_counts(&self, id: &str, doc_count: i64, chunk_count: i64) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();

@@ -206,7 +206,12 @@ pub async fn reindex_kb_contents(state: AppState, kb_id: String) -> Result<(), S
             .update_chunk_embedding_id(&chunk.id, embedding_id)
             .map_err(|e| e.to_string())?;
     }
-    index.save()
+    index.save()?;
+    state
+        .repo
+        .mark_kb_reindexed(&kb_id)
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// 摄取尾段失败后的回滚:删除刚插入的 chunk(触发器同步清理 FTS),并从向量索引
@@ -616,5 +621,43 @@ mod tests {
         let results = retrieve(&state, &kb, "quantum", 5).await.unwrap();
         assert!(!results.is_empty(), "reindexed kb should be retrievable");
         assert!(results.iter().any(|r| r.filename == "notes.md"));
+    }
+
+    #[tokio::test]
+    async fn reindex_clears_needs_reindex_flag() {
+        let base_url = spawn_mock(200).await;
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let dir = test_index_dir("reindex_clear_flag");
+        *state.kb_index_dir.write() = dir.clone();
+
+        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        let kb_id = "kb-reindex-clear-flag".to_string();
+        state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
+
+        let d = doc("doc-reindex-clear-flag", &kb_id, "notes.md");
+        state.repo.insert_document(&d).unwrap();
+        stage_content(&state, &d.id, b"# Title\n\nquantum computing basics").unwrap();
+        spawn_ingest(state.clone(), d.id.clone());
+
+        let indexed = wait_for_status(&state, &d.id, "indexed").await;
+        assert!(indexed.chunk_count > 0, "doc should be ingested first");
+
+        // 模拟 embedding model 变更,触发 needs_reindex 置位
+        state
+            .repo
+            .update_kb_embedding_channel(&kb_id, Some("ch1".into()), "text-embedding-3-small-v2".into())
+            .unwrap();
+        assert!(
+            state.repo.get_kb(&kb_id).unwrap().unwrap().needs_reindex,
+            "flag should be set after embedding model change"
+        );
+
+        reindex_kb_contents(state.clone(), kb_id.clone()).await.unwrap();
+
+        assert!(
+            !state.repo.get_kb(&kb_id).unwrap().unwrap().needs_reindex,
+            "flag should be cleared after successful reindex"
+        );
     }
 }
