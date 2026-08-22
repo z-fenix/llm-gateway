@@ -890,11 +890,15 @@ impl Repository {
         // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms)
         let conn = self.db.conn();
         let conn = conn.lock();
+        // 本地日历日的零点,按本地时区解释为 UTC 时间戳。
+        // 之前用 and_utc() 把「本地午夜」当作 UTC,在 UTC+8 等东时区的本地 00:00–08:00
+        // 会把当天的日志算进"昨天",导致 today 统计为 0。
         let today_start = chrono::Local::now()
             .date_naive()
             .and_hms_opt(0, 0, 0)
             .unwrap()
-            .and_utc()
+            .and_local_timezone(chrono::Local)
+            .unwrap()
             .timestamp();
         let (tr, tt): (i64,i64) = conn.query_row(
             "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs WHERE created_at>=?1",
