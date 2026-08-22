@@ -71,16 +71,24 @@ impl SseAccumulator {
         }
     }
 
-    /// 喂入一行原始 SSE 文本（可能是 "data: {...}" 或空行/event 行）。
+    /// 喂入一行原始 SSE 文本（可能是 "data: {...}"、空行/event 行，
+    /// 或 Gemini Native 无 data: 前缀的 NDJSON 行）。
     pub fn feed_line(&mut self, line: &str) {
         let line = line.trim();
-        if !line.starts_with("data:") {
-            return;
-        }
-        let payload = line.trim_start_matches("data:").trim();
-        if payload == "[DONE]" || payload.is_empty() {
-            return;
-        }
+        let payload: Option<&str> = if line.starts_with("data:") {
+            let p = line.trim_start_matches("data:").trim();
+            if p == "[DONE]" || p.is_empty() {
+                None
+            } else {
+                Some(p)
+            }
+        } else if self.protocol == Protocol::Gemini && !line.is_empty() {
+            // Gemini Native streamGenerateContent 默认返回 NDJSON(无 data: 前缀)
+            Some(line)
+        } else {
+            None
+        };
+        let Some(payload) = payload else { return };
         let v: serde_json::Value = match serde_json::from_str(payload) {
             Ok(v) => v,
             Err(_) => return,
@@ -178,5 +186,31 @@ mod tests {
         assert_eq!(u.input_tokens, 3);
         assert_eq!(u.output_tokens, 2);
         assert_eq!(acc.text(), "hello");
+    }
+
+    #[test]
+    fn gemini_ndjson_without_data_prefix_parses() {
+        let mut acc = SseAccumulator::new(Protocol::Gemini);
+        acc.feed_line(r#"{"candidates":[{"content":{"parts":[{"text":"ndjson works"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":2}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 3);
+        assert_eq!(u.output_tokens, 2);
+        assert_eq!(acc.text(), "ndjson works");
+    }
+
+    #[test]
+    fn gemini_accepts_both_data_prefix_and_ndjson() {
+        let mut acc = SseAccumulator::new(Protocol::Gemini);
+        acc.feed_line(r#"data: {"candidates":[{"content":{"parts":[{"text":"data "}],"role":"model"}}]}"#);
+        acc.feed_line(r#"{"candidates":[{"content":{"parts":[{"text":"ndjson"}],"role":"model"}}]}"#);
+        assert_eq!(acc.text(), "data ndjson");
+    }
+
+    #[test]
+    fn non_gemini_requires_data_prefix() {
+        let mut acc = SseAccumulator::new(Protocol::OpenAI);
+        // 无 data: 前缀的裸 JSON 行在非 Gemini 协议下必须被忽略
+        acc.feed_line(r#"{"choices":[{"delta":{"content":"sneaky"}}]}"#);
+        assert_eq!(acc.text(), "");
     }
 }
