@@ -49,6 +49,8 @@ export const api = {
   deleteApiKey: (id: string) => invoke<void>("delete_api_key", { id }),
   updateQuota: (id: string, quotaTotal: number | null) =>
     invoke<void>("update_quota", { id, quotaTotal }),
+  updateApiKey: (id: string, name: string, quotaTotal: number | null) =>
+    invoke<void>("update_api_key", { id, name, quotaTotal }),
 
   listRoleRoutes: () => invoke<RoleRoute[]>("list_role_routes"),
   setRoleRoute: (role: string, channelId: string, targetModel: string) =>

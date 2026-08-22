@@ -128,6 +128,7 @@ pub fn run() {
             commands::api_key::set_api_key_enabled,
             commands::api_key::delete_api_key,
             commands::api_key::update_quota,
+            commands::api_key::update_api_key,
             commands::role_route::list_role_routes,
             commands::role_route::set_role_route,
             commands::role_route::delete_role_route,
