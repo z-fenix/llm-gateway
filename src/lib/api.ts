@@ -14,6 +14,7 @@ import type {
   LogFilter,
   LogPage,
   LogStats,
+  ModelMapEntry,
   RagSettings,
   RequestLog,
   RetrievedChunk,
@@ -32,6 +33,13 @@ export const api = {
   updateChannel: (c: Channel) => invoke<void>("update_channel", { c }),
   deleteChannel: (id: string) => invoke<void>("delete_channel", { id }),
   testChannel: (id: string) => invoke<TestResult>("test_channel", { id }),
+
+  setModelMap: (channelId: string, sourceModel: string, targetModel: string) =>
+    invoke<void>("set_model_map", { channelId, sourceModel, targetModel }),
+  deleteModelMap: (channelId: string, sourceModel: string) =>
+    invoke<void>("delete_model_map", { channelId, sourceModel }),
+  getModelMap: (channelId: string) =>
+    invoke<ModelMapEntry[]>("get_model_map", { channelId }),
 
   listApiKeys: () => invoke<ApiKey[]>("list_api_keys"),
   createApiKey: (name: string, quotaTotal: number | null) =>

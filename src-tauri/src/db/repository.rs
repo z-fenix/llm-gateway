@@ -121,10 +121,10 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
-            "INSERT INTO channels (id,name,provider_type,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
+            "INSERT INTO channels (id,name,supplier,upstream_protocol,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)",
             params![
-                c.id, c.name, c.provider_type, c.base_url, c.api_key,
+                c.id, c.name, c.supplier, c.upstream_protocol, c.base_url, c.api_key,
                 serde_json::to_string(&c.models).unwrap(),
                 c.priority, c.weight, c.enabled as i64, c.timeout_secs,
                 c.total_calls, c.total_tokens, c.success_rate, c.avg_latency_ms,
@@ -138,7 +138,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,name,provider_type,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels WHERE id=?1",
+            "SELECT id,name,supplier,upstream_protocol,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels WHERE id=?1",
         )?;
         let mut rows = stmt.query(params![id])?;
         if let Some(r) = rows.next()? {
@@ -152,7 +152,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,name,provider_type,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels ORDER BY priority DESC, created_at ASC",
+            "SELECT id,name,supplier,upstream_protocol,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels ORDER BY priority DESC, created_at ASC",
         )?;
         let rows = stmt.query_map([], row_to_channel)?;
         let mut out = Vec::new();
@@ -265,6 +265,16 @@ impl Repository {
             out.push(r?);
         }
         Ok(out)
+    }
+
+    pub fn delete_model_map(&self, channel_id: &str, source: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "DELETE FROM channel_model_maps WHERE channel_id=?1 AND source_model=?2",
+            params![channel_id, source],
+        )?;
+        Ok(())
     }
 
     pub fn insert_log(&self, l: &RequestLog) -> AppResult<()> {
@@ -384,8 +394,8 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
-            "UPDATE channels SET name=?2,provider_type=?3,base_url=?4,api_key=?5,models=?6,priority=?7,weight=?8,enabled=?9,timeout_secs=?10,updated_at=?11 WHERE id=?1",
-            rusqlite::params![c.id,c.name,c.provider_type,c.base_url,c.api_key,serde_json::to_string(&c.models).unwrap(),c.priority,c.weight,c.enabled as i64,c.timeout_secs,c.updated_at],
+            "UPDATE channels SET name=?2,supplier=?3,upstream_protocol=?4,base_url=?5,api_key=?6,models=?7,priority=?8,weight=?9,enabled=?10,timeout_secs=?11,updated_at=?12 WHERE id=?1",
+            rusqlite::params![c.id,c.name,c.supplier,c.upstream_protocol,c.base_url,c.api_key,serde_json::to_string(&c.models).unwrap(),c.priority,c.weight,c.enabled as i64,c.timeout_secs,c.updated_at],
         )?;
         Ok(())
     }
@@ -1029,24 +1039,25 @@ fn fts5_escape(query: &str) -> Option<String> {
 }
 
 fn row_to_channel(r: &rusqlite::Row) -> rusqlite::Result<Channel> {
-    let models_json: String = r.get(5)?;
+    let models_json: String = r.get(6)?;
     Ok(Channel {
         id: r.get(0)?,
         name: r.get(1)?,
-        provider_type: r.get(2)?,
-        base_url: r.get(3)?,
-        api_key: r.get(4)?,
+        supplier: r.get(2)?,
+        upstream_protocol: r.get(3)?,
+        base_url: r.get(4)?,
+        api_key: r.get(5)?,
         models: serde_json::from_str(&models_json).unwrap_or_default(),
-        priority: r.get(6)?,
-        weight: r.get(7)?,
-        enabled: r.get::<_, i64>(8)? != 0,
-        timeout_secs: r.get(9)?,
-        total_calls: r.get(10)?,
-        total_tokens: r.get(11)?,
-        success_rate: r.get(12)?,
-        avg_latency_ms: r.get(13)?,
-        created_at: r.get(14)?,
-        updated_at: r.get(15)?,
+        priority: r.get(7)?,
+        weight: r.get(8)?,
+        enabled: r.get::<_, i64>(9)? != 0,
+        timeout_secs: r.get(10)?,
+        total_calls: r.get(11)?,
+        total_tokens: r.get(12)?,
+        success_rate: r.get(13)?,
+        avg_latency_ms: r.get(14)?,
+        created_at: r.get(15)?,
+        updated_at: r.get(16)?,
     })
 }
 
@@ -1100,7 +1111,8 @@ mod tests {
 
     fn ch(id: &str) -> Channel {
         Channel {
-            id: id.into(), name: "n".into(), provider_type: "openai".into(),
+            id: id.into(), name: "n".into(), supplier: "openai".into(),
+            upstream_protocol: "openai-chat".into(),
             base_url: "http://x".into(), api_key: "sk-real".into(),
             models: vec!["gpt-4o".into()], priority: 0, weight: 1, enabled: true,
             timeout_secs: 60, total_calls: 0, total_tokens: 0, success_rate: 1.0,

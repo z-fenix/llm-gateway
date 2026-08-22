@@ -1,7 +1,8 @@
 export interface Channel {
   id: string;
   name: string;
-  provider_type: string;
+  supplier: string;
+  upstream_protocol: string;
   base_url: string;
   api_key: string;
   models: string[];
@@ -35,6 +36,11 @@ export interface RoleRoute {
   target_model: string;
   enabled: boolean;
   updated_at: number;
+}
+export interface ModelMapEntry {
+  channel_id: string;
+  source_model: string;
+  target_model: string;
 }
 export interface RolePattern {
   id: string;

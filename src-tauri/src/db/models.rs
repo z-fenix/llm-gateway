@@ -6,7 +6,10 @@ pub struct Channel {
     #[serde(default)]
     pub id: String,
     pub name: String,
-    pub provider_type: String,
+    #[serde(alias = "provider_type")]
+    pub supplier: String,
+    #[serde(default = "default_upstream_protocol")]
+    pub upstream_protocol: String,
     pub base_url: String,
     pub api_key: String,
     pub models: Vec<String>,
@@ -26,6 +29,10 @@ pub struct Channel {
     pub created_at: i64,
     #[serde(default)]
     pub updated_at: i64,
+}
+
+fn default_upstream_protocol() -> String {
+    "openai-chat".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +57,13 @@ pub struct RoleRoute {
     pub target_model: String,
     pub enabled: bool,
     pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelMapEntry {
+    pub channel_id: String,
+    pub source_model: String,
+    pub target_model: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -168,7 +182,8 @@ mod tests {
         // 前端新建渠道表单只提交用户可填字段；服务端生成的 id/时间戳/统计字段应可缺省
         let json = r#"{
             "name": "deepseek",
-            "provider_type": "deepseek",
+            "supplier": "deepseek",
+            "upstream_protocol": "openai-chat",
             "base_url": "https://api.deepseek.com",
             "api_key": "sk-real-key",
             "models": ["deepseek-chat"],
@@ -182,5 +197,6 @@ mod tests {
         assert!(c.id.is_empty());
         assert_eq!(c.total_calls, 0);
         assert_eq!(c.created_at, 0);
+        assert_eq!(c.upstream_protocol, "openai-chat");
     }
 }
