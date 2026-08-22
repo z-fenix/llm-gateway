@@ -1,6 +1,9 @@
 use crate::proxy::handlers;
 use crate::proxy::state::AppState;
-use axum::{routing::{get, post}, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use std::net::SocketAddr;
 
 pub fn router(state: AppState) -> Router {
@@ -14,7 +17,10 @@ pub fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
-pub async fn start(state: AppState, start_port: u16) -> Result<(tokio::task::JoinHandle<()>, SocketAddr), String> {
+pub async fn start(
+    state: AppState,
+    start_port: u16,
+) -> Result<(tokio::task::JoinHandle<()>, SocketAddr), String> {
     let app = router(state);
     let listener = if start_port == 0 {
         let addr = SocketAddr::from(([127, 0, 0, 1], 0));
@@ -42,18 +48,16 @@ pub async fn start(state: AppState, start_port: u16) -> Result<(tokio::task::Joi
                 }
             }
         }
-        listener.ok_or_else(|| {
-            format!(
-                "no available port in {}..=8787: {:?}",
-                start_port,
-                last_err
-            )
-        })?
+        listener
+            .ok_or_else(|| format!("no available port in {}..=8787: {:?}", start_port, last_err))?
     };
 
     let local = listener.local_addr().unwrap();
 
-    Ok((tokio::spawn(async move {
-        axum::serve(listener, app).await.expect("serve gateway");
-    }), local))
+    Ok((
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.expect("serve gateway");
+        }),
+        local,
+    ))
 }

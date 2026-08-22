@@ -1,7 +1,11 @@
 use crate::protocol::types::ChatRequest;
 
 /// 统一格式 → 指定上游协议的上游请求体。
-pub fn build_upstream_body(chat: &ChatRequest, upstream_protocol: &str, model: &str) -> serde_json::Value {
+pub fn build_upstream_body(
+    chat: &ChatRequest,
+    upstream_protocol: &str,
+    model: &str,
+) -> serde_json::Value {
     match upstream_protocol {
         "anthropic-messages" => crate::protocol::anthropic::chat_request_to_upstream(chat, model),
         "openai-responses" => crate::protocol::responses::chat_request_to_upstream(chat, model),
@@ -12,7 +16,13 @@ pub fn build_upstream_body(chat: &ChatRequest, upstream_protocol: &str, model: &
 }
 
 /// 上游完整 URL。
-pub fn upstream_url(upstream_protocol: &str, base_url: &str, model: &str, api_key: &str, stream: bool) -> String {
+pub fn upstream_url(
+    upstream_protocol: &str,
+    base_url: &str,
+    model: &str,
+    api_key: &str,
+    stream: bool,
+) -> String {
     let base = base_url.trim_end_matches('/');
     match upstream_protocol {
         "anthropic-messages" => {
@@ -31,7 +41,11 @@ pub fn upstream_url(upstream_protocol: &str, base_url: &str, model: &str, api_ke
         }
         "gemini-native" => {
             // Gemini Native: base_url 通常是 https://generativelanguage.googleapis.com/v1beta
-            let action = if stream { "streamGenerateContent" } else { "generateContent" };
+            let action = if stream {
+                "streamGenerateContent"
+            } else {
+                "generateContent"
+            };
             format!("{}/models/{}:{}?key={}", base, model, action, api_key)
         }
         // openai-chat / 自定义渠道默认走 OpenAI Chat Completions
@@ -61,7 +75,13 @@ mod tests {
     #[test]
     fn openai_chat_url_without_v1_gets_v1_prefix() {
         assert_eq!(
-            upstream_url("openai-chat", "https://api.openai.com", "gpt-4", "sk-xxx", false),
+            upstream_url(
+                "openai-chat",
+                "https://api.openai.com",
+                "gpt-4",
+                "sk-xxx",
+                false
+            ),
             "https://api.openai.com/v1/chat/completions"
         );
     }
@@ -69,7 +89,13 @@ mod tests {
     #[test]
     fn openai_chat_url_with_v1_does_not_duplicate() {
         assert_eq!(
-            upstream_url("openai-chat", "https://api.openai.com/v1", "gpt-4", "sk-xxx", false),
+            upstream_url(
+                "openai-chat",
+                "https://api.openai.com/v1",
+                "gpt-4",
+                "sk-xxx",
+                false
+            ),
             "https://api.openai.com/v1/chat/completions"
         );
     }
@@ -77,7 +103,13 @@ mod tests {
     #[test]
     fn openai_responses_url_uses_responses_endpoint() {
         assert_eq!(
-            upstream_url("openai-responses", "https://api.openai.com", "gpt-4", "sk-xxx", false),
+            upstream_url(
+                "openai-responses",
+                "https://api.openai.com",
+                "gpt-4",
+                "sk-xxx",
+                false
+            ),
             "https://api.openai.com/v1/responses"
         );
     }
@@ -85,7 +117,13 @@ mod tests {
     #[test]
     fn anthropic_messages_url_without_v1_gets_v1_messages() {
         assert_eq!(
-            upstream_url("anthropic-messages", "https://api.anthropic.com", "claude-3", "sk-xxx", false),
+            upstream_url(
+                "anthropic-messages",
+                "https://api.anthropic.com",
+                "claude-3",
+                "sk-xxx",
+                false
+            ),
             "https://api.anthropic.com/v1/messages"
         );
     }
@@ -93,7 +131,13 @@ mod tests {
     #[test]
     fn anthropic_messages_url_with_v1_does_not_duplicate() {
         assert_eq!(
-            upstream_url("anthropic-messages", "https://api.anthropic.com/v1", "claude-3", "sk-xxx", false),
+            upstream_url(
+                "anthropic-messages",
+                "https://api.anthropic.com/v1",
+                "claude-3",
+                "sk-xxx",
+                false
+            ),
             "https://api.anthropic.com/v1/messages"
         );
     }
@@ -117,11 +161,23 @@ mod tests {
     #[test]
     fn trailing_slashes_are_normalized() {
         assert_eq!(
-            upstream_url("openai-chat", "https://api.openai.com/", "gpt-4", "sk-xxx", false),
+            upstream_url(
+                "openai-chat",
+                "https://api.openai.com/",
+                "gpt-4",
+                "sk-xxx",
+                false
+            ),
             "https://api.openai.com/v1/chat/completions"
         );
         assert_eq!(
-            upstream_url("openai-chat", "https://api.openai.com/v1/", "gpt-4", "sk-xxx", false),
+            upstream_url(
+                "openai-chat",
+                "https://api.openai.com/v1/",
+                "gpt-4",
+                "sk-xxx",
+                false
+            ),
             "https://api.openai.com/v1/chat/completions"
         );
     }

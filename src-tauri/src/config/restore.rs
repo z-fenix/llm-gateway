@@ -234,7 +234,10 @@ pub fn import(
 
         if overwrite {
             for br in &sec.builtin_rules {
-                if let Err(e) = state.repo.update_builtin_rule(&br.id, br.enabled, &br.severity) {
+                if let Err(e) = state
+                    .repo
+                    .update_builtin_rule(&br.id, br.enabled, &br.severity)
+                {
                     log::error!("import: failed to update builtin_rule {}: {}", br.id, e);
                 }
             }
@@ -248,7 +251,10 @@ pub fn import(
     }
 
     if let Some(ac) = &bundle.app_config {
-        let p = ac.preferred_port.clamp(crate::config::settings::MIN_PORT, crate::config::settings::MAX_PORT);
+        let p = ac.preferred_port.clamp(
+            crate::config::settings::MIN_PORT,
+            crate::config::settings::MAX_PORT,
+        );
         *state.app.write() = crate::config::settings::AppConfig { preferred_port: p };
     }
 
@@ -311,7 +317,7 @@ mod tests {
                 id: id.into(),
                 name: name.into(),
                 supplier: "openai".into(),
-            upstream_protocol: "openai-chat".into(),
+                upstream_protocol: "openai-chat".into(),
                 base_url: "https://api.openai.com/v1".into(),
                 api_key: "".into(),
                 models: vec!["gpt-4o".into()],
@@ -447,51 +453,69 @@ mod tests {
         let mut bundle = empty_bundle();
         bundle.app_config = Some(AppConfigExport { preferred_port: 0 });
         import(&state, &bundle, "overwrite").unwrap();
-        assert_eq!(state.app.read().preferred_port, crate::config::settings::MIN_PORT);
+        assert_eq!(
+            state.app.read().preferred_port,
+            crate::config::settings::MIN_PORT
+        );
     }
 
     #[test]
     fn import_clamps_preferred_port_high() {
         let state = test_state();
         let mut bundle = empty_bundle();
-        bundle.app_config = Some(AppConfigExport { preferred_port: 9000 });
+        bundle.app_config = Some(AppConfigExport {
+            preferred_port: 9000,
+        });
         import(&state, &bundle, "overwrite").unwrap();
-        assert_eq!(state.app.read().preferred_port, crate::config::settings::MAX_PORT);
+        assert_eq!(
+            state.app.read().preferred_port,
+            crate::config::settings::MAX_PORT
+        );
     }
 
     #[test]
     fn import_overwrite_api_key_and_custom_rule_atomic() {
         let state = test_state();
-        state.repo.insert_api_key(&ApiKey {
-            id: "k1".into(),
-            key: "sk-old".into(),
-            name: "old".into(),
-            enabled: true,
-            quota_total: Some(100),
-            quota_used: 0,
-            total_calls: 0,
-            total_tokens: 0,
-            created_at: 1,
-            last_used_at: None,
-        }).unwrap();
-        state.repo.create_custom_rule(&CustomRule {
-            id: "cr1".into(),
-            rule_type: "regex".into(),
-            category: "prompt_injection".into(),
-            pattern: "old-pattern".into(),
-            severity: "medium".into(),
-            action: "warn".into(),
-            enabled: true,
-            description: Some("old desc".into()),
-            created_at: 1,
-        }).unwrap();
+        state
+            .repo
+            .insert_api_key(&ApiKey {
+                id: "k1".into(),
+                key: "sk-old".into(),
+                name: "old".into(),
+                enabled: true,
+                quota_total: Some(100),
+                quota_used: 0,
+                total_calls: 0,
+                total_tokens: 0,
+                created_at: 1,
+                last_used_at: None,
+            })
+            .unwrap();
+        state
+            .repo
+            .create_custom_rule(&CustomRule {
+                id: "cr1".into(),
+                rule_type: "regex".into(),
+                category: "prompt_injection".into(),
+                pattern: "old-pattern".into(),
+                severity: "medium".into(),
+                action: "warn".into(),
+                enabled: true,
+                description: Some("old desc".into()),
+                created_at: 1,
+            })
+            .unwrap();
 
         let r = import(&state, &bundle_with_overwrite_data(), "overwrite").unwrap();
         assert_eq!(r.imported, 0);
         assert_eq!(r.skipped, 0);
         assert_eq!(r.overwritten, 2);
 
-        let key = state.repo.get_api_key_by_key("sk-imported").unwrap().unwrap();
+        let key = state
+            .repo
+            .get_api_key_by_key("sk-imported")
+            .unwrap()
+            .unwrap();
         assert_eq!(key.id, "k1");
         assert_eq!(key.name, "imported");
         assert!(!key.enabled);

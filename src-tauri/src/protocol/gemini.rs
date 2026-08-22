@@ -2,12 +2,22 @@ use super::types::{ChatMessage, ChatRequest, ChatResponse};
 
 /// Gemini Native generateContent/streamGenerateContent 请求体 → 统一 ChatRequest。
 pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
-    let model = v.get("model").and_then(|m| m.as_str()).unwrap_or("").to_string();
+    let model = v
+        .get("model")
+        .and_then(|m| m.as_str())
+        .unwrap_or("")
+        .to_string();
     if model.is_empty() {
         return Err("missing model".into());
     }
     let mut messages: Vec<ChatMessage> = Vec::new();
-    if let Some(sys) = v.get("systemInstruction").and_then(|s| s.get("parts")).and_then(|p| p.get(0)).and_then(|p| p.get("text")).and_then(|t| t.as_str()) {
+    if let Some(sys) = v
+        .get("systemInstruction")
+        .and_then(|s| s.get("parts"))
+        .and_then(|p| p.get(0))
+        .and_then(|p| p.get("text"))
+        .and_then(|t| t.as_str())
+    {
         messages.push(ChatMessage {
             role: "system".into(),
             content: serde_json::Value::String(sys.to_string()),
@@ -35,9 +45,15 @@ pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
     Ok(ChatRequest {
         model,
         messages,
-        max_tokens: gen_cfg.get("maxOutputTokens").and_then(|t| t.as_u64()).map(|t| t as u32),
+        max_tokens: gen_cfg
+            .get("maxOutputTokens")
+            .and_then(|t| t.as_u64())
+            .map(|t| t as u32),
         stream: false,
-        temperature: gen_cfg.get("temperature").and_then(|t| t.as_f64()).map(|t| t as f32),
+        temperature: gen_cfg
+            .get("temperature")
+            .and_then(|t| t.as_f64())
+            .map(|t| t as f32),
         tools: None,
         extra: Default::default(),
     })
@@ -58,7 +74,11 @@ pub fn chat_request_to_upstream(chat: &ChatRequest, _model: &str) -> serde_json:
             }
             continue;
         }
-        let role = if m.role == "assistant" { "model" } else { "user" };
+        let role = if m.role == "assistant" {
+            "model"
+        } else {
+            "user"
+        };
         let text = match &m.content {
             serde_json::Value::String(s) => s.clone(),
             other => other.to_string(),
@@ -159,9 +179,18 @@ mod tests {
         let chat = ChatRequest {
             model: "gemini-pro".into(),
             messages: vec![
-                ChatMessage { role: "system".into(), content: serde_json::json!("sys") },
-                ChatMessage { role: "user".into(), content: serde_json::json!("hi") },
-                ChatMessage { role: "assistant".into(), content: serde_json::json!("hello") },
+                ChatMessage {
+                    role: "system".into(),
+                    content: serde_json::json!("sys"),
+                },
+                ChatMessage {
+                    role: "user".into(),
+                    content: serde_json::json!("hi"),
+                },
+                ChatMessage {
+                    role: "assistant".into(),
+                    content: serde_json::json!("hello"),
+                },
             ],
             max_tokens: Some(100),
             stream: false,
@@ -183,11 +212,19 @@ mod tests {
     #[test]
     fn chat_to_response_shape() {
         let chat = ChatResponse {
-            id: "x".into(), model: "m".into(), content: serde_json::json!("answer"),
-            stop_reason: Some("stop".into()), input_tokens: 3, output_tokens: 5, raw: serde_json::json!({}),
+            id: "x".into(),
+            model: "m".into(),
+            content: serde_json::json!("answer"),
+            stop_reason: Some("stop".into()),
+            input_tokens: 3,
+            output_tokens: 5,
+            raw: serde_json::json!({}),
         };
         let out = chat_to_response(&chat);
-        assert_eq!(out["candidates"][0]["content"]["parts"][0]["text"], "answer");
+        assert_eq!(
+            out["candidates"][0]["content"]["parts"][0]["text"],
+            "answer"
+        );
         assert_eq!(out["usageMetadata"]["totalTokenCount"], 8);
     }
 }

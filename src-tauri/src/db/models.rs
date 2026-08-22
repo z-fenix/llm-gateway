@@ -109,25 +109,45 @@ pub struct RequestLog {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestSecurityFinding {
-    pub id: String, pub log_id: String, pub phase: String, pub category: String,
-    pub rule_id: String, pub severity: String, pub title: String,
-    pub description: Option<String>, pub location: Option<String>,
-    pub evidence_masked: Option<String>, pub evidence_hash: Option<String>,
-    pub action: Option<String>, pub created_at: i64,
+    pub id: String,
+    pub log_id: String,
+    pub phase: String,
+    pub category: String,
+    pub rule_id: String,
+    pub severity: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub location: Option<String>,
+    pub evidence_masked: Option<String>,
+    pub evidence_hash: Option<String>,
+    pub action: Option<String>,
+    pub created_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BuiltinRule {
-    pub id: String, pub rule_id: String, pub category: String, pub severity: String,
-    pub title: String, pub description: Option<String>, pub toggle_key: Option<String>,
-    pub enabled: bool, pub created_at: i64,
+    pub id: String,
+    pub rule_id: String,
+    pub category: String,
+    pub severity: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub toggle_key: Option<String>,
+    pub enabled: bool,
+    pub created_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomRule {
-    pub id: String, pub rule_type: String, pub category: String, pub pattern: String,
-    pub severity: String, pub action: String, pub enabled: bool,
-    pub description: Option<String>, pub created_at: i64,
+    pub id: String,
+    pub rule_type: String,
+    pub category: String,
+    pub pattern: String,
+    pub severity: String,
+    pub action: String,
+    pub enabled: bool,
+    pub description: Option<String>,
+    pub created_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

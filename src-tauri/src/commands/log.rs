@@ -56,7 +56,10 @@ pub fn list_logs(state: State<AppState>, filter: CommandLogFilter) -> Result<Log
         .repo
         .list_logs(&domain_filter, limit, offset)
         .map_err(|e| e.to_string())?;
-    let total = state.repo.count_logs(&domain_filter).map_err(|e| e.to_string())?;
+    let total = state
+        .repo
+        .count_logs(&domain_filter)
+        .map_err(|e| e.to_string())?;
     Ok(LogPage { items, total })
 }
 
@@ -82,7 +85,10 @@ pub fn get_log_timeseries(
 
 #[tauri::command]
 pub fn delete_logs_before(state: State<AppState>, before: i64) -> Result<usize, String> {
-    state.repo.delete_logs_before(before).map_err(|e| e.to_string())
+    state
+        .repo
+        .delete_logs_before(before)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

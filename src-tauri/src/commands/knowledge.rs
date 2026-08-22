@@ -102,7 +102,10 @@ pub fn list_kbs(state: State<AppState>) -> Result<Vec<KnowledgeBase>, String> {
 }
 
 fn set_kb_status_inner(state: &AppState, id: &str, enabled: bool) -> Result<(), String> {
-    state.repo.set_kb_status(id, enabled).map_err(|e| e.to_string())
+    state
+        .repo
+        .set_kb_status(id, enabled)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -179,12 +182,7 @@ pub fn delete_kb(state: State<AppState>, id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn reindex_kb(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    if state
-        .repo
-        .get_kb(&id)
-        .map_err(|e| e.to_string())?
-        .is_none()
-    {
+    if state.repo.get_kb(&id).map_err(|e| e.to_string())?.is_none() {
         return Err(format!("knowledge base not found: {id}"));
     }
     // 后台重建：从 kb_chunks.content 重新 embedding 并重写 usearch 索引。
@@ -229,10 +227,15 @@ pub fn upload_document(
         error: None,
         created_at: chrono::Utc::now().timestamp(),
     };
-    state.repo.insert_document(&doc).map_err(|e| e.to_string())?;
+    state
+        .repo
+        .insert_document(&doc)
+        .map_err(|e| e.to_string())?;
     // 暂存解码后的原始内容,供异步摄取任务按 doc_id 读取(KbDocument 不含 content 字段)。
     if let Err(e) = crate::knowledge::ingest::stage_content(&state, &doc.id, &content) {
-        let _ = state.repo.update_document_status(&doc.id, "failed", Some(&e));
+        let _ = state
+            .repo
+            .update_document_status(&doc.id, "failed", Some(&e));
         return Err(e);
     }
     crate::knowledge::ingest::spawn_ingest(state.inner().clone(), doc.id.clone());
@@ -458,10 +461,7 @@ mod tests {
 
         state.repo.create_kb(&kb_with_chunks("kb1", 0)).unwrap();
         let kbs = list_kbs_with_state(&state).unwrap();
-        assert!(
-            !kbs[0].needs_reindex,
-            "empty kb should never need reindex"
-        );
+        assert!(!kbs[0].needs_reindex, "empty kb should never need reindex");
     }
 
     #[test]
@@ -506,57 +506,31 @@ mod tests {
 
         // empty model rejected
         assert!(
-            update_kb_embedding_channel_inner(
-                &state,
-                "kb1",
-                Some("ch1".into()),
-                "   ",
-            )
-            .is_err()
+            update_kb_embedding_channel_inner(&state, "kb1", Some("ch1".into()), "   ",).is_err()
         );
 
         // non-existent channel rejected
-        assert!(
-            update_kb_embedding_channel_inner(
-                &state,
-                "kb1",
-                Some("missing".into()),
-                "new-model",
-            )
-            .is_err()
-        );
-
-        // same config: no needs_reindex flag set
-        update_kb_embedding_channel_inner(
+        assert!(update_kb_embedding_channel_inner(
             &state,
             "kb1",
-            Some("ch1".into()),
-            "old-model",
+            Some("missing".into()),
+            "new-model",
         )
-        .unwrap();
+        .is_err());
+
+        // same config: no needs_reindex flag set
+        update_kb_embedding_channel_inner(&state, "kb1", Some("ch1".into()), "old-model").unwrap();
         let kb = state.repo.get_kb("kb1").unwrap().unwrap();
         assert!(!kb.needs_reindex);
 
         // channel change: needs_reindex set
-        update_kb_embedding_channel_inner(
-            &state,
-            "kb1",
-            Some("ch2".into()),
-            "old-model",
-        )
-        .unwrap();
+        update_kb_embedding_channel_inner(&state, "kb1", Some("ch2".into()), "old-model").unwrap();
         let kb = state.repo.get_kb("kb1").unwrap().unwrap();
         assert_eq!(kb.embedding_channel_id, Some("ch2".into()));
         assert!(kb.needs_reindex);
 
         // model change: needs_reindex remains true
-        update_kb_embedding_channel_inner(
-            &state,
-            "kb1",
-            Some("ch2".into()),
-            "new-model",
-        )
-        .unwrap();
+        update_kb_embedding_channel_inner(&state, "kb1", Some("ch2".into()), "new-model").unwrap();
         let kb = state.repo.get_kb("kb1").unwrap().unwrap();
         assert_eq!(kb.embedding_model, "new-model");
         assert!(kb.needs_reindex);
@@ -572,13 +546,7 @@ mod tests {
         kb.embedding_model = "old-model".into();
         state.repo.create_kb(&kb).unwrap();
 
-        update_kb_embedding_channel_inner(
-            &state,
-            "kb1",
-            None,
-            "new-model",
-        )
-        .unwrap();
+        update_kb_embedding_channel_inner(&state, "kb1", None, "new-model").unwrap();
         let kb = state.repo.get_kb("kb1").unwrap().unwrap();
         assert_eq!(kb.embedding_channel_id, None);
         assert_eq!(kb.embedding_model, "new-model");

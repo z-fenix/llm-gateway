@@ -58,7 +58,10 @@ pub fn import_config(
             let _ = store.set("security.max_scan_bytes", json!(sec.max_scan_bytes));
             match state.fallback.read().clone() {
                 Some((channel_id, model)) => {
-                    let _ = store.set("fallback", json!({"channel_id": channel_id, "model": model}));
+                    let _ = store.set(
+                        "fallback",
+                        json!({"channel_id": channel_id, "model": model}),
+                    );
                 }
                 None => {
                     let _ = store.set("fallback", serde_json::Value::Null);
@@ -91,7 +94,9 @@ pub struct CliTargetInfo {
 }
 
 pub fn resolve_base_url(bound: Option<SocketAddr>) -> Result<String, String> {
-    bound.map(|a| format!("http://{}", a)).ok_or_else(|| "网关未启动".to_string())
+    bound
+        .map(|a| format!("http://{}", a))
+        .ok_or_else(|| "网关未启动".to_string())
 }
 
 fn home() -> Result<PathBuf, String> {
@@ -107,11 +112,7 @@ pub fn get_app_config(state: State<AppState>) -> AppConfigInfo {
 }
 
 #[tauri::command]
-pub fn set_preferred_port(
-    app: AppHandle,
-    state: State<AppState>,
-    port: u16,
-) -> Result<(), String> {
+pub fn set_preferred_port(app: AppHandle, state: State<AppState>, port: u16) -> Result<(), String> {
     if !(settings::MIN_PORT..=settings::MAX_PORT).contains(&port) {
         return Err(format!(
             "端口须在 {}..={}",
@@ -192,6 +193,9 @@ mod tests {
     fn resolve_base_url_requires_bound() {
         assert!(resolve_base_url(None).is_err());
         let addr: std::net::SocketAddr = "127.0.0.1:8779".parse().unwrap();
-        assert_eq!(resolve_base_url(Some(addr)).unwrap(), "http://127.0.0.1:8779");
+        assert_eq!(
+            resolve_base_url(Some(addr)).unwrap(),
+            "http://127.0.0.1:8779"
+        );
     }
 }

@@ -40,7 +40,11 @@ pub async fn maybe_inject(state: &AppState, headers: &HeaderMap, chat: &mut Chat
                 return;
             }
             Err(e) => {
-                log::warn!("rag: kb '{}' lookup failed, skipping injection: {}", name, e);
+                log::warn!(
+                    "rag: kb '{}' lookup failed, skipping injection: {}",
+                    name,
+                    e
+                );
                 return;
             }
         },
@@ -81,11 +85,18 @@ pub async fn maybe_inject(state: &AppState, headers: &HeaderMap, chat: &mut Chat
     {
         Ok(Ok(chunks)) => chunks,
         Ok(Err(e)) => {
-            log::warn!("rag: retrieve failed for kb '{}', skipping injection: {}", kb.name, e);
+            log::warn!(
+                "rag: retrieve failed for kb '{}', skipping injection: {}",
+                kb.name,
+                e
+            );
             return;
         }
         Err(_) => {
-            log::warn!("rag: retrieve timed out for kb '{}', skipping injection", kb.name);
+            log::warn!(
+                "rag: retrieve timed out for kb '{}', skipping injection",
+                kb.name
+            );
             return;
         }
     };

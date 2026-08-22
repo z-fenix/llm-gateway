@@ -32,7 +32,8 @@ impl VectorIndex {
     }
 
     fn path_str(path: &Path) -> Result<&str, String> {
-        path.to_str().ok_or_else(|| "invalid index path".to_string())
+        path.to_str()
+            .ok_or_else(|| "invalid index path".to_string())
     }
 
     /// 新建一个空的向量索引文件（尚未落盘，可随后调用 `save`）。
@@ -173,15 +174,9 @@ mod tests {
     fn index_add_search_returns_nearest() {
         let path = test_path("add_search");
         let index = VectorIndex::create(&path, 4).unwrap();
-        index
-            .add(10, &[1.0_f32, 0.0, 0.0, 0.0])
-            .unwrap();
-        index
-            .add(20, &[0.0_f32, 1.0, 0.0, 0.0])
-            .unwrap();
-        index
-            .add(30, &[0.0_f32, 0.0, 1.0, 0.0])
-            .unwrap();
+        index.add(10, &[1.0_f32, 0.0, 0.0, 0.0]).unwrap();
+        index.add(20, &[0.0_f32, 1.0, 0.0, 0.0]).unwrap();
+        index.add(30, &[0.0_f32, 0.0, 1.0, 0.0]).unwrap();
 
         let results = index.search(&[1.0_f32, 0.0, 0.0, 0.0], 1).unwrap();
         assert_eq!(results.len(), 1);
@@ -194,12 +189,8 @@ mod tests {
         let path = test_path("persist");
         {
             let index = VectorIndex::create(&path, 4).unwrap();
-            index
-                .add(1, &[1.0_f32, 0.0, 0.0, 0.0])
-                .unwrap();
-            index
-                .add(2, &[0.0_f32, 1.0, 0.0, 0.0])
-                .unwrap();
+            index.add(1, &[1.0_f32, 0.0, 0.0, 0.0]).unwrap();
+            index.add(2, &[0.0_f32, 1.0, 0.0, 0.0]).unwrap();
             index.save().unwrap();
         }
 
@@ -214,15 +205,9 @@ mod tests {
     fn index_remove_excludes_key() {
         let path = test_path("remove");
         let index = VectorIndex::create(&path, 4).unwrap();
-        index
-            .add(1, &[1.0_f32, 0.0, 0.0, 0.0])
-            .unwrap();
-        index
-            .add(2, &[0.0_f32, 1.0, 0.0, 0.0])
-            .unwrap();
-        index
-            .add(3, &[0.0_f32, 0.0, 1.0, 0.0])
-            .unwrap();
+        index.add(1, &[1.0_f32, 0.0, 0.0, 0.0]).unwrap();
+        index.add(2, &[0.0_f32, 1.0, 0.0, 0.0]).unwrap();
+        index.add(3, &[0.0_f32, 0.0, 1.0, 0.0]).unwrap();
 
         index.remove(2).unwrap();
 

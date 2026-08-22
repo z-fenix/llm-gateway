@@ -23,6 +23,9 @@ pub fn mcp_router(state: AppState) -> axum::Router<AppState> {
     let auth_state = state.clone();
     axum::Router::new()
         .nest_service("/mcp", service)
-        .route_layer(axum::middleware::from_fn_with_state(auth_state, auth::mcp_auth))
+        .route_layer(axum::middleware::from_fn_with_state(
+            auth_state,
+            auth::mcp_auth,
+        ))
         .with_state(state)
 }

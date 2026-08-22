@@ -12,7 +12,9 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self { preferred_port: 8779 }
+        Self {
+            preferred_port: 8779,
+        }
     }
 }
 

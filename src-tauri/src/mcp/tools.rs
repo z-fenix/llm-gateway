@@ -144,10 +144,16 @@ impl KbMcpServer {
             error: None,
             created_at: chrono::Utc::now().timestamp(),
         };
-        self.state.repo.insert_document(&doc).map_err(|e| e.to_string())?;
+        self.state
+            .repo
+            .insert_document(&doc)
+            .map_err(|e| e.to_string())?;
         // 暂存纯文本原文,供异步摄取任务按 doc_id 读取(KbDocument 不含 content 字段)。
         if let Err(e) = stage_content(&self.state, &doc.id, content.as_bytes()) {
-            let _ = self.state.repo.update_document_status(&doc.id, "failed", Some(&e));
+            let _ = self
+                .state
+                .repo
+                .update_document_status(&doc.id, "failed", Some(&e));
             return Err(e);
         }
         spawn_ingest(self.state.clone(), doc.id.clone());
@@ -268,12 +274,15 @@ impl KbMcpServer {
         &self,
         Parameters(args): Parameters<KbCreateArgs>,
     ) -> Result<CallToolResult, rmcp::ErrorData> {
-        self.do_kb_create(args.name, args.description, args.embedding_channel_id, args.embedding_model)
-            .await
-            .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
-            .map_err(|e| {
-                rmcp::model::ErrorData::new(rmcp::model::ErrorCode::INTERNAL_ERROR, e, None)
-            })
+        self.do_kb_create(
+            args.name,
+            args.description,
+            args.embedding_channel_id,
+            args.embedding_model,
+        )
+        .await
+        .map(|json| CallToolResult::success(vec![ContentBlock::text(json)]))
+        .map_err(|e| rmcp::model::ErrorData::new(rmcp::model::ErrorCode::INTERNAL_ERROR, e, None))
     }
 
     /// 上传纯文本文档到知识库(异步摄取)
@@ -305,7 +314,10 @@ impl KbMcpServer {
     }
 
     /// 全局用量统计
-    #[tool(name = "stats_quota", description = "全局用量统计(请求/token/活跃渠道/平均延迟)")]
+    #[tool(
+        name = "stats_quota",
+        description = "全局用量统计(请求/token/活跃渠道/平均延迟)"
+    )]
     pub async fn stats_quota(&self) -> Result<CallToolResult, rmcp::ErrorData> {
         self.do_stats_quota()
             .await
@@ -486,7 +498,10 @@ mod tests {
             .await
             .unwrap();
         let arr: Vec<Value> = serde_json::from_str(&json).unwrap();
-        assert!(!arr.is_empty(), "search should hit the ingested doc: {json}");
+        assert!(
+            !arr.is_empty(),
+            "search should hit the ingested doc: {json}"
+        );
         assert!(
             json.contains("quantum"),
             "chunk content should be present: {json}"

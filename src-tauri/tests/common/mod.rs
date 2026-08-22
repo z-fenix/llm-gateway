@@ -36,26 +36,40 @@ pub async fn spawn_mock(status: u16, body: Value) -> (String, MockUpstream) {
     };
     let _s = state.clone();
     let app = Router::new()
-        .route("/v1/chat/completions", post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
-            let s = st.0.clone();
-            async move {
-                s.hits.lock().unwrap().push(v);
-                let status = *s.respond_status.lock().unwrap();
-                let body = s.respond_body.lock().unwrap().clone();
-                (axum::http::StatusCode::from_u16(status).unwrap(), Json(body))
-            }
-        }))
-        .route("/v1/messages", post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
-            let s = st.0.clone();
-            async move {
-                s.hits.lock().unwrap().push(v);
-                let status = *s.respond_status.lock().unwrap();
-                let body = s.respond_body.lock().unwrap().clone();
-                (axum::http::StatusCode::from_u16(status).unwrap(), Json(body))
-            }
-        }))
+        .route(
+            "/v1/chat/completions",
+            post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
+                let s = st.0.clone();
+                async move {
+                    s.hits.lock().unwrap().push(v);
+                    let status = *s.respond_status.lock().unwrap();
+                    let body = s.respond_body.lock().unwrap().clone();
+                    (
+                        axum::http::StatusCode::from_u16(status).unwrap(),
+                        Json(body),
+                    )
+                }
+            }),
+        )
+        .route(
+            "/v1/messages",
+            post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
+                let s = st.0.clone();
+                async move {
+                    s.hits.lock().unwrap().push(v);
+                    let status = *s.respond_status.lock().unwrap();
+                    let body = s.respond_body.lock().unwrap().clone();
+                    (
+                        axum::http::StatusCode::from_u16(status).unwrap(),
+                        Json(body),
+                    )
+                }
+            }),
+        )
         .with_state(state.clone());
-    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     (format!("http://{}", addr), state)
@@ -134,36 +148,48 @@ pub async fn spawn_mock_stream(chunks: Vec<String>) -> (String, MockUpstream) {
     let completions_chunks = chunks.clone();
     let messages_chunks = chunks.clone();
     let app = Router::new()
-        .route("/v1/chat/completions", post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
-            let s = st.0.clone();
-            let chunks = completions_chunks.clone();
-            async move {
-                s.hits.lock().unwrap().push(v);
-                let body_chunks: Vec<String> = chunks.to_vec();
-                axum::response::Response::builder()
-                    .header("content-type", "text/event-stream")
-                    .body(axum::body::Body::from_stream(futures::stream::iter(
-                        body_chunks.into_iter().map(|c| Ok::<_, std::convert::Infallible>(c))
-                    )))
-                    .unwrap()
-            }
-        }))
-        .route("/v1/messages", post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
-            let s = st.0.clone();
-            let chunks = messages_chunks.clone();
-            async move {
-                s.hits.lock().unwrap().push(v);
-                let body_chunks: Vec<String> = chunks.to_vec();
-                axum::response::Response::builder()
-                    .header("content-type", "text/event-stream")
-                    .body(axum::body::Body::from_stream(futures::stream::iter(
-                        body_chunks.into_iter().map(|c| Ok::<_, std::convert::Infallible>(c))
-                    )))
-                    .unwrap()
-            }
-        }))
+        .route(
+            "/v1/chat/completions",
+            post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
+                let s = st.0.clone();
+                let chunks = completions_chunks.clone();
+                async move {
+                    s.hits.lock().unwrap().push(v);
+                    let body_chunks: Vec<String> = chunks.to_vec();
+                    axum::response::Response::builder()
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from_stream(futures::stream::iter(
+                            body_chunks
+                                .into_iter()
+                                .map(|c| Ok::<_, std::convert::Infallible>(c)),
+                        )))
+                        .unwrap()
+                }
+            }),
+        )
+        .route(
+            "/v1/messages",
+            post(move |st: State<MockUpstream>, Json(v): Json<Value>| {
+                let s = st.0.clone();
+                let chunks = messages_chunks.clone();
+                async move {
+                    s.hits.lock().unwrap().push(v);
+                    let body_chunks: Vec<String> = chunks.to_vec();
+                    axum::response::Response::builder()
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from_stream(futures::stream::iter(
+                            body_chunks
+                                .into_iter()
+                                .map(|c| Ok::<_, std::convert::Infallible>(c)),
+                        )))
+                        .unwrap()
+                }
+            }),
+        )
         .with_state(state.clone());
-    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     (format!("http://{}", addr), state)

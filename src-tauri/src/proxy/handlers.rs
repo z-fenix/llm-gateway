@@ -31,7 +31,11 @@ pub(crate) fn extract_key(headers: &HeaderMap) -> Option<String> {
 }
 
 fn err_response(status: StatusCode, code: &str, trace: &str) -> Response {
-    (status, Json(json!({"error": {"code": code, "trace_id": trace}}))).into_response()
+    (
+        status,
+        Json(json!({"error": {"code": code, "trace_id": trace}})),
+    )
+        .into_response()
 }
 
 pub async fn health() -> &'static str {
@@ -127,8 +131,14 @@ async fn handle(
         Some(k) => k,
         None => {
             return log_failure(
-                &state, &trace_id, None, proto, StatusCode::UNAUTHORIZED,
-                "invalid_api_key", None, &body,
+                &state,
+                &trace_id,
+                None,
+                proto,
+                StatusCode::UNAUTHORIZED,
+                "invalid_api_key",
+                None,
+                &body,
             )
         }
     };
@@ -136,26 +146,50 @@ async fn handle(
         Ok(Ok(k)) => k,
         Ok(Err(AuthError::QuotaExceeded)) => {
             return log_failure(
-                &state, &trace_id, None, proto, StatusCode::TOO_MANY_REQUESTS,
-                "quota_exceeded", None, &body,
+                &state,
+                &trace_id,
+                None,
+                proto,
+                StatusCode::TOO_MANY_REQUESTS,
+                "quota_exceeded",
+                None,
+                &body,
             )
         }
         Ok(Err(AuthError::Disabled)) => {
             return log_failure(
-                &state, &trace_id, None, proto, StatusCode::UNAUTHORIZED,
-                "api_key_disabled", None, &body,
+                &state,
+                &trace_id,
+                None,
+                proto,
+                StatusCode::UNAUTHORIZED,
+                "api_key_disabled",
+                None,
+                &body,
             )
         }
         Ok(Err(AuthError::Invalid)) => {
             return log_failure(
-                &state, &trace_id, None, proto, StatusCode::UNAUTHORIZED,
-                "invalid_api_key", None, &body,
+                &state,
+                &trace_id,
+                None,
+                proto,
+                StatusCode::UNAUTHORIZED,
+                "invalid_api_key",
+                None,
+                &body,
             )
         }
         Err(_) => {
             return log_failure(
-                &state, &trace_id, None, proto, StatusCode::INTERNAL_SERVER_ERROR,
-                "internal_error", None, &body,
+                &state,
+                &trace_id,
+                None,
+                proto,
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                None,
+                &body,
             )
         }
     };
@@ -166,8 +200,14 @@ async fn handle(
             Ok(c) => c,
             Err(e) => {
                 return log_failure(
-                    &state, &trace_id, Some(&api_key), proto, StatusCode::BAD_REQUEST,
-                    &e, None, &body,
+                    &state,
+                    &trace_id,
+                    Some(&api_key),
+                    proto,
+                    StatusCode::BAD_REQUEST,
+                    &e,
+                    None,
+                    &body,
                 )
             }
         },
@@ -175,8 +215,14 @@ async fn handle(
             Ok(c) => c,
             Err(e) => {
                 return log_failure(
-                    &state, &trace_id, Some(&api_key), proto, StatusCode::BAD_REQUEST,
-                    &e, None, &body,
+                    &state,
+                    &trace_id,
+                    Some(&api_key),
+                    proto,
+                    StatusCode::BAD_REQUEST,
+                    &e,
+                    None,
+                    &body,
                 )
             }
         },
@@ -184,8 +230,14 @@ async fn handle(
             Ok(c) => c,
             Err(e) => {
                 return log_failure(
-                    &state, &trace_id, Some(&api_key), proto, StatusCode::BAD_REQUEST,
-                    &e, None, &body,
+                    &state,
+                    &trace_id,
+                    Some(&api_key),
+                    proto,
+                    StatusCode::BAD_REQUEST,
+                    &e,
+                    None,
+                    &body,
                 )
             }
         },
@@ -209,24 +261,45 @@ async fn handle(
         Protocol::Responses => "responses",
     };
     let scan = match security_hook::inspect_request(
-        &state, &trace_id, &api_key, proto_str, &request_model, &unified,
+        &state,
+        &trace_id,
+        &api_key,
+        proto_str,
+        &request_model,
+        &unified,
     )
     .await
     {
         RequestVerdict::Blocked(resp) => return resp,
-        RequestVerdict::Proceed { body: scanned_unified, scan } => {
+        RequestVerdict::Proceed {
+            body: scanned_unified,
+            scan,
+        } => {
             if scan.sanitized {
                 match serde_json::from_value::<ChatRequest>(scanned_unified) {
                     Ok(c) => chat = c,
                     Err(_) => {
                         if let Err(e) = write_log(
-                            &state, &trace_id, Some(&api_key), None, None, Some(&request_model),
-                            proto, Some(StatusCode::UNPROCESSABLE_ENTITY.as_u16() as i64),
-                            Some("redact_reparse_failed".to_string()), 0, &body, Some(&scan),
+                            &state,
+                            &trace_id,
+                            Some(&api_key),
+                            None,
+                            None,
+                            Some(&request_model),
+                            proto,
+                            Some(StatusCode::UNPROCESSABLE_ENTITY.as_u16() as i64),
+                            Some("redact_reparse_failed".to_string()),
+                            0,
+                            &body,
+                            Some(&scan),
                         ) {
                             log::error!("failed to write request log: {}", e);
                         }
-                        return err_response(StatusCode::UNPROCESSABLE_ENTITY, "redact_reparse_failed", &trace_id);
+                        return err_response(
+                            StatusCode::UNPROCESSABLE_ENTITY,
+                            "redact_reparse_failed",
+                            &trace_id,
+                        );
                     }
                 }
             }
@@ -253,13 +326,24 @@ async fn handle(
     };
 
     if chat.stream {
-        return handle_stream(state, &trace_id, &api_key, chat, role_route, role.clone(), proto, &request_model, &unified, &scan, started).await;
+        return handle_stream(
+            state,
+            &trace_id,
+            &api_key,
+            chat,
+            role_route,
+            role.clone(),
+            proto,
+            &request_model,
+            &unified,
+            &scan,
+            started,
+        )
+        .await;
     }
 
     // 5. forward
-    let result = forwarder::forward(&state, &chat, role_route, &api_key,
-    )
-    .await;
+    let result = forwarder::forward(&state, &chat, role_route, &api_key).await;
 
     // 6. log + quota + response
     let latency = started.elapsed().as_millis() as i64;
@@ -286,17 +370,31 @@ async fn handle(
             };
 
             match write_log(
-                &state, &trace_id, Some(&api_key), Some(o), Some(&role), Some(&request_model),
-                proto, log_status, log_error, latency, &body, Some(&merged_scan),
+                &state,
+                &trace_id,
+                Some(&api_key),
+                Some(o),
+                Some(&role),
+                Some(&request_model),
+                proto,
+                log_status,
+                log_error,
+                latency,
+                &body,
+                Some(&merged_scan),
             ) {
                 Ok(log_id) => {
                     for f in &scan.findings {
-                        if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "request", f) {
+                        if let Err(e) =
+                            security_hook::insert_finding(&state.repo, &log_id, "request", f)
+                        {
                             log::error!("failed to insert request security finding: {}", e);
                         }
                     }
                     for f in &resp_scan.findings {
-                        if let Err(e) = security_hook::insert_finding(&state.repo, &log_id, "response", f) {
+                        if let Err(e) =
+                            security_hook::insert_finding(&state.repo, &log_id, "response", f)
+                        {
                             log::error!("failed to insert response security finding: {}", e);
                         }
                     }
@@ -307,18 +405,17 @@ async fn handle(
             }
 
             match resp_scan.action {
-                SecurityAction::Block => {
-                    (
-                        StatusCode::from_u16(451).unwrap(),
-                        Json(json!({
-                            "error": {
-                                "code": "blocked_by_security",
-                                "trace_id": trace_id,
-                                "summary": format!("响应侧：{}", resp_scan.summary)
-                            }
-                        })),
-                    ).into_response()
-                }
+                SecurityAction::Block => (
+                    StatusCode::from_u16(451).unwrap(),
+                    Json(json!({
+                        "error": {
+                            "code": "blocked_by_security",
+                            "trace_id": trace_id,
+                            "summary": format!("响应侧：{}", resp_scan.summary)
+                        }
+                    })),
+                )
+                    .into_response(),
                 SecurityAction::Redact => {
                     let redacted = crate::security::redact::redact_json(&o.body, &settings);
                     let redacted_outcome = forwarder::Outcome {
@@ -326,21 +423,25 @@ async fn handle(
                         ..o.clone()
                     };
                     let resp_body = match proto {
-                        Protocol::OpenAI => {
-                            openai::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
-                        }
-                        Protocol::Anthropic => {
-                            anthropic::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
-                        }
-                        Protocol::Responses => {
-                            responses::chat_to_response(&to_chat_response(&redacted_outcome, &request_model))
-                        }
+                        Protocol::OpenAI => openai::chat_to_response(&to_chat_response(
+                            &redacted_outcome,
+                            &request_model,
+                        )),
+                        Protocol::Anthropic => anthropic::chat_to_response(&to_chat_response(
+                            &redacted_outcome,
+                            &request_model,
+                        )),
+                        Protocol::Responses => responses::chat_to_response(&to_chat_response(
+                            &redacted_outcome,
+                            &request_model,
+                        )),
                     };
                     (StatusCode::OK, Json(resp_body)).into_response()
                 }
                 _ => {
                     if proto == Protocol::Responses && client_wants_stream {
-                        let sse = responses::chat_to_sse_events(&to_chat_response(o, &request_model));
+                        let sse =
+                            responses::chat_to_sse_events(&to_chat_response(o, &request_model));
                         return (
                             StatusCode::OK,
                             [(axum::http::header::CONTENT_TYPE, "text/event-stream")],
@@ -368,14 +469,25 @@ async fn handle(
                 ForwardError::NoChannel => {
                     (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel")
                 }
-                ForwardError::Upstream { status, .. } => {
-                    (StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY), "upstream_error")
-                }
+                ForwardError::Upstream { status, .. } => (
+                    StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY),
+                    "upstream_error",
+                ),
                 ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
             };
             if let Err(e) = write_log(
-                &state, &trace_id, Some(&api_key), None, Some(&role), Some(&request_model),
-                proto, Some(status.as_u16() as i64), Some(e.to_string()), latency, &body, Some(&scan),
+                &state,
+                &trace_id,
+                Some(&api_key),
+                None,
+                Some(&role),
+                Some(&request_model),
+                proto,
+                Some(status.as_u16() as i64),
+                Some(e.to_string()),
+                latency,
+                &body,
+                Some(&scan),
             ) {
                 log::error!("failed to write request log: {}", e);
             }
@@ -408,44 +520,43 @@ async fn handle_stream(
             let trace = trace_id.to_string();
             let api_key2 = api_key.clone();
             let req_model = request_model.to_string();
-            let req_body_masked = crate::security::redact::redact_json_for_logging(req_body).to_string();
+            let req_body_masked =
+                crate::security::redact::redact_json_for_logging(req_body).to_string();
 
-            let acc = Arc::new(Mutex::new(
-                crate::proxy::sse::SseAccumulator::new(usage_protocol),
-            ));
+            let acc = Arc::new(Mutex::new(crate::proxy::sse::SseAccumulator::new(
+                usage_protocol,
+            )));
             let acc_log = acc.clone();
             let stream_error = Arc::new(AtomicBool::new(false));
             let stream_error_log = stream_error.clone();
 
             const MAX_SSE_LINE_BYTES: usize = 1024 * 1024;
             let mut buffer: Vec<u8> = Vec::new();
-            let stream = handle.byte_stream.map(move |chunk| {
-                match chunk {
-                    Ok(bytes) => {
-                        buffer.extend_from_slice(&bytes);
-                        if buffer.iter().position(|&b| b == b'\n').is_none()
-                            && buffer.len() > MAX_SSE_LINE_BYTES
-                        {
-                            log::error!(
-                                "SSE line exceeded {} bytes without newline; dropping",
-                                MAX_SSE_LINE_BYTES
-                            );
-                            buffer.clear();
-                        }
-                        while let Some(pos) = buffer.iter().position(|&b| b == b'\n') {
-                            let line_bytes: Vec<u8> = buffer.drain(..=pos).collect();
-                            let line = String::from_utf8_lossy(&line_bytes);
-                            acc.lock().feed_line(&line);
-                        }
-                        Ok(bytes)
+            let stream = handle.byte_stream.map(move |chunk| match chunk {
+                Ok(bytes) => {
+                    buffer.extend_from_slice(&bytes);
+                    if buffer.iter().position(|&b| b == b'\n').is_none()
+                        && buffer.len() > MAX_SSE_LINE_BYTES
+                    {
+                        log::error!(
+                            "SSE line exceeded {} bytes without newline; dropping",
+                            MAX_SSE_LINE_BYTES
+                        );
+                        buffer.clear();
                     }
-                    Err(_e) => {
-                        stream_error.store(true, Ordering::SeqCst);
-                        log::error!("upstream stream error");
-                        let err_chunk =
-                            "data: {\"error\": {\"message\": \"upstream stream error\"}}\n\n";
-                        Ok::<_, std::io::Error>(bytes::Bytes::from(err_chunk))
+                    while let Some(pos) = buffer.iter().position(|&b| b == b'\n') {
+                        let line_bytes: Vec<u8> = buffer.drain(..=pos).collect();
+                        let line = String::from_utf8_lossy(&line_bytes);
+                        acc.lock().feed_line(&line);
                     }
+                    Ok(bytes)
+                }
+                Err(_e) => {
+                    stream_error.store(true, Ordering::SeqCst);
+                    log::error!("upstream stream error");
+                    let err_chunk =
+                        "data: {\"error\": {\"message\": \"upstream stream error\"}}\n\n";
+                    Ok::<_, std::io::Error>(bytes::Bytes::from(err_chunk))
                 }
             });
 
@@ -457,12 +568,14 @@ async fn handle_stream(
                 let (status_code, error) = if failed {
                     (Some(502), Some("upstream_stream_error".into()))
                 } else {
-                    match state2
-                        .repo
-                        .consume_quota(&api_key2.id, (usage.input_tokens + usage.output_tokens) as i64)
-                    {
+                    match state2.repo.consume_quota(
+                        &api_key2.id,
+                        (usage.input_tokens + usage.output_tokens) as i64,
+                    ) {
                         Ok(true) => {}
-                        Ok(false) => log::error!("quota exceeded for key {}: consume skipped", api_key2.id),
+                        Ok(false) => {
+                            log::error!("quota exceeded for key {}: consume skipped", api_key2.id)
+                        }
                         Err(e) => log::error!("failed to consume quota: {}", e),
                     }
                     (Some(200), None)
@@ -471,8 +584,18 @@ async fn handle_stream(
                 let resp_body = serde_json::json!({"content": text});
                 let resp_scan = security_hook::inspect_response(&state2, &resp_body);
                 let merged_scan = merge_scan_for_log(&req_scan, &resp_scan);
-                let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) = (
-                    serde_json::to_string(&merged_scan.risk_level).unwrap().trim_matches('"').to_string(),
+                let (
+                    risk_level,
+                    risk_score,
+                    risk_summary,
+                    security_action,
+                    sanitized,
+                    blocked_reason,
+                ) = (
+                    serde_json::to_string(&merged_scan.risk_level)
+                        .unwrap()
+                        .trim_matches('"')
+                        .to_string(),
                     merged_scan.risk_score,
                     Some(merged_scan.summary.clone()),
                     merged_scan.action.as_str().to_string(),
@@ -519,13 +642,17 @@ async fn handle_stream(
                 }
 
                 for f in &req_scan.findings {
-                    if let Err(e) = security_hook::insert_finding(&state2.repo, &log_id, "request", f) {
+                    if let Err(e) =
+                        security_hook::insert_finding(&state2.repo, &log_id, "request", f)
+                    {
                         log::error!("failed to insert request security finding: {}", e);
                     }
                 }
 
                 for f in &resp_scan.findings {
-                    if let Err(e) = security_hook::insert_finding(&state2.repo, &log_id, "response", f) {
+                    if let Err(e) =
+                        security_hook::insert_finding(&state2.repo, &log_id, "response", f)
+                    {
                         log::error!("failed to insert response security finding: {}", e);
                     }
                 }
@@ -541,7 +668,9 @@ async fn handle_stream(
         }
         Err(e) => {
             let (status, code) = match &e {
-                ForwardError::NoChannel => (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel"),
+                ForwardError::NoChannel => {
+                    (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel")
+                }
                 ForwardError::Upstream { status, .. } => (
                     StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY),
                     "upstream_error",
@@ -550,7 +679,10 @@ async fn handle_stream(
             };
             let latency = started.elapsed().as_millis() as i64;
             let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) = (
-                serde_json::to_string(&scan.risk_level).unwrap().trim_matches('"').to_string(),
+                serde_json::to_string(&scan.risk_level)
+                    .unwrap()
+                    .trim_matches('"')
+                    .to_string(),
                 scan.risk_score,
                 Some(scan.summary.clone()),
                 scan.action.as_str().to_string(),
@@ -581,7 +713,9 @@ async fn handle_stream(
                 error: Some(e.to_string()),
                 fallback: false,
                 tool_calls: None,
-                request_body: Some(crate::security::redact::redact_json_for_logging(req_body).to_string()),
+                request_body: Some(
+                    crate::security::redact::redact_json_for_logging(req_body).to_string(),
+                ),
                 response_body: None,
                 risk_level,
                 risk_score,
@@ -598,10 +732,7 @@ async fn handle_stream(
     }
 }
 
-fn to_chat_response(
-    o: &forwarder::Outcome,
-    model: &str,
-) -> crate::protocol::types::ChatResponse {
+fn to_chat_response(o: &forwarder::Outcome, model: &str) -> crate::protocol::types::ChatResponse {
     let raw = &o.body;
     let content = raw
         .get("choices")
@@ -617,9 +748,17 @@ fn to_chat_response(
         .and_then(|c| c.get("finish_reason"))
         .and_then(|s| s.as_str())
         .map(|s| s.to_string())
-        .or_else(|| raw.get("stop_reason").and_then(|s| s.as_str()).map(|s| s.to_string()));
+        .or_else(|| {
+            raw.get("stop_reason")
+                .and_then(|s| s.as_str())
+                .map(|s| s.to_string())
+        });
     crate::protocol::types::ChatResponse {
-        id: raw.get("id").and_then(|s| s.as_str()).unwrap_or("").to_string(),
+        id: raw
+            .get("id")
+            .and_then(|s| s.as_str())
+            .unwrap_or("")
+            .to_string(),
         model: model.to_string(),
         content,
         stop_reason: stop,
@@ -687,7 +826,10 @@ fn write_log(
     let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) =
         match scan {
             Some(s) => (
-                serde_json::to_string(&s.risk_level).unwrap().trim_matches('"').to_string(),
+                serde_json::to_string(&s.risk_level)
+                    .unwrap()
+                    .trim_matches('"')
+                    .to_string(),
                 s.risk_score,
                 Some(s.summary.clone()),
                 s.action.as_str().to_string(),
@@ -729,7 +871,8 @@ fn write_log(
         fallback: o.map(|x| x.via_fallback).unwrap_or(false),
         tool_calls: None,
         request_body: Some(crate::security::redact::redact_json_for_logging(req_body).to_string()),
-        response_body: o.map(|x| crate::security::redact::redact_json_for_logging(&x.body).to_string()),
+        response_body: o
+            .map(|x| crate::security::redact::redact_json_for_logging(&x.body).to_string()),
         risk_level,
         risk_score,
         risk_summary,

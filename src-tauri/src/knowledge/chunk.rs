@@ -32,8 +32,8 @@ pub fn detect_file_type(filename: &str) -> FileType {
         return FileType::Markdown;
     }
     const CODE_EXTS: &[&str] = &[
-        ".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".java", ".c", ".cpp", ".h",
-        ".rb", ".sh",
+        ".rs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".java", ".c", ".cpp", ".h", ".rb",
+        ".sh",
     ];
     if CODE_EXTS.iter().any(|ext| lower.ends_with(ext)) {
         return FileType::Code;
@@ -316,7 +316,11 @@ fn split_paragraphs(text: &str) -> Vec<&str> {
                 if start < chars[i].0 {
                     pieces.push(&text[start..chars[i].0]);
                 }
-                start = if j < chars.len() { chars[j].0 } else { text.len() };
+                start = if j < chars.len() {
+                    chars[j].0
+                } else {
+                    text.len()
+                };
                 i = j;
                 continue;
             }

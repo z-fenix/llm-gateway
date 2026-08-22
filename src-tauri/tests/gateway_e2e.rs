@@ -7,12 +7,23 @@ use llm_gateway_lib::proxy::{server, state::AppState};
 
 fn channel(id: &str, base: &str) -> Channel {
     Channel {
-        id: id.into(), name: id.into(), supplier: "openai".into(),
+        id: id.into(),
+        name: id.into(),
+        supplier: "openai".into(),
         upstream_protocol: "openai-chat".into(),
-        base_url: base.into(), api_key: "sk-real".into(), models: vec![],
-        priority: 0, weight: 1, enabled: true, timeout_secs: 5,
-        total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,
-        created_at: 1, updated_at: 1,
+        base_url: base.into(),
+        api_key: "sk-real".into(),
+        models: vec![],
+        priority: 0,
+        weight: 1,
+        enabled: true,
+        timeout_secs: 5,
+        total_calls: 0,
+        total_tokens: 0,
+        success_rate: 1.0,
+        avg_latency_ms: 0,
+        created_at: 1,
+        updated_at: 1,
     }
 }
 
@@ -28,15 +39,28 @@ async fn end_to_end_openai_with_role_route_and_logging() {
     let repo = Repository::new(db.clone());
     repo.insert_channel(&channel("c1", &base)).unwrap();
     repo.insert_api_key(&ApiKey {
-        id: "k1".into(), key: "sk-lgw-test".into(), name: "t".into(), enabled: true,
-        quota_total: None, quota_used: 0, total_calls: 0, total_tokens: 0,
-        created_at: 1, last_used_at: None,
-    }).unwrap();
+        id: "k1".into(),
+        key: "sk-lgw-test".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
     // 角色路由：sonnet → c1/deepseek-v4-flash
     repo.upsert_role_route(&RoleRoute {
-        id: "r1".into(), role: "sonnet".into(), channel_id: "c1".into(),
-        target_model: "deepseek-v4-flash".into(), enabled: true, updated_at: 1,
-    }).unwrap();
+        id: "r1".into(),
+        role: "sonnet".into(),
+        channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(),
+        enabled: true,
+        updated_at: 1,
+    })
+    .unwrap();
 
     let state = AppState::new(db);
     let (_h, addr) = server::start(state.clone(), 0).await.unwrap(); // 0 = 随机端口
@@ -49,7 +73,9 @@ async fn end_to_end_openai_with_role_route_and_logging() {
             "model":"claude-sonnet-4-20250514",
             "messages":[{"role":"user","content":"hi"}]
         }))
-        .send().await.unwrap();
+        .send()
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 200);
     let v: serde_json::Value = resp.json().await.unwrap();
     assert!(v["choices"].is_array());
@@ -57,7 +83,10 @@ async fn end_to_end_openai_with_role_route_and_logging() {
     // 日志已入库，role/upstream_model 正确
     let log = repo.latest_log().unwrap().unwrap();
     assert_eq!(log.role.as_deref(), Some("sonnet"));
-    assert_eq!(log.request_model.as_deref(), Some("claude-sonnet-4-20250514"));
+    assert_eq!(
+        log.request_model.as_deref(),
+        Some("claude-sonnet-4-20250514")
+    );
     assert_eq!(log.upstream_model.as_deref(), Some("deepseek-v4-flash"));
     assert_eq!(log.input_tokens, 10);
     // 配额已扣
@@ -74,7 +103,9 @@ async fn invalid_key_rejected_401() {
         .post(format!("http://{}/v1/chat/completions", addr))
         .header("authorization", "Bearer wrong")
         .json(&serde_json::json!({"model":"x","messages":[]}))
-        .send().await.unwrap();
+        .send()
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 401);
 }
 
@@ -83,10 +114,18 @@ async fn failure_paths_persist_request_log() {
     let db = Db::new_in_memory().unwrap();
     let repo = Repository::new(db.clone());
     repo.insert_api_key(&ApiKey {
-        id: "k1".into(), key: "sk-lgw-dead".into(), name: "dead".into(), enabled: true,
-        quota_total: Some(100), quota_used: 100, total_calls: 0, total_tokens: 0,
-        created_at: 1, last_used_at: None,
-    }).unwrap();
+        id: "k1".into(),
+        key: "sk-lgw-dead".into(),
+        name: "dead".into(),
+        enabled: true,
+        quota_total: Some(100),
+        quota_used: 100,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
 
     let state = AppState::new(db);
     let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
@@ -97,7 +136,9 @@ async fn failure_paths_persist_request_log() {
         .post(format!("http://{}/v1/chat/completions", addr))
         .header("authorization", "Bearer wrong-key")
         .json(&serde_json::json!({"model":"x","messages":[]}))
-        .send().await.unwrap();
+        .send()
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 401);
     let v: serde_json::Value = resp.json().await.unwrap();
     let trace_401 = v["error"]["trace_id"].as_str().unwrap();

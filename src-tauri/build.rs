@@ -51,11 +51,8 @@ fn embed_windows_manifest() {
         "gnu" => {
             let rc_path = out_dir.join("app.rc");
             let manifest_path_fwd = manifest_path.to_string_lossy().replace('\\', "/");
-            std::fs::write(
-                &rc_path,
-                format!(r#"1 24 "{}""#, manifest_path_fwd),
-            )
-            .expect("failed to write Windows resource script");
+            std::fs::write(&rc_path, format!(r#"1 24 "{}""#, manifest_path_fwd))
+                .expect("failed to write Windows resource script");
             let object_path = out_dir.join("app_manifest.o");
             let status = std::process::Command::new("windres")
                 .arg(format!("--input={}", rc_path.display()))

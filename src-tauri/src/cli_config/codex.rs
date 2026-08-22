@@ -9,16 +9,26 @@ pub fn config_path(home: &Path) -> PathBuf {
 }
 
 /// 合并 config.toml, 设 model_provider 与 [model_providers.llm-gateway], 保留其它键/provider。
-pub fn merge_config(existing: Option<&str>, base_url: &str) -> Result<(String, Vec<String>), String> {
+pub fn merge_config(
+    existing: Option<&str>,
+    base_url: &str,
+) -> Result<(String, Vec<String>), String> {
     let mut doc: toml::Value = match existing {
-        Some(s) if !s.trim().is_empty() => toml::from_str(s).map_err(|e| format!("parse config.toml: {e}"))?,
+        Some(s) if !s.trim().is_empty() => {
+            toml::from_str(s).map_err(|e| format!("parse config.toml: {e}"))?
+        }
         _ => toml::Value::Table(toml::map::Map::new()),
     };
-    let root = doc.as_table_mut().ok_or_else(|| "config.toml root not a table".to_string())?;
+    let root = doc
+        .as_table_mut()
+        .ok_or_else(|| "config.toml root not a table".to_string())?;
     let mut changed = vec![];
 
     if root.get("model_provider").and_then(|v| v.as_str()) != Some(PROVIDER) {
-        root.insert("model_provider".to_string(), toml::Value::String(PROVIDER.into()));
+        root.insert(
+            "model_provider".to_string(),
+            toml::Value::String(PROVIDER.into()),
+        );
         changed.push("model_provider".into());
     }
     let providers = root
@@ -106,7 +116,12 @@ fn read_opt(path: &Path) -> Result<Option<String>, String> {
     }
 }
 
-pub fn write(home: &Path, base_url: &str, token: &str, write_env: bool) -> Result<CliWriteResult, String> {
+pub fn write(
+    home: &Path,
+    base_url: &str,
+    token: &str,
+    write_env: bool,
+) -> Result<CliWriteResult, String> {
     let cp = config_path(home);
     let existing = read_opt(&cp)?;
     let (content, changed) = merge_config(existing.as_deref(), base_url)?;
@@ -140,12 +155,26 @@ base_url = "https://x/v1"
         let (out, changed) = merge_config(Some(existing), "http://127.0.0.1:8779/v1").unwrap();
         let v: toml::Value = toml::from_str(&out).unwrap();
         assert_eq!(v["model_provider"].as_str(), Some("llm-gateway"));
-        assert_eq!(v["model_providers"]["llm-gateway"]["base_url"].as_str(), Some("http://127.0.0.1:8779/v1"));
-        assert_eq!(v["model_providers"]["llm-gateway"]["wire_api"].as_str(), Some("responses"));
-        assert_eq!(v["model_providers"]["llm-gateway"]["env_key"].as_str(), Some("LLM_GATEWAY_KEY"));
-        assert_eq!(v["model_providers"]["other"]["name"].as_str(), Some("Other")); // 其它 provider 保留
-        assert_eq!(v["model"].as_str(), Some("gpt-5"));                              // 顶层无关键保留
-        assert!(changed.iter().any(|k| k.contains("model_providers.llm-gateway")));
+        assert_eq!(
+            v["model_providers"]["llm-gateway"]["base_url"].as_str(),
+            Some("http://127.0.0.1:8779/v1")
+        );
+        assert_eq!(
+            v["model_providers"]["llm-gateway"]["wire_api"].as_str(),
+            Some("responses")
+        );
+        assert_eq!(
+            v["model_providers"]["llm-gateway"]["env_key"].as_str(),
+            Some("LLM_GATEWAY_KEY")
+        );
+        assert_eq!(
+            v["model_providers"]["other"]["name"].as_str(),
+            Some("Other")
+        ); // 其它 provider 保留
+        assert_eq!(v["model"].as_str(), Some("gpt-5")); // 顶层无关键保留
+        assert!(changed
+            .iter()
+            .any(|k| k.contains("model_providers.llm-gateway")));
     }
 
     #[test]
@@ -180,7 +209,10 @@ base_url = "https://x/v1"
         let written = std::fs::read_to_string(config_path(home.path())).unwrap();
         let v: toml::Value = toml::from_str(&written).unwrap();
         assert_eq!(v["model_provider"].as_str(), Some("llm-gateway"));
-        assert_eq!(v["model_providers"]["llm-gateway"]["base_url"].as_str(), Some("http://127.0.0.1:8779/v1"));
+        assert_eq!(
+            v["model_providers"]["llm-gateway"]["base_url"].as_str(),
+            Some("http://127.0.0.1:8779/v1")
+        );
         assert!(!written.contains("sk-lgw-xyz"));
     }
 
@@ -189,7 +221,8 @@ base_url = "https://x/v1"
         let home = tempfile::tempdir().unwrap();
         let cp = config_path(home.path());
         std::fs::create_dir_all(cp.parent().unwrap()).unwrap();
-        std::fs::write(&cp,
+        std::fs::write(
+            &cp,
             r#"model = "gpt-4"
 [model_providers.openai]
 name = "OpenAI"
@@ -203,7 +236,10 @@ name = "OpenAI"
         let written = std::fs::read_to_string(&cp).unwrap();
         let v: toml::Value = toml::from_str(&written).unwrap();
         assert_eq!(v["model"].as_str(), Some("gpt-4"));
-        assert_eq!(v["model_providers"]["openai"]["name"].as_str(), Some("OpenAI"));
+        assert_eq!(
+            v["model_providers"]["openai"]["name"].as_str(),
+            Some("OpenAI")
+        );
         assert_eq!(v["model_provider"].as_str(), Some("llm-gateway"));
     }
 

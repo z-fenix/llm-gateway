@@ -11,8 +11,13 @@ pub fn dotclaude_path(home: &Path) -> PathBuf {
 fn load_root(existing: Option<&str>) -> Result<serde_json::Value, String> {
     match existing {
         Some(s) if !s.trim().is_empty() => {
-            let v: serde_json::Value = serde_json::from_str(s).map_err(|e| format!("parse json: {e}"))?;
-            Ok(if v.is_object() { v } else { serde_json::json!({}) })
+            let v: serde_json::Value =
+                serde_json::from_str(s).map_err(|e| format!("parse json: {e}"))?;
+            Ok(if v.is_object() {
+                v
+            } else {
+                serde_json::json!({})
+            })
         }
         _ => Ok(serde_json::json!({})),
     }
@@ -26,19 +31,27 @@ pub fn merge_settings(
 ) -> Result<(String, Vec<String>), String> {
     let mut root = load_root(existing)?;
     let root_obj = root.as_object_mut().unwrap();
-    let env = root_obj.entry("env").or_insert_with(|| serde_json::json!({}));
+    let env = root_obj
+        .entry("env")
+        .or_insert_with(|| serde_json::json!({}));
     if !env.is_object() {
         *env = serde_json::json!({});
     }
     let env = env.as_object_mut().unwrap();
     let mut changed = vec![];
-    for (k, val) in [("ANTHROPIC_BASE_URL", base_url), ("ANTHROPIC_AUTH_TOKEN", token)] {
+    for (k, val) in [
+        ("ANTHROPIC_BASE_URL", base_url),
+        ("ANTHROPIC_AUTH_TOKEN", token),
+    ] {
         if env.get(k).and_then(|v| v.as_str()) != Some(val) {
             env.insert(k.to_string(), serde_json::Value::String(val.to_string()));
             changed.push(format!("env.{k}"));
         }
     }
-    Ok((serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?, changed))
+    Ok((
+        serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?,
+        changed,
+    ))
 }
 
 /// 确保 .claude.json hasCompletedOnboarding=true(否则 CC 强制登录页忽略 env)。
@@ -47,10 +60,16 @@ pub fn merge_dotclaude(existing: Option<&str>) -> Result<(String, Vec<String>), 
     let obj = root.as_object_mut().unwrap();
     let mut changed = vec![];
     if obj.get("hasCompletedOnboarding").and_then(|v| v.as_bool()) != Some(true) {
-        obj.insert("hasCompletedOnboarding".to_string(), serde_json::Value::Bool(true));
+        obj.insert(
+            "hasCompletedOnboarding".to_string(),
+            serde_json::Value::Bool(true),
+        );
         changed.push("hasCompletedOnboarding".to_string());
     }
-    Ok((serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?, changed))
+    Ok((
+        serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?,
+        changed,
+    ))
 }
 
 /// 读取可选的配置文件。
@@ -97,12 +116,19 @@ mod tests {
     #[test]
     fn merge_settings_preserves_unrelated_and_sets_env() {
         let existing = r#"{ "model": "opus", "env": { "OTHER": "1" } }"#;
-        let (out, changed) = merge_settings(Some(existing), "http://127.0.0.1:8779", "sk-lgw-abc").unwrap();
+        let (out, changed) =
+            merge_settings(Some(existing), "http://127.0.0.1:8779", "sk-lgw-abc").unwrap();
         let v: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v["model"], serde_json::json!("opus")); // 无关键保留
         assert_eq!(v["env"]["OTHER"], serde_json::json!("1")); // env 无关键保留
-        assert_eq!(v["env"]["ANTHROPIC_BASE_URL"], serde_json::json!("http://127.0.0.1:8779"));
-        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-abc"));
+        assert_eq!(
+            v["env"]["ANTHROPIC_BASE_URL"],
+            serde_json::json!("http://127.0.0.1:8779")
+        );
+        assert_eq!(
+            v["env"]["ANTHROPIC_AUTH_TOKEN"],
+            serde_json::json!("sk-lgw-abc")
+        );
         assert!(changed.contains(&"env.ANTHROPIC_BASE_URL".to_string()));
     }
 
@@ -135,7 +161,10 @@ mod tests {
         let p = settings_path(home.path());
         std::fs::create_dir_all(p.parent().unwrap()).unwrap();
         std::fs::write(&p, r#"{"model":"opus"}"#).unwrap();
-        assert_eq!(read_opt(&p).unwrap().as_deref(), Some(r#"{"model":"opus"}"#));
+        assert_eq!(
+            read_opt(&p).unwrap().as_deref(),
+            Some(r#"{"model":"opus"}"#)
+        );
     }
 
     #[test]
@@ -163,7 +192,11 @@ mod tests {
         assert!(r2[0].backup_path.is_some());
 
         let v: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap()).unwrap();
-        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-b"));
+            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap())
+                .unwrap();
+        assert_eq!(
+            v["env"]["ANTHROPIC_AUTH_TOKEN"],
+            serde_json::json!("sk-lgw-b")
+        );
     }
 }

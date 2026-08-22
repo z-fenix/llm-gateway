@@ -178,7 +178,10 @@ mod tests {
         assert!(block.contains("[知识库参考资料]"), "{block}");
         assert!(block.contains("--- 片段1 (来自 a.txt) ---"), "{block}");
         assert!(block.contains("AAAA"), "{block}");
-        assert!(block.contains("请基于以上资料回答,不相关则忽略。"), "{block}");
+        assert!(
+            block.contains("请基于以上资料回答,不相关则忽略。"),
+            "{block}"
+        );
         assert!(!block.contains("BBBB"), "{block}");
         assert!(!block.contains("CCCC"), "{block}");
     }

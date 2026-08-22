@@ -379,7 +379,13 @@ mod tests {
 
     #[test]
     fn blacklist_match_carries_rule_action_block() {
-        let rules = vec![custom_rule("blacklist", "keyword", "forbidden", "high", true)];
+        let rules = vec![custom_rule(
+            "blacklist",
+            "keyword",
+            "forbidden",
+            "high",
+            true,
+        )];
         let mut findings = Vec::new();
         apply_custom_rules("forbidden word", "request", "$.msg", &rules, &mut findings);
         assert_eq!(findings.len(), 1);
@@ -391,7 +397,13 @@ mod tests {
 
     #[test]
     fn blacklist_match_empty_action_yields_none() {
-        let mut rules = vec![custom_rule("blacklist", "keyword", "forbidden", "high", true)];
+        let mut rules = vec![custom_rule(
+            "blacklist",
+            "keyword",
+            "forbidden",
+            "high",
+            true,
+        )];
         rules[0].action = "".to_string();
         let mut findings = Vec::new();
         apply_custom_rules("forbidden word", "request", "$.msg", &rules, &mut findings);
@@ -401,7 +413,13 @@ mod tests {
 
     #[test]
     fn blacklist_match_unknown_action_yields_none() {
-        let mut rules = vec![custom_rule("blacklist", "keyword", "forbidden", "high", true)];
+        let mut rules = vec![custom_rule(
+            "blacklist",
+            "keyword",
+            "forbidden",
+            "high",
+            true,
+        )];
         rules[0].action = "totally-bogus".to_string();
         let mut findings = Vec::new();
         apply_custom_rules("forbidden word", "request", "$.msg", &rules, &mut findings);

@@ -70,9 +70,18 @@ mod tests {
             detect_role(&conn, "claude-sonnet-4-20250514"),
             Some("sonnet".to_string())
         );
-        assert_eq!(detect_role(&conn, "claude-opus-4"), Some("opus".to_string()));
-        assert_eq!(detect_role(&conn, "claude-haiku-3"), Some("haiku".to_string()));
-        assert_eq!(detect_role(&conn, "claude-fable-5"), Some("fable".to_string()));
+        assert_eq!(
+            detect_role(&conn, "claude-opus-4"),
+            Some("opus".to_string())
+        );
+        assert_eq!(
+            detect_role(&conn, "claude-haiku-3"),
+            Some("haiku".to_string())
+        );
+        assert_eq!(
+            detect_role(&conn, "claude-fable-5"),
+            Some("fable".to_string())
+        );
         assert_eq!(detect_role(&conn, "gpt-4o"), None);
     }
 

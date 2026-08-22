@@ -24,7 +24,11 @@ const RETRIEVE_FTS_TOP_K: usize = 20;
 /// 两路结果各自按列表中的名次 rank（从 1 开始）打分：
 /// `score = Σ 1 / (60 + rank)`
 /// 合并相同 embedding_id 的分数后按分降序取 top_n。
-pub fn rrf_fuse(vector_hits: &[(u64, f32)], fts_hits: &[(i64, f64)], top_n: usize) -> Result<Vec<i64>, String> {
+pub fn rrf_fuse(
+    vector_hits: &[(u64, f32)],
+    fts_hits: &[(i64, f64)],
+    top_n: usize,
+) -> Result<Vec<i64>, String> {
     Ok(rrf_fuse_scored(vector_hits, fts_hits, top_n)?
         .into_iter()
         .map(|(id, _)| id)
@@ -40,8 +44,8 @@ fn rrf_fuse_scored(
 
     for (rank, (id, _)) in vector_hits.iter().enumerate() {
         let rank = rank + 1;
-        let emb_id = i64::try_from(*id)
-            .map_err(|_| format!("embedding_id {} out of i64 range", id))?;
+        let emb_id =
+            i64::try_from(*id).map_err(|_| format!("embedding_id {} out of i64 range", id))?;
         *scores.entry(emb_id).or_insert(0.0) += 1.0 / (RRF_K + rank as f64);
     }
 
@@ -234,7 +238,10 @@ mod tests {
             "/v1/embeddings",
             post(move |Json(v): Json<Value>| async move {
                 hits_clone.lock().unwrap().push(v);
-                (axum::http::StatusCode::from_u16(status).unwrap(), Json(body.clone()))
+                (
+                    axum::http::StatusCode::from_u16(status).unwrap(),
+                    Json(body.clone()),
+                )
             }),
         );
         let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
@@ -294,15 +301,24 @@ mod tests {
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         state.rag.write().default_embedding_channel = Some("ch1".into());
 
         let kb_id = "retrieve_kb";
         let mut test_kb = kb(kb_id);
         test_kb.embedding_channel_id = Some("ch1".into());
         state.repo.create_kb(&test_kb).unwrap();
-        state.repo.insert_document(&kb_doc("d1", kb_id, "alpha.txt")).unwrap();
-        state.repo.insert_document(&kb_doc("d2", kb_id, "beta.txt")).unwrap();
+        state
+            .repo
+            .insert_document(&kb_doc("d1", kb_id, "alpha.txt"))
+            .unwrap();
+        state
+            .repo
+            .insert_document(&kb_doc("d2", kb_id, "beta.txt"))
+            .unwrap();
 
         // 建 4 个 chunk，内容与向量分别对应不同方向
         state
@@ -330,7 +346,9 @@ mod tests {
         *state.kb_index_dir.write() = index_dir.to_path_buf();
 
         // query 既命中向量 emb1，也命中 FTS "alpha"
-        let results = retrieve(&state, &test_kb, "alpha keyword", 3).await.unwrap();
+        let results = retrieve(&state, &test_kb, "alpha keyword", 3)
+            .await
+            .unwrap();
 
         assert!(!results.is_empty(), "retrieve should return hits");
         // emb1 向量最相似 + FTS 含 alpha，应排第一
@@ -353,14 +371,20 @@ mod tests {
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         state.rag.write().default_embedding_channel = Some("ch1".into());
 
         let kb_id = "empty_kb";
         let mut test_kb = kb(kb_id);
         test_kb.embedding_channel_id = Some("ch1".into());
         state.repo.create_kb(&test_kb).unwrap();
-        state.repo.insert_document(&kb_doc("d1", kb_id, "a.txt")).unwrap();
+        state
+            .repo
+            .insert_document(&kb_doc("d1", kb_id, "a.txt"))
+            .unwrap();
         state
             .repo
             .insert_chunks(&[kb_chunk("c1", "d1", kb_id, "irrelevant", 1)])
@@ -384,14 +408,20 @@ mod tests {
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         state.rag.write().default_embedding_channel = Some("ch1".into());
 
         let kb_id = "missing_chunk_kb";
         let mut test_kb = kb(kb_id);
         test_kb.embedding_channel_id = Some("ch1".into());
         state.repo.create_kb(&test_kb).unwrap();
-        state.repo.insert_document(&kb_doc("d1", kb_id, "a.txt")).unwrap();
+        state
+            .repo
+            .insert_document(&kb_doc("d1", kb_id, "a.txt"))
+            .unwrap();
         // 索引中写入 emb_id=999，但 DB 中不存在对应 chunk
         state
             .repo
@@ -414,6 +444,9 @@ mod tests {
         let err = retrieve(&state, &test_kb, "real content", 3)
             .await
             .unwrap_err();
-        assert!(err.contains("kb chunk missing for embedding_id 999"), "{err}");
+        assert!(
+            err.contains("kb chunk missing for embedding_id 999"),
+            "{err}"
+        );
     }
 }

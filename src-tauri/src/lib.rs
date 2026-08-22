@@ -6,8 +6,8 @@ pub mod db;
 pub mod error;
 pub mod knowledge;
 pub mod mcp;
-pub mod provider;
 pub mod protocol;
+pub mod provider;
 pub mod proxy;
 pub mod router;
 pub mod security;
@@ -36,8 +36,16 @@ pub fn run() {
             if let Ok(store) = app.store("store.bin") {
                 if let Some(value) = store.get("fallback") {
                     if let Some(obj) = value.as_object() {
-                        let channel_id = obj.get("channel_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                        let model = obj.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let channel_id = obj
+                            .get("channel_id")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let model = obj
+                            .get("model")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
                         if !channel_id.is_empty() && !model.is_empty() {
                             *state.fallback.write() = Some((channel_id, model));
                         }

@@ -1,4 +1,7 @@
-use super::models::{ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute};
+use super::models::{
+    ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, RequestLog,
+    RequestSecurityFinding, RolePattern, RoleRoute,
+};
 use super::Db;
 use crate::error::AppResult;
 use rusqlite::params;
@@ -226,7 +229,13 @@ impl Repository {
         Ok(n > 0)
     }
 
-    pub fn record_channel_stats(&self, channel_id: &str, tokens: i64, latency_ms: i64, success: bool) -> AppResult<()> {
+    pub fn record_channel_stats(
+        &self,
+        channel_id: &str,
+        tokens: i64,
+        latency_ms: i64,
+        success: bool,
+    ) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
         // 简化：累计调用与 token，平均延迟用滑动近似，success_rate 用指数滑动
@@ -280,7 +289,10 @@ impl Repository {
     pub fn insert_log(&self, l: &RequestLog) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        let seq: i64 = conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| r.get(0))?;
+        let seq: i64 =
+            conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| {
+                r.get(0)
+            })?;
         conn.execute(
             "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28)",
@@ -304,7 +316,10 @@ impl Repository {
             "DELETE FROM request_security_findings WHERE log_id IN (SELECT id FROM request_logs WHERE created_at < ?1)",
             params![ts],
         )?;
-        let deleted = tx.execute("DELETE FROM request_logs WHERE created_at < ?1", params![ts])?;
+        let deleted = tx.execute(
+            "DELETE FROM request_logs WHERE created_at < ?1",
+            params![ts],
+        )?;
         tx.commit()?;
         Ok(deleted)
     }
@@ -328,8 +343,12 @@ impl Repository {
         let mut rows = stmt.query(params![role])?;
         if let Some(r) = rows.next()? {
             Ok(Some(RoleRoute {
-                id: r.get(0)?, role: r.get(1)?, channel_id: r.get(2)?,
-                target_model: r.get(3)?, enabled: r.get::<_, i64>(4)? != 0, updated_at: r.get(5)?,
+                id: r.get(0)?,
+                role: r.get(1)?,
+                channel_id: r.get(2)?,
+                target_model: r.get(3)?,
+                enabled: r.get::<_, i64>(4)? != 0,
+                updated_at: r.get(5)?,
             }))
         } else {
             Ok(None)
@@ -344,12 +363,17 @@ impl Repository {
         )?;
         let rows = stmt.query_map([], |r| {
             Ok(RolePattern {
-                id: r.get(0)?, pattern: r.get(1)?, role: r.get(2)?,
-                priority: r.get(3)?, enabled: r.get::<_, i64>(4)? != 0,
+                id: r.get(0)?,
+                pattern: r.get(1)?,
+                role: r.get(2)?,
+                priority: r.get(3)?,
+                enabled: r.get::<_, i64>(4)? != 0,
             })
         })?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -373,17 +397,34 @@ impl Repository {
         let mut rows = stmt.query([])?;
         if let Some(r) = rows.next()? {
             Ok(Some(RequestLog {
-                id: r.get(0)?, seq: r.get(1)?, trace_id: r.get(2)?,
-                api_key_id: r.get(3)?, key_name: r.get(4)?, channel_id: r.get(5)?,
-                channel_name: r.get(6)?, role: r.get(7)?, request_model: r.get(8)?,
-                upstream_model: r.get(9)?, protocol: r.get(10)?, status_code: r.get(11)?,
-                input_tokens: r.get(12)?, output_tokens: r.get(13)?, latency_ms: r.get(14)?,
-                is_stream: r.get::<_, i64>(15)? != 0, error: r.get(16)?,
-                fallback: r.get::<_, i64>(17)? != 0, tool_calls: r.get(18)?,
-                request_body: r.get(19)?, response_body: r.get(20)?,
-                risk_level: r.get(21)?, risk_score: r.get(22)?, risk_summary: r.get(23)?,
-                security_action: r.get(24)?, sanitized: r.get::<_, i64>(25)? != 0,
-                blocked_reason: r.get(26)?, created_at: r.get(27)?,
+                id: r.get(0)?,
+                seq: r.get(1)?,
+                trace_id: r.get(2)?,
+                api_key_id: r.get(3)?,
+                key_name: r.get(4)?,
+                channel_id: r.get(5)?,
+                channel_name: r.get(6)?,
+                role: r.get(7)?,
+                request_model: r.get(8)?,
+                upstream_model: r.get(9)?,
+                protocol: r.get(10)?,
+                status_code: r.get(11)?,
+                input_tokens: r.get(12)?,
+                output_tokens: r.get(13)?,
+                latency_ms: r.get(14)?,
+                is_stream: r.get::<_, i64>(15)? != 0,
+                error: r.get(16)?,
+                fallback: r.get::<_, i64>(17)? != 0,
+                tool_calls: r.get(18)?,
+                request_body: r.get(19)?,
+                response_body: r.get(20)?,
+                risk_level: r.get(21)?,
+                risk_score: r.get(22)?,
+                risk_summary: r.get(23)?,
+                security_action: r.get(24)?,
+                sanitized: r.get::<_, i64>(25)? != 0,
+                blocked_reason: r.get(26)?,
+                created_at: r.get(27)?,
             }))
         } else {
             Ok(None)
@@ -408,7 +449,10 @@ impl Repository {
     pub fn set_api_key_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        conn.execute("UPDATE api_keys SET enabled=?2 WHERE id=?1", rusqlite::params![id, enabled as i64])?;
+        conn.execute(
+            "UPDATE api_keys SET enabled=?2 WHERE id=?1",
+            rusqlite::params![id, enabled as i64],
+        )?;
         Ok(())
     }
     pub fn delete_api_key(&self, id: &str) -> AppResult<()> {
@@ -420,20 +464,34 @@ impl Repository {
     pub fn update_quota(&self, id: &str, quota_total: Option<i64>) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        conn.execute("UPDATE api_keys SET quota_total=?2 WHERE id=?1", rusqlite::params![id, quota_total])?;
+        conn.execute(
+            "UPDATE api_keys SET quota_total=?2 WHERE id=?1",
+            rusqlite::params![id, quota_total],
+        )?;
         Ok(())
     }
     pub fn list_api_keys(&self) -> AppResult<Vec<ApiKey>> {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at FROM api_keys ORDER BY created_at DESC")?;
-        let rows = stmt.query_map([], |r| Ok(ApiKey {
-            id: r.get(0)?, key: r.get(1)?, name: r.get(2)?, enabled: r.get::<_,i64>(3)? != 0,
-            quota_total: r.get(4)?, quota_used: r.get(5)?, total_calls: r.get(6)?,
-            total_tokens: r.get(7)?, created_at: r.get(8)?, last_used_at: r.get(9)?,
-        }))?;
+        let rows = stmt.query_map([], |r| {
+            Ok(ApiKey {
+                id: r.get(0)?,
+                key: r.get(1)?,
+                name: r.get(2)?,
+                enabled: r.get::<_, i64>(3)? != 0,
+                quota_total: r.get(4)?,
+                quota_used: r.get(5)?,
+                total_calls: r.get(6)?,
+                total_tokens: r.get(7)?,
+                created_at: r.get(8)?,
+                last_used_at: r.get(9)?,
+            })
+        })?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
     pub fn delete_role_route(&self, role: &str) -> AppResult<()> {
@@ -445,13 +503,23 @@ impl Repository {
     pub fn list_role_routes(&self) -> AppResult<Vec<crate::db::models::RoleRoute>> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        let mut stmt = conn.prepare("SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes")?;
-        let rows = stmt.query_map([], |r| Ok(crate::db::models::RoleRoute {
-            id: r.get(0)?, role: r.get(1)?, channel_id: r.get(2)?, target_model: r.get(3)?,
-            enabled: r.get::<_,i64>(4)? != 0, updated_at: r.get(5)?,
-        }))?;
+        let mut stmt = conn.prepare(
+            "SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(crate::db::models::RoleRoute {
+                id: r.get(0)?,
+                role: r.get(1)?,
+                channel_id: r.get(2)?,
+                target_model: r.get(3)?,
+                enabled: r.get::<_, i64>(4)? != 0,
+                updated_at: r.get(5)?,
+            })
+        })?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
     pub fn upsert_role_pattern(&self, p: &crate::db::models::RolePattern) -> AppResult<()> {
@@ -487,10 +555,14 @@ impl Repository {
             "SELECT COUNT(*), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), COALESCE(SUM(CASE WHEN status_code BETWEEN 200 AND 299 THEN 1 ELSE 0 END),0) FROM request_logs {}",
             where_sql
         );
-        let (total_calls, total_input_tokens, total_output_tokens, success_count): (i64, i64, i64, i64) =
-            conn.query_row(&agg_sql, rusqlite::params_from_iter(values.iter()), |r| {
-                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
-            })?;
+        let (total_calls, total_input_tokens, total_output_tokens, success_count): (
+            i64,
+            i64,
+            i64,
+            i64,
+        ) = conn.query_row(&agg_sql, rusqlite::params_from_iter(values.iter()), |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+        })?;
 
         let risk_sql = format!(
             "SELECT risk_level, COUNT(*) FROM request_logs {} GROUP BY risk_level ORDER BY COUNT(*) DESC, risk_level ASC",
@@ -606,7 +678,12 @@ impl Repository {
         }
         Ok(out)
     }
-    pub fn list_logs(&self, filter: &LogFilter, limit: i64, offset: i64) -> AppResult<Vec<RequestLog>> {
+    pub fn list_logs(
+        &self,
+        filter: &LogFilter,
+        limit: i64,
+        offset: i64,
+    ) -> AppResult<Vec<RequestLog>> {
         let conn = self.db.conn();
         let conn = conn.lock();
         let (where_sql, values) = build_where(filter);
@@ -617,20 +694,43 @@ impl Repository {
         let mut stmt = conn.prepare(&sql)?;
         let rows = stmt.query_map(
             rusqlite::params_from_iter(values.iter().chain([limit.into(), offset.into()].iter())),
-            |r| Ok(RequestLog {
-                id: r.get(0)?, seq: r.get(1)?, trace_id: r.get(2)?, api_key_id: r.get(3)?,
-                key_name: r.get(4)?, channel_id: r.get(5)?, channel_name: r.get(6)?, role: r.get(7)?,
-                request_model: r.get(8)?, upstream_model: r.get(9)?, protocol: r.get(10)?,
-                status_code: r.get(11)?, input_tokens: r.get(12)?, output_tokens: r.get(13)?,
-                latency_ms: r.get(14)?, is_stream: r.get::<_,i64>(15)? != 0, error: r.get(16)?,
-                fallback: r.get::<_,i64>(17)? != 0, tool_calls: r.get(18)?, request_body: r.get(19)?,
-                response_body: r.get(20)?, risk_level: r.get(21)?, risk_score: r.get(22)?,
-                risk_summary: r.get(23)?, security_action: r.get(24)?,
-                sanitized: r.get::<_,i64>(25)? != 0, blocked_reason: r.get(26)?, created_at: r.get(27)?,
-            })
+            |r| {
+                Ok(RequestLog {
+                    id: r.get(0)?,
+                    seq: r.get(1)?,
+                    trace_id: r.get(2)?,
+                    api_key_id: r.get(3)?,
+                    key_name: r.get(4)?,
+                    channel_id: r.get(5)?,
+                    channel_name: r.get(6)?,
+                    role: r.get(7)?,
+                    request_model: r.get(8)?,
+                    upstream_model: r.get(9)?,
+                    protocol: r.get(10)?,
+                    status_code: r.get(11)?,
+                    input_tokens: r.get(12)?,
+                    output_tokens: r.get(13)?,
+                    latency_ms: r.get(14)?,
+                    is_stream: r.get::<_, i64>(15)? != 0,
+                    error: r.get(16)?,
+                    fallback: r.get::<_, i64>(17)? != 0,
+                    tool_calls: r.get(18)?,
+                    request_body: r.get(19)?,
+                    response_body: r.get(20)?,
+                    risk_level: r.get(21)?,
+                    risk_score: r.get(22)?,
+                    risk_summary: r.get(23)?,
+                    security_action: r.get(24)?,
+                    sanitized: r.get::<_, i64>(25)? != 0,
+                    blocked_reason: r.get(26)?,
+                    created_at: r.get(27)?,
+                })
+            },
         )?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -648,12 +748,28 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,log_id,phase,category,rule_id,severity,title,description,location,evidence_masked,evidence_hash,action,created_at FROM request_security_findings WHERE log_id=?1 ORDER BY created_at ASC")?;
-        let rows = stmt.query_map(params![log_id], |r| Ok(RequestSecurityFinding{
-            id:r.get(0)?, log_id:r.get(1)?, phase:r.get(2)?, category:r.get(3)?, rule_id:r.get(4)?,
-            severity:r.get(5)?, title:r.get(6)?, description:r.get(7)?, location:r.get(8)?,
-            evidence_masked:r.get(9)?, evidence_hash:r.get(10)?, action:r.get(11)?, created_at:r.get(12)?,
-        }))?;
-        let mut out=Vec::new(); for x in rows { out.push(x?); } Ok(out)
+        let rows = stmt.query_map(params![log_id], |r| {
+            Ok(RequestSecurityFinding {
+                id: r.get(0)?,
+                log_id: r.get(1)?,
+                phase: r.get(2)?,
+                category: r.get(3)?,
+                rule_id: r.get(4)?,
+                severity: r.get(5)?,
+                title: r.get(6)?,
+                description: r.get(7)?,
+                location: r.get(8)?,
+                evidence_masked: r.get(9)?,
+                evidence_hash: r.get(10)?,
+                action: r.get(11)?,
+                created_at: r.get(12)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for x in rows {
+            out.push(x?);
+        }
+        Ok(out)
     }
 
     pub fn seed_builtin_rules(&self, rules: &[BuiltinRule]) -> AppResult<()> {
@@ -672,13 +788,23 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,rule_id,category,severity,title,description,toggle_key,enabled,created_at FROM security_builtin_rules ORDER BY created_at ASC")?;
-        let rows = stmt.query_map([], |r| Ok(BuiltinRule {
-            id: r.get(0)?, rule_id: r.get(1)?, category: r.get(2)?, severity: r.get(3)?,
-            title: r.get(4)?, description: r.get(5)?, toggle_key: r.get(6)?,
-            enabled: r.get::<_, i64>(7)? != 0, created_at: r.get(8)?,
-        }))?;
+        let rows = stmt.query_map([], |r| {
+            Ok(BuiltinRule {
+                id: r.get(0)?,
+                rule_id: r.get(1)?,
+                category: r.get(2)?,
+                severity: r.get(3)?,
+                title: r.get(4)?,
+                description: r.get(5)?,
+                toggle_key: r.get(6)?,
+                enabled: r.get::<_, i64>(7)? != 0,
+                created_at: r.get(8)?,
+            })
+        })?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -724,13 +850,23 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare("SELECT id,rule_type,category,pattern,severity,action,enabled,description,created_at FROM security_custom_rules ORDER BY created_at DESC")?;
-        let rows = stmt.query_map([], |r| Ok(CustomRule {
-            id: r.get(0)?, rule_type: r.get(1)?, category: r.get(2)?, pattern: r.get(3)?,
-            severity: r.get(4)?, action: r.get(5)?, enabled: r.get::<_, i64>(6)? != 0,
-            description: r.get(7)?, created_at: r.get(8)?,
-        }))?;
+        let rows = stmt.query_map([], |r| {
+            Ok(CustomRule {
+                id: r.get(0)?,
+                rule_type: r.get(1)?,
+                category: r.get(2)?,
+                pattern: r.get(3)?,
+                severity: r.get(4)?,
+                action: r.get(5)?,
+                enabled: r.get::<_, i64>(6)? != 0,
+                description: r.get(7)?,
+                created_at: r.get(8)?,
+            })
+        })?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -750,18 +886,32 @@ impl Repository {
         conn.execute("DELETE FROM security_custom_rules WHERE id=?1", [id])?;
         Ok(())
     }
-    pub fn stats(&self) -> AppResult<(i64,i64,i64,i64,i64,i64)> {
+    pub fn stats(&self) -> AppResult<(i64, i64, i64, i64, i64, i64)> {
         // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms)
         let conn = self.db.conn();
         let conn = conn.lock();
-        let today_start = chrono::Local::now().date_naive().and_hms_opt(0,0,0).unwrap().and_utc().timestamp();
+        let today_start = chrono::Local::now()
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc()
+            .timestamp();
         let (tr, tt): (i64,i64) = conn.query_row(
             "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs WHERE created_at>=?1",
             [today_start], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        let (ar, at): (i64,i64) = conn.query_row(
-            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs", [], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        let ac: i64 = conn.query_row("SELECT COUNT(*) FROM channels WHERE enabled=1", [], |r| r.get(0))?;
-        let lat: i64 = conn.query_row("SELECT CAST(COALESCE(AVG(latency_ms),0) AS INTEGER) FROM request_logs", [], |r| r.get(0))?;
+        let (ar, at): (i64, i64) = conn.query_row(
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )?;
+        let ac: i64 = conn.query_row("SELECT COUNT(*) FROM channels WHERE enabled=1", [], |r| {
+            r.get(0)
+        })?;
+        let lat: i64 = conn.query_row(
+            "SELECT CAST(COALESCE(AVG(latency_ms),0) AS INTEGER) FROM request_logs",
+            [],
+            |r| r.get(0),
+        )?;
         Ok((tr, tt, ar, at, ac, lat))
     }
 
@@ -789,7 +939,9 @@ impl Repository {
         )?;
         let rows = stmt.query_map([], row_to_kb)?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -848,7 +1000,12 @@ impl Repository {
         Ok(())
     }
 
-    pub fn update_kb_embedding_channel(&self, id: &str, channel_id: Option<String>, model: &str) -> AppResult<bool> {
+    pub fn update_kb_embedding_channel(
+        &self,
+        id: &str,
+        channel_id: Option<String>,
+        model: &str,
+    ) -> AppResult<bool> {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
@@ -913,7 +1070,9 @@ impl Repository {
         )?;
         let rows = stmt.query_map(params![kb_id], row_to_kb_doc)?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -931,7 +1090,12 @@ impl Repository {
         }
     }
 
-    pub fn update_document_status(&self, id: &str, status: &str, error: Option<&str>) -> AppResult<()> {
+    pub fn update_document_status(
+        &self,
+        id: &str,
+        status: &str,
+        error: Option<&str>,
+    ) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
@@ -993,7 +1157,9 @@ impl Repository {
         )?;
         let rows = stmt.query_map(params![kb_id], row_to_kb_chunk)?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -1016,11 +1182,18 @@ impl Repository {
         let mut stmt = conn.prepare(&sql)?;
         let rows = stmt.query_map(rusqlite::params_from_iter(params.iter()), row_to_kb_chunk)?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
-    pub fn fts_search_chunks(&self, kb_id: &str, query: &str, top_k: usize) -> AppResult<Vec<(i64, f64)>> {
+    pub fn fts_search_chunks(
+        &self,
+        kb_id: &str,
+        query: &str,
+        top_k: usize,
+    ) -> AppResult<Vec<(i64, f64)>> {
         let escaped = match fts5_escape(query) {
             Some(q) => q,
             None => return Ok(Vec::new()),
@@ -1034,7 +1207,9 @@ impl Repository {
             Ok((r.get::<_, i64>(0)?, r.get::<_, f64>(1)?))
         })?;
         let mut out = Vec::new();
-        for r in rows { out.push(r?); }
+        for r in rows {
+            out.push(r?);
+        }
         Ok(out)
     }
 
@@ -1155,12 +1330,23 @@ mod tests {
 
     fn ch(id: &str) -> Channel {
         Channel {
-            id: id.into(), name: "n".into(), supplier: "openai".into(),
+            id: id.into(),
+            name: "n".into(),
+            supplier: "openai".into(),
             upstream_protocol: "openai-chat".into(),
-            base_url: "http://x".into(), api_key: "sk-real".into(),
-            models: vec!["gpt-4o".into()], priority: 0, weight: 1, enabled: true,
-            timeout_secs: 60, total_calls: 0, total_tokens: 0, success_rate: 1.0,
-            avg_latency_ms: 0, created_at: 1, updated_at: 1,
+            base_url: "http://x".into(),
+            api_key: "sk-real".into(),
+            models: vec!["gpt-4o".into()],
+            priority: 0,
+            weight: 1,
+            enabled: true,
+            timeout_secs: 60,
+            total_calls: 0,
+            total_tokens: 0,
+            success_rate: 1.0,
+            avg_latency_ms: 0,
+            created_at: 1,
+            updated_at: 1,
         }
     }
 
@@ -1178,9 +1364,16 @@ mod tests {
     fn apikey_lookup_by_key() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
-            id: "k1".into(), key: "sk-lgw-abc".into(), name: "alice".into(),
-            enabled: true, quota_total: Some(1000), quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-abc".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: Some(1000),
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         };
         repo.insert_api_key(&k).unwrap();
         let got = repo.get_api_key_by_key("sk-lgw-abc").unwrap().unwrap();
@@ -1219,9 +1412,16 @@ mod tests {
     fn api_key_crud_and_quota() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: Some(1000), quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: Some(1000),
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         };
         repo.insert_api_key(&k).unwrap();
         let keys = repo.list_api_keys().unwrap();
@@ -1229,13 +1429,31 @@ mod tests {
         assert_eq!(keys[0].name, "alice");
 
         repo.set_api_key_enabled("k1", false).unwrap();
-        assert!(!repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap().enabled);
+        assert!(
+            !repo
+                .get_api_key_by_key("sk-lgw-a")
+                .unwrap()
+                .unwrap()
+                .enabled
+        );
         repo.set_api_key_enabled("k1", true).unwrap();
 
         repo.update_quota("k1", Some(5000)).unwrap();
-        assert_eq!(repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap().quota_total, Some(5000));
+        assert_eq!(
+            repo.get_api_key_by_key("sk-lgw-a")
+                .unwrap()
+                .unwrap()
+                .quota_total,
+            Some(5000)
+        );
         repo.update_quota("k1", None).unwrap();
-        assert_eq!(repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap().quota_total, None);
+        assert_eq!(
+            repo.get_api_key_by_key("sk-lgw-a")
+                .unwrap()
+                .unwrap()
+                .quota_total,
+            None
+        );
 
         repo.delete_api_key("k1").unwrap();
         assert!(repo.get_api_key_by_key("sk-lgw-a").unwrap().is_none());
@@ -1246,13 +1464,20 @@ mod tests {
     fn consume_quota_atomic_caps_at_total() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: Some(10), quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: Some(10),
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         };
         repo.insert_api_key(&k).unwrap();
-        assert!(repo.consume_quota("k1", 6).unwrap());   // 0+6<=10 -> true, used=6
-        assert!(!repo.consume_quota("k1", 6).unwrap());  // 6+6>10 -> false, used stays 6
+        assert!(repo.consume_quota("k1", 6).unwrap()); // 0+6<=10 -> true, used=6
+        assert!(!repo.consume_quota("k1", 6).unwrap()); // 6+6>10 -> false, used stays 6
         let got = repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap();
         assert_eq!(got.quota_used, 6);
     }
@@ -1261,9 +1486,16 @@ mod tests {
     fn consume_quota_zero_tokens_increments_calls_without_changing_used() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: Some(100), quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: Some(100),
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         };
         repo.insert_api_key(&k).unwrap();
         assert!(repo.consume_quota("k1", 0).unwrap());
@@ -1277,12 +1509,19 @@ mod tests {
     fn consume_quota_large_value_and_over_cap_is_atomic() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: Some(100), quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: Some(100),
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         };
         repo.insert_api_key(&k).unwrap();
-        assert!(repo.consume_quota("k1", 99).unwrap());   // 0+99<=100 -> true, used=99
+        assert!(repo.consume_quota("k1", 99).unwrap()); // 0+99<=100 -> true, used=99
         assert!(!repo.consume_quota("k1", 100).unwrap()); // 99+100>100 -> false, used stays 99
         let got = repo.get_api_key_by_key("sk-lgw-a").unwrap().unwrap();
         assert_eq!(got.quota_used, 99);
@@ -1294,9 +1533,16 @@ mod tests {
     fn consume_quota_over_cap_does_not_decrement() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: Some(50), quota_used: 40,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: Some(50),
+            quota_used: 40,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         };
         repo.insert_api_key(&k).unwrap();
         assert!(!repo.consume_quota("k1", 20).unwrap()); // 40+20>50 -> false
@@ -1324,13 +1570,21 @@ mod tests {
         let got = repo.get_channel("c1").unwrap().unwrap();
         assert_eq!(got.total_calls, 2);
         assert_eq!(got.avg_latency_ms, 150);
-        assert!((got.success_rate - 0.9).abs() < f64::EPSILON, "success_rate={}", got.success_rate);
+        assert!(
+            (got.success_rate - 0.9).abs() < f64::EPSILON,
+            "success_rate={}",
+            got.success_rate
+        );
 
         repo.record_channel_stats("c1", 10, 300, true).unwrap();
         let got = repo.get_channel("c1").unwrap().unwrap();
         assert_eq!(got.total_calls, 3);
         assert_eq!(got.avg_latency_ms, 200);
-        assert!((got.success_rate - 0.91).abs() < f64::EPSILON, "success_rate={}", got.success_rate);
+        assert!(
+            (got.success_rate - 0.91).abs() < f64::EPSILON,
+            "success_rate={}",
+            got.success_rate
+        );
     }
 
     #[test]
@@ -1338,8 +1592,12 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         let rr = RoleRoute {
-            id: "rr1".into(), role: "coder".into(), channel_id: "ch1".into(),
-            target_model: "gpt-4o".into(), enabled: true, updated_at: 1,
+            id: "rr1".into(),
+            role: "coder".into(),
+            channel_id: "ch1".into(),
+            target_model: "gpt-4o".into(),
+            enabled: true,
+            updated_at: 1,
         };
         repo.upsert_role_route(&rr).unwrap();
         let routes = repo.list_role_routes().unwrap();
@@ -1354,8 +1612,11 @@ mod tests {
     fn role_pattern_upsert_and_delete() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let p = RolePattern {
-            id: "rp1".into(), pattern: ".*code.*".into(), role: "coder".into(),
-            priority: 10, enabled: true,
+            id: "rp1".into(),
+            pattern: ".*code.*".into(),
+            role: "coder".into(),
+            priority: 10,
+            enabled: true,
         };
         repo.upsert_role_pattern(&p).unwrap();
         let patterns = repo.list_role_patterns().unwrap();
@@ -1364,41 +1625,90 @@ mod tests {
         let mut p2 = p.clone();
         p2.pattern = ".*review.*".into();
         repo.upsert_role_pattern(&p2).unwrap();
-        let got = repo.list_role_patterns().unwrap().into_iter().find(|x| x.id == "rp1").unwrap();
+        let got = repo
+            .list_role_patterns()
+            .unwrap()
+            .into_iter()
+            .find(|x| x.id == "rp1")
+            .unwrap();
         assert_eq!(got.pattern, ".*review.*");
 
         repo.delete_role_pattern("rp1").unwrap();
-        assert!(!repo.list_role_patterns().unwrap().iter().any(|x| x.id == "rp1"));
+        assert!(!repo
+            .list_role_patterns()
+            .unwrap()
+            .iter()
+            .any(|x| x.id == "rp1"));
     }
 
     fn make_log(seq: i64, model: &str, tokens: i64, latency: i64, created_at: i64) -> RequestLog {
         RequestLog {
-            id: format!("l{}", seq), seq, trace_id: format!("t{}", seq),
-            api_key_id: Some("k1".into()), key_name: Some("alice".into()),
-            channel_id: Some("ch1".into()), channel_name: Some("ch".into()),
-            role: Some("coder".into()), request_model: Some(model.into()),
-            upstream_model: Some(model.into()), protocol: "openai".into(),
-            status_code: Some(200), input_tokens: tokens, output_tokens: tokens,
-            latency_ms: latency, is_stream: false, error: None, fallback: false,
-            tool_calls: None, request_body: None, response_body: None,
-            risk_level: "clean".into(), risk_score: 0, risk_summary: None,
-            security_action: "allow".into(), sanitized: false, blocked_reason: None,
+            id: format!("l{}", seq),
+            seq,
+            trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()),
+            key_name: Some("alice".into()),
+            channel_id: Some("ch1".into()),
+            channel_name: Some("ch".into()),
+            role: Some("coder".into()),
+            request_model: Some(model.into()),
+            upstream_model: Some(model.into()),
+            protocol: "openai".into(),
+            status_code: Some(200),
+            input_tokens: tokens,
+            output_tokens: tokens,
+            latency_ms: latency,
+            is_stream: false,
+            error: None,
+            fallback: false,
+            tool_calls: None,
+            request_body: None,
+            response_body: None,
+            risk_level: "clean".into(),
+            risk_score: 0,
+            risk_summary: None,
+            security_action: "allow".into(),
+            sanitized: false,
+            blocked_reason: None,
             created_at,
         }
     }
 
-    fn make_log_with(seq: i64, status: i64, channel_id: &str, risk_level: &str, created_at: i64) -> RequestLog {
+    fn make_log_with(
+        seq: i64,
+        status: i64,
+        channel_id: &str,
+        risk_level: &str,
+        created_at: i64,
+    ) -> RequestLog {
         RequestLog {
-            id: format!("l{}", seq), seq, trace_id: format!("t{}", seq),
-            api_key_id: Some("k1".into()), key_name: Some("alice".into()),
-            channel_id: Some(channel_id.into()), channel_name: Some("ch".into()),
-            role: Some("coder".into()), request_model: Some("gpt-4o".into()),
-            upstream_model: Some("gpt-4o".into()), protocol: "openai".into(),
-            status_code: Some(status), input_tokens: 10, output_tokens: 10,
-            latency_ms: 100, is_stream: false, error: None, fallback: false,
-            tool_calls: None, request_body: None, response_body: None,
-            risk_level: risk_level.into(), risk_score: 0, risk_summary: None,
-            security_action: "allow".into(), sanitized: false, blocked_reason: None,
+            id: format!("l{}", seq),
+            seq,
+            trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()),
+            key_name: Some("alice".into()),
+            channel_id: Some(channel_id.into()),
+            channel_name: Some("ch".into()),
+            role: Some("coder".into()),
+            request_model: Some("gpt-4o".into()),
+            upstream_model: Some("gpt-4o".into()),
+            protocol: "openai".into(),
+            status_code: Some(status),
+            input_tokens: 10,
+            output_tokens: 10,
+            latency_ms: 100,
+            is_stream: false,
+            error: None,
+            fallback: false,
+            tool_calls: None,
+            request_body: None,
+            response_body: None,
+            risk_level: risk_level.into(),
+            risk_score: 0,
+            risk_summary: None,
+            security_action: "allow".into(),
+            sanitized: false,
+            blocked_reason: None,
             created_at,
         }
     }
@@ -1408,23 +1718,48 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
         repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1)).unwrap();
-        repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2))
+            .unwrap();
         repo.insert_log(&make_log(3, "gpt-4o", 30, 300, 3)).unwrap();
 
         assert_eq!(repo.count_logs(&LogFilter::default()).unwrap(), 3);
-        assert_eq!(repo.count_logs(&LogFilter { keyword: Some("gpt-4o".into()), ..Default::default() }).unwrap(), 2);
+        assert_eq!(
+            repo.count_logs(&LogFilter {
+                keyword: Some("gpt-4o".into()),
+                ..Default::default()
+            })
+            .unwrap(),
+            2
+        );
 
         let page = repo.list_logs(&LogFilter::default(), 2, 0).unwrap();
         assert_eq!(page.len(), 2);
         assert_eq!(page[0].seq, 3);
         assert_eq!(page[1].seq, 2);
 
-        let page = repo.list_logs(&LogFilter { keyword: Some("gpt-4o".into()), ..Default::default() }, 10, 0).unwrap();
+        let page = repo
+            .list_logs(
+                &LogFilter {
+                    keyword: Some("gpt-4o".into()),
+                    ..Default::default()
+                },
+                10,
+                0,
+            )
+            .unwrap();
         assert_eq!(page.len(), 2);
     }
 
@@ -1434,15 +1769,27 @@ mod tests {
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_channel(&ch("ch2")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
 
-        repo.insert_log(&make_log_with(1, 200, "ch1", "high", 1)).unwrap();
-        repo.insert_log(&make_log_with(2, 200, "ch1", "low", 2)).unwrap();
-        repo.insert_log(&make_log_with(3, 500, "ch1", "high", 3)).unwrap();
-        repo.insert_log(&make_log_with(4, 200, "ch2", "high", 4)).unwrap();
+        repo.insert_log(&make_log_with(1, 200, "ch1", "high", 1))
+            .unwrap();
+        repo.insert_log(&make_log_with(2, 200, "ch1", "low", 2))
+            .unwrap();
+        repo.insert_log(&make_log_with(3, 500, "ch1", "high", 3))
+            .unwrap();
+        repo.insert_log(&make_log_with(4, 200, "ch2", "high", 4))
+            .unwrap();
 
         let filter = LogFilter {
             channel_id: Some("ch1".into()),
@@ -1461,14 +1808,25 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
 
-        repo.insert_log(&make_log_with(1, 200, "ch1", "clean", 100)).unwrap();
-        repo.insert_log(&make_log_with(2, 500, "ch1", "clean", 200)).unwrap();
-        repo.insert_log(&make_log_with(3, 503, "ch1", "clean", 300)).unwrap();
+        repo.insert_log(&make_log_with(1, 200, "ch1", "clean", 100))
+            .unwrap();
+        repo.insert_log(&make_log_with(2, 500, "ch1", "clean", 200))
+            .unwrap();
+        repo.insert_log(&make_log_with(3, 503, "ch1", "clean", 300))
+            .unwrap();
 
         let filter = LogFilter {
             after: Some(150),
@@ -1488,19 +1846,33 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
         repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1)).unwrap();
-        repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2)).unwrap();
+        repo.insert_log(&make_log(2, "gpt-3.5", 20, 200, 2))
+            .unwrap();
         repo.insert_log(&make_log(3, "gpt-4o", 30, 300, 3)).unwrap();
 
-        let filter = LogFilter { keyword: Some("gpt-4o".into()), ..Default::default() };
+        let filter = LogFilter {
+            keyword: Some("gpt-4o".into()),
+            ..Default::default()
+        };
         assert_eq!(repo.count_logs(&filter).unwrap(), 2);
         let items = repo.list_logs(&filter, 10, 0).unwrap();
         assert_eq!(items.len(), 2);
-        assert!(items.iter().all(|l| l.request_model.as_deref() == Some("gpt-4o")));
+        assert!(items
+            .iter()
+            .all(|l| l.request_model.as_deref() == Some("gpt-4o")));
     }
 
     #[test]
@@ -1511,14 +1883,24 @@ mod tests {
         c2.enabled = false;
         repo.insert_channel(&c2).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
 
         let today = chrono::Local::now().timestamp();
-        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, today)).unwrap();
-        repo.insert_log(&make_log(2, "gpt-4o", 20, 200, today - 86400 * 2)).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, today))
+            .unwrap();
+        repo.insert_log(&make_log(2, "gpt-4o", 20, 200, today - 86400 * 2))
+            .unwrap();
 
         let (tr, tt, ar, at, ac, lat) = repo.stats().unwrap();
         assert_eq!(tr, 1);
@@ -1531,15 +1913,29 @@ mod tests {
 
     fn make_log_risk(seq: i64, model: &str, risk_level: &str, risk_score: i64) -> RequestLog {
         RequestLog {
-            id: format!("l{}", seq), seq, trace_id: format!("t{}", seq),
-            api_key_id: Some("k1".into()), key_name: Some("alice".into()),
-            channel_id: Some("ch1".into()), channel_name: Some("ch".into()),
-            role: Some("coder".into()), request_model: Some(model.into()),
-            upstream_model: Some(model.into()), protocol: "openai".into(),
-            status_code: Some(200), input_tokens: 10, output_tokens: 10,
-            latency_ms: 100, is_stream: false, error: None, fallback: false,
-            tool_calls: None, request_body: None, response_body: None,
-            risk_level: risk_level.into(), risk_score,
+            id: format!("l{}", seq),
+            seq,
+            trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()),
+            key_name: Some("alice".into()),
+            channel_id: Some("ch1".into()),
+            channel_name: Some("ch".into()),
+            role: Some("coder".into()),
+            request_model: Some(model.into()),
+            upstream_model: Some(model.into()),
+            protocol: "openai".into(),
+            status_code: Some(200),
+            input_tokens: 10,
+            output_tokens: 10,
+            latency_ms: 100,
+            is_stream: false,
+            error: None,
+            fallback: false,
+            tool_calls: None,
+            request_body: None,
+            response_body: None,
+            risk_level: risk_level.into(),
+            risk_score,
             risk_summary: Some("summary".into()),
             security_action: "block".into(),
             sanitized: true,
@@ -1553,12 +1949,21 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
 
-        repo.insert_log(&make_log_risk(1, "gpt-4o", "high", 85)).unwrap();
+        repo.insert_log(&make_log_risk(1, "gpt-4o", "high", 85))
+            .unwrap();
         let logs = repo.list_logs(&LogFilter::default(), 10, 0).unwrap();
         assert_eq!(logs.len(), 1);
         let got = &logs[0];
@@ -1575,19 +1980,34 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
         repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1)).unwrap();
 
         let finding = crate::db::models::RequestSecurityFinding {
-            id: "f1".into(), log_id: "l1".into(), phase: "request".into(),
-            category: "prompt_injection".into(), rule_id: "rule-1".into(),
-            severity: "high".into(), title: "Detected".into(),
-            description: Some("desc".into()), location: Some("messages[0]".into()),
-            evidence_masked: Some("***".into()), evidence_hash: Some("hash".into()),
-            action: Some("block".into()), created_at: 1,
+            id: "f1".into(),
+            log_id: "l1".into(),
+            phase: "request".into(),
+            category: "prompt_injection".into(),
+            rule_id: "rule-1".into(),
+            severity: "high".into(),
+            title: "Detected".into(),
+            description: Some("desc".into()),
+            location: Some("messages[0]".into()),
+            evidence_masked: Some("***".into()),
+            evidence_hash: Some("hash".into()),
+            action: Some("block".into()),
+            created_at: 1,
         };
         repo.insert_finding(&finding).unwrap();
 
@@ -1609,7 +2029,8 @@ mod tests {
     fn count_table(repo: &Repository, table: &str) -> i64 {
         let conn = repo.db.conn();
         let conn = conn.lock();
-        conn.query_row(&format!("SELECT COUNT(*) FROM {}", table), [], |r| r.get(0)).unwrap()
+        conn.query_row(&format!("SELECT COUNT(*) FROM {}", table), [], |r| r.get(0))
+            .unwrap()
     }
 
     #[test]
@@ -1617,13 +2038,23 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
         // log at 100 and 200; only 100 is before cutoff 150
-        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 100)).unwrap();
-        repo.insert_log(&make_log(2, "gpt-4o", 10, 100, 200)).unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 100))
+            .unwrap();
+        repo.insert_log(&make_log(2, "gpt-4o", 10, 100, 200))
+            .unwrap();
         insert_raw_finding(&repo, "f1", "l1", 100);
         insert_raw_finding(&repo, "f2", "l2", 200);
 
@@ -1640,11 +2071,20 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
-        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1000)).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 1000))
+            .unwrap();
         insert_raw_finding(&repo, "f1", "l1", 1000);
 
         // created_at == ts must be kept (strict less-than)
@@ -1659,12 +2099,22 @@ mod tests {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
-            id: "k1".into(), key: "sk-lgw-a".into(), name: "alice".into(),
-            enabled: true, quota_total: None, quota_used: 0,
-            total_calls: 0, total_tokens: 0, created_at: 1, last_used_at: None,
-        }).unwrap();
-        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 100)).unwrap();
-        repo.insert_log(&make_log(2, "gpt-4o", 10, 100, 200)).unwrap();
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+        repo.insert_log(&make_log(1, "gpt-4o", 10, 100, 100))
+            .unwrap();
+        repo.insert_log(&make_log(2, "gpt-4o", 10, 100, 200))
+            .unwrap();
         insert_raw_finding(&repo, "f1", "l1", 100);
         insert_raw_finding(&repo, "f2", "l2", 200);
 
@@ -1678,9 +2128,15 @@ mod tests {
     fn builtin_rule_seed_idempotent() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let rules = vec![crate::db::models::BuiltinRule {
-            id: "b1".into(), rule_id: "PI-001".into(), category: "prompt_injection".into(),
-            severity: "high".into(), title: "PI".into(), description: Some("d".into()),
-            toggle_key: Some("pi".into()), enabled: true, created_at: 1,
+            id: "b1".into(),
+            rule_id: "PI-001".into(),
+            category: "prompt_injection".into(),
+            severity: "high".into(),
+            title: "PI".into(),
+            description: Some("d".into()),
+            toggle_key: Some("pi".into()),
+            enabled: true,
+            created_at: 1,
         }];
         repo.seed_builtin_rules(&rules).unwrap();
         let listed = repo.list_builtin_rules().unwrap();
@@ -1695,9 +2151,15 @@ mod tests {
     fn custom_rule_crud_and_toggle() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let rule = crate::db::models::CustomRule {
-            id: "c1".into(), rule_type: "keyword".into(), category: "secret".into(),
-            pattern: "password".into(), severity: "medium".into(), action: "warn".into(),
-            enabled: true, description: Some("d".into()), created_at: 1,
+            id: "c1".into(),
+            rule_type: "keyword".into(),
+            category: "secret".into(),
+            pattern: "password".into(),
+            severity: "medium".into(),
+            action: "warn".into(),
+            enabled: true,
+            description: Some("d".into()),
+            created_at: 1,
         };
         repo.create_custom_rule(&rule).unwrap();
         let listed = repo.list_custom_rules().unwrap();
@@ -1774,16 +2236,66 @@ mod tests {
         })
         .unwrap();
 
-        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 1))
-            .unwrap();
-        repo.insert_log(&make_log_stats(2, 200, "ch1", "prod-channel", "alice", "low", 20, 10, 2))
-            .unwrap();
-        repo.insert_log(&make_log_stats(3, 400, "ch1", "prod-channel", "bob", "high", 30, 15, 3))
-            .unwrap();
-        repo.insert_log(&make_log_stats(4, 500, "ch2", "dev-channel", "bob", "high", 40, 20, 4))
-            .unwrap();
-        repo.insert_log(&make_log_stats(5, 200, "ch2", "dev-channel", "alice", "clean", 50, 25, 5))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            1,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "clean",
+            10,
+            5,
+            1,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            2,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "low",
+            20,
+            10,
+            2,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            3,
+            400,
+            "ch1",
+            "prod-channel",
+            "bob",
+            "high",
+            30,
+            15,
+            3,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            4,
+            500,
+            "ch2",
+            "dev-channel",
+            "bob",
+            "high",
+            40,
+            20,
+            4,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            5,
+            200,
+            "ch2",
+            "dev-channel",
+            "alice",
+            "clean",
+            50,
+            25,
+            5,
+        ))
+        .unwrap();
 
         let stats = repo.log_stats(&LogFilter::default()).unwrap();
         assert_eq!(stats.total_calls, 5);
@@ -1791,19 +2303,25 @@ mod tests {
         assert_eq!(stats.total_output_tokens, 75);
         assert_eq!(stats.success_count, 3);
 
-        assert_eq!(stats.risk_distribution, vec![
-            ("clean".to_string(), 2),
-            ("high".to_string(), 2),
-            ("low".to_string(), 1),
-        ]);
-        assert_eq!(stats.top_channels, vec![
-            ("prod-channel".to_string(), 3),
-            ("dev-channel".to_string(), 2),
-        ]);
-        assert_eq!(stats.top_api_keys, vec![
-            ("alice".to_string(), 3),
-            ("bob".to_string(), 2),
-        ]);
+        assert_eq!(
+            stats.risk_distribution,
+            vec![
+                ("clean".to_string(), 2),
+                ("high".to_string(), 2),
+                ("low".to_string(), 1),
+            ]
+        );
+        assert_eq!(
+            stats.top_channels,
+            vec![
+                ("prod-channel".to_string(), 3),
+                ("dev-channel".to_string(), 2),
+            ]
+        );
+        assert_eq!(
+            stats.top_api_keys,
+            vec![("alice".to_string(), 3), ("bob".to_string(), 2),]
+        );
     }
 
     #[test]
@@ -1825,16 +2343,66 @@ mod tests {
         })
         .unwrap();
 
-        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 1))
-            .unwrap();
-        repo.insert_log(&make_log_stats(2, 200, "ch1", "prod-channel", "alice", "low", 20, 10, 2))
-            .unwrap();
-        repo.insert_log(&make_log_stats(3, 400, "ch1", "prod-channel", "bob", "high", 30, 15, 3))
-            .unwrap();
-        repo.insert_log(&make_log_stats(4, 500, "ch2", "dev-channel", "bob", "high", 40, 20, 4))
-            .unwrap();
-        repo.insert_log(&make_log_stats(5, 200, "ch2", "dev-channel", "alice", "clean", 50, 25, 5))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            1,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "clean",
+            10,
+            5,
+            1,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            2,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "low",
+            20,
+            10,
+            2,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            3,
+            400,
+            "ch1",
+            "prod-channel",
+            "bob",
+            "high",
+            30,
+            15,
+            3,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            4,
+            500,
+            "ch2",
+            "dev-channel",
+            "bob",
+            "high",
+            40,
+            20,
+            4,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            5,
+            200,
+            "ch2",
+            "dev-channel",
+            "alice",
+            "clean",
+            50,
+            25,
+            5,
+        ))
+        .unwrap();
 
         let stats = repo
             .log_stats(&LogFilter {
@@ -1847,15 +2415,15 @@ mod tests {
         assert_eq!(stats.total_output_tokens, 45);
         assert_eq!(stats.success_count, 1);
 
-        assert_eq!(stats.risk_distribution, vec![
-            ("clean".to_string(), 1),
-            ("high".to_string(), 1),
-        ]);
+        assert_eq!(
+            stats.risk_distribution,
+            vec![("clean".to_string(), 1), ("high".to_string(), 1),]
+        );
         assert_eq!(stats.top_channels, vec![("dev-channel".to_string(), 2)]);
-        assert_eq!(stats.top_api_keys, vec![
-            ("alice".to_string(), 1),
-            ("bob".to_string(), 1),
-        ]);
+        assert_eq!(
+            stats.top_api_keys,
+            vec![("alice".to_string(), 1), ("bob".to_string(), 1),]
+        );
     }
 
     #[test]
@@ -1877,16 +2445,56 @@ mod tests {
         .unwrap();
 
         // Bucket 0: two calls
-        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 5))
-            .unwrap();
-        repo.insert_log(&make_log_stats(2, 200, "ch1", "prod-channel", "alice", "low", 20, 10, 10))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            1,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "clean",
+            10,
+            5,
+            5,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            2,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "low",
+            20,
+            10,
+            10,
+        ))
+        .unwrap();
         // Bucket 60: one error + one high risk
-        repo.insert_log(&make_log_stats(3, 500, "ch1", "prod-channel", "bob", "high", 30, 15, 65))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            3,
+            500,
+            "ch1",
+            "prod-channel",
+            "bob",
+            "high",
+            30,
+            15,
+            65,
+        ))
+        .unwrap();
         // Bucket 120: one critical
-        repo.insert_log(&make_log_stats(4, 200, "ch1", "prod-channel", "alice", "critical", 40, 20, 120))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            4,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "critical",
+            40,
+            20,
+            120,
+        ))
+        .unwrap();
 
         let series = repo.log_timeseries(&LogFilter::default(), 60).unwrap();
         assert_eq!(series.len(), 3);
@@ -1943,8 +2551,18 @@ mod tests {
         })
         .unwrap();
 
-        repo.insert_log(&make_log_stats(1, 200, "ch1", "prod-channel", "alice", "clean", 10, 5, 5))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            1,
+            200,
+            "ch1",
+            "prod-channel",
+            "alice",
+            "clean",
+            10,
+            5,
+            5,
+        ))
+        .unwrap();
 
         let filter = LogFilter {
             api_key_id: Some("non-existent".into()),
@@ -1957,25 +2575,52 @@ mod tests {
     // 知识库测试
     fn kb(id: &str, name: &str) -> KnowledgeBase {
         KnowledgeBase {
-            id: id.into(), name: name.into(), description: None,
-            embedding_channel_id: None, embedding_model: "text-embedding-3-small".into(),
-            dim: 1536, doc_count: 0, chunk_count: 0, enabled: true,
-            created_at: 1, updated_at: 1, needs_reindex: false,
+            id: id.into(),
+            name: name.into(),
+            description: None,
+            embedding_channel_id: None,
+            embedding_model: "text-embedding-3-small".into(),
+            dim: 1536,
+            doc_count: 0,
+            chunk_count: 0,
+            enabled: true,
+            created_at: 1,
+            updated_at: 1,
+            needs_reindex: false,
         }
     }
 
     fn kb_doc(id: &str, kb_id: &str, filename: &str) -> KbDocument {
         KbDocument {
-            id: id.into(), kb_id: kb_id.into(), filename: filename.into(),
-            file_type: "txt".into(), size_bytes: 100, chunk_count: 0,
-            status: "indexed".into(), error: None, created_at: 1,
+            id: id.into(),
+            kb_id: kb_id.into(),
+            filename: filename.into(),
+            file_type: "txt".into(),
+            size_bytes: 100,
+            chunk_count: 0,
+            status: "indexed".into(),
+            error: None,
+            created_at: 1,
         }
     }
 
-    fn kb_chunk(id: &str, doc_id: &str, kb_id: &str, seq: i64, content: &str, emb_id: i64) -> KbChunk {
+    fn kb_chunk(
+        id: &str,
+        doc_id: &str,
+        kb_id: &str,
+        seq: i64,
+        content: &str,
+        emb_id: i64,
+    ) -> KbChunk {
         KbChunk {
-            id: id.into(), doc_id: doc_id.into(), kb_id: kb_id.into(),
-            seq, symbol: None, content: content.into(), token_count: 10, embedding_id: emb_id,
+            id: id.into(),
+            doc_id: doc_id.into(),
+            kb_id: kb_id.into(),
+            seq,
+            symbol: None,
+            content: content.into(),
+            token_count: 10,
+            embedding_id: emb_id,
         }
     }
 
@@ -2005,7 +2650,8 @@ mod tests {
         repo.insert_chunks(&[
             kb_chunk("c1", "d1", "kb1", 0, "hello world", 1),
             kb_chunk("c2", "d1", "kb1", 1, "foo bar", 2),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         assert_eq!(count_table(&repo, "kb_documents"), 1);
         assert_eq!(count_table(&repo, "kb_chunks"), 2);
@@ -2017,7 +2663,9 @@ mod tests {
         // FTS 同步清理
         let conn = repo.db.conn();
         let conn = conn.lock();
-        let fts: i64 = conn.query_row("SELECT COUNT(*) FROM kb_chunks_fts", [], |r| r.get(0)).unwrap();
+        let fts: i64 = conn
+            .query_row("SELECT COUNT(*) FROM kb_chunks_fts", [], |r| r.get(0))
+            .unwrap();
         assert_eq!(fts, 0);
     }
 
@@ -2029,13 +2677,18 @@ mod tests {
         repo.insert_chunks(&[
             kb_chunk("c1", "d1", "kb1", 0, "unique keyword alpha", 1),
             kb_chunk("c2", "d1", "kb1", 1, "beta gamma", 2),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         {
             let conn = repo.db.conn();
             let conn = conn.lock();
             let hits: i64 = conn
-                .query_row("SELECT COUNT(*) FROM kb_chunks_fts WHERE content MATCH ?", ["alpha"], |r| r.get(0))
+                .query_row(
+                    "SELECT COUNT(*) FROM kb_chunks_fts WHERE content MATCH ?",
+                    ["alpha"],
+                    |r| r.get(0),
+                )
                 .unwrap();
             assert_eq!(hits, 1);
         }
@@ -2046,7 +2699,11 @@ mod tests {
             let conn = repo.db.conn();
             let conn = conn.lock();
             let hits: i64 = conn
-                .query_row("SELECT COUNT(*) FROM kb_chunks_fts WHERE content MATCH ?", ["alpha"], |r| r.get(0))
+                .query_row(
+                    "SELECT COUNT(*) FROM kb_chunks_fts WHERE content MATCH ?",
+                    ["alpha"],
+                    |r| r.get(0),
+                )
                 .unwrap();
             assert_eq!(hits, 0);
         }
@@ -2062,7 +2719,8 @@ mod tests {
             kb_chunk("c2", "d1", "kb1", 1, "beta gamma", 2),
             kb_chunk("c3", "d1", "kb1", 2, "alpha beta keyword", 3),
             kb_chunk("c4", "d1", "kb1", 3, "under_score foo-bar", 4),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         let hits = repo.fts_search_chunks("kb1", "alpha", 10).unwrap();
         assert_eq!(hits.len(), 2);
@@ -2075,7 +2733,10 @@ mod tests {
         // 下划线保留，应能命中
         let hits = repo.fts_search_chunks("kb1", "under_score", 10).unwrap();
         let ids: Vec<i64> = hits.iter().map(|(id, _)| *id).collect();
-        assert!(ids.contains(&4), "underscore should be preserved in fts5_escape");
+        assert!(
+            ids.contains(&4),
+            "underscore should be preserved in fts5_escape"
+        );
 
         // 连字符保留并正确切分，应能命中
         let hits = repo.fts_search_chunks("kb1", "foo-bar", 10).unwrap();
@@ -2089,6 +2750,9 @@ mod tests {
         let a = repo.next_embedding_id().unwrap();
         let b = repo.next_embedding_id().unwrap();
         let c = repo.next_embedding_id().unwrap();
-        assert!(a < b && b < c, "embedding ids must be strictly monotonic: {a} {b} {c}");
+        assert!(
+            a < b && b < c,
+            "embedding ids must be strictly monotonic: {a} {b} {c}"
+        );
     }
 }

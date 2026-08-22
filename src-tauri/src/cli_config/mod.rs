@@ -26,7 +26,8 @@ pub fn backup_and_write(path: &Path, content: &str) -> Result<Option<String>, St
         None
     };
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| format!("mkdir {}: {}", parent.display(), e))?;
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("mkdir {}: {}", parent.display(), e))?;
     }
     std::fs::write(path, content).map_err(|e| format!("write {}: {}", path.display(), e))?;
     Ok(backup_path)

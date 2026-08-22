@@ -12,10 +12,7 @@ pub fn weighted_pick(candidates: &[Channel], seed: u64) -> Option<Channel> {
     if candidates.is_empty() {
         return None;
     }
-    let total: u64 = candidates
-        .iter()
-        .map(|c| c.weight.max(1) as u64)
-        .sum();
+    let total: u64 = candidates.iter().map(|c| c.weight.max(1) as u64).sum();
     let mut roll = seed % total;
     for c in candidates {
         let w = c.weight.max(1) as u64;
@@ -56,7 +53,11 @@ pub fn plan_route(
     }
 
     // 普通调度：按 priority 分组，组内按权重做带 seed 的加权洗牌
-    let mut enabled: Vec<Channel> = normal_channels.iter().filter(|c| c.enabled).cloned().collect();
+    let mut enabled: Vec<Channel> = normal_channels
+        .iter()
+        .filter(|c| c.enabled)
+        .cloned()
+        .collect();
     if enabled.is_empty() {
         return Vec::new();
     }
@@ -78,7 +79,11 @@ pub fn plan_route(
                 s = s.wrapping_mul(6364136223846793005).wrapping_add(1); // LCG 推进
                 g.retain(|c| c.id != pick.id);
                 let model = resolve_model(&pick, request_model);
-                out.push(RouteTarget { channel: pick, model, via_fallback: false });
+                out.push(RouteTarget {
+                    channel: pick,
+                    model,
+                    via_fallback: false,
+                });
             } else {
                 break;
             }
@@ -90,12 +95,23 @@ pub fn plan_route(
 #[cfg(test)]
 pub fn tests_helper_channel(id: &str) -> crate::db::models::Channel {
     crate::db::models::Channel {
-        id: id.into(), name: id.into(), supplier: "openai".into(),
+        id: id.into(),
+        name: id.into(),
+        supplier: "openai".into(),
         upstream_protocol: "openai-chat".into(),
-        base_url: "http://x".into(), api_key: "k".into(), models: vec![],
-        priority: 0, weight: 1, enabled: true, timeout_secs: 60,
-        total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,
-        created_at: 1, updated_at: 1,
+        base_url: "http://x".into(),
+        api_key: "k".into(),
+        models: vec![],
+        priority: 0,
+        weight: 1,
+        enabled: true,
+        timeout_secs: 60,
+        total_calls: 0,
+        total_tokens: 0,
+        success_rate: 1.0,
+        avg_latency_ms: 0,
+        created_at: 1,
+        updated_at: 1,
     }
 }
 
@@ -105,16 +121,29 @@ mod tests {
 
     fn ch(id: &str, prio: i64, weight: i64) -> Channel {
         Channel {
-            id: id.into(), name: id.into(), supplier: "openai".into(),
-        upstream_protocol: "openai-chat".into(),
-            base_url: "http://x".into(), api_key: "k".into(), models: vec![],
-            priority: prio, weight, enabled: true, timeout_secs: 60,
-            total_calls: 0, total_tokens: 0, success_rate: 1.0, avg_latency_ms: 0,
-            created_at: 1, updated_at: 1,
+            id: id.into(),
+            name: id.into(),
+            supplier: "openai".into(),
+            upstream_protocol: "openai-chat".into(),
+            base_url: "http://x".into(),
+            api_key: "k".into(),
+            models: vec![],
+            priority: prio,
+            weight,
+            enabled: true,
+            timeout_secs: 60,
+            total_calls: 0,
+            total_tokens: 0,
+            success_rate: 1.0,
+            avg_latency_ms: 0,
+            created_at: 1,
+            updated_at: 1,
         }
     }
 
-    fn identity(_c: &Channel, m: &str) -> String { m.to_string() }
+    fn identity(_c: &Channel, m: &str) -> String {
+        m.to_string()
+    }
 
     #[test]
     fn role_route_beats_normal_and_appends_fallback() {
@@ -124,7 +153,10 @@ mod tests {
         let plan = plan_route(
             Some((role_ch, "deepseek-v4-flash".into())),
             Some((fb_ch, "kimi-k3".into())),
-            &normal, &identity, "claude-sonnet-4", 42,
+            &normal,
+            &identity,
+            "claude-sonnet-4",
+            42,
         );
         assert_eq!(plan.len(), 2);
         assert_eq!(plan[0].channel.id, "role-ch");
@@ -138,7 +170,11 @@ mod tests {
     fn role_route_without_fallback_has_single_target() {
         let plan = plan_route(
             Some((ch("role-ch", 0, 1), "m".into())),
-            None, &[], &identity, "x", 1,
+            None,
+            &[],
+            &identity,
+            "x",
+            1,
         );
         assert_eq!(plan.len(), 1);
     }

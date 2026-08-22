@@ -88,7 +88,9 @@ async fn wait_for_response_findings(
 #[tokio::test]
 async fn stream_audit_chunks_untouched_and_response_findings_logged() {
     let chunks = vec![
-        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#.to_string() + "\n\n",
+        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#
+            .to_string()
+            + "\n\n",
         r#"data: {"choices":[{"index":0,"delta":{"content":"678901234"}}]}"#.to_string() + "\n\n",
         "data: [DONE]\n\n".to_string(),
     ];
@@ -134,7 +136,10 @@ async fn stream_audit_chunks_untouched_and_response_findings_logged() {
     assert_eq!(log.status_code, Some(200));
     assert!(log.is_stream);
 
-    assert_ne!(log.risk_level, "clean", "response risk should be reflected in log");
+    assert_ne!(
+        log.risk_level, "clean",
+        "response risk should be reflected in log"
+    );
     assert!(log.risk_score > 0);
     assert!(
         log.risk_summary.as_ref().unwrap().contains("API"),
@@ -148,7 +153,9 @@ async fn stream_audit_chunks_untouched_and_response_findings_logged() {
         "expected a response-phase finding"
     );
     assert!(
-        findings.iter().any(|f| f.rule_id == "credential.secret_token"),
+        findings
+            .iter()
+            .any(|f| f.rule_id == "credential.secret_token"),
         "expected credential.secret_token finding: {:?}",
         findings
     );
@@ -199,7 +206,9 @@ async fn stream_audit_persists_request_phase_findings() {
         findings
     );
     assert!(
-        findings.iter().any(|f| f.rule_id == "credential.secret_token"),
+        findings
+            .iter()
+            .any(|f| f.rule_id == "credential.secret_token"),
         "expected credential.secret_token finding: {:?}",
         findings
     );
@@ -208,7 +217,9 @@ async fn stream_audit_persists_request_phase_findings() {
 #[tokio::test]
 async fn stream_response_redact_does_not_set_sanitized_flag() {
     let chunks = vec![
-        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#.to_string() + "\n\n",
+        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#
+            .to_string()
+            + "\n\n",
         r#"data: {"choices":[{"index":0,"delta":{"content":"678901234"}}]}"#.to_string() + "\n\n",
         "data: [DONE]\n\n".to_string(),
     ];
@@ -249,7 +260,9 @@ async fn stream_response_redact_does_not_set_sanitized_flag() {
 #[tokio::test]
 async fn stream_scan_disabled_leaves_clean_log() {
     let chunks = vec![
-        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#.to_string() + "\n\n",
+        r#"data: {"choices":[{"index":0,"delta":{"content":"my key is sk-123456789012345"}}]}"#
+            .to_string()
+            + "\n\n",
         r#"data: {"choices":[{"index":0,"delta":{"content":"678901234"}}]}"#.to_string() + "\n\n",
         "data: [DONE]\n\n".to_string(),
     ];

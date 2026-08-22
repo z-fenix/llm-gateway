@@ -64,12 +64,17 @@ impl Embedder {
     }
 
     async fn embed_batch(&self, chunk: &[String]) -> Result<Vec<Vec<f32>>, String> {
-        let url = format!("{}/v1/embeddings", self.channel.base_url.trim_end_matches('/'));
+        let url = format!(
+            "{}/v1/embeddings",
+            self.channel.base_url.trim_end_matches('/')
+        );
         let body = serde_json::json!({
             "model": self.model,
             "input": chunk,
         });
-        let (header_name, header_value) = auth_header(&self.channel.upstream_protocol, &self.channel.api_key).ok_or_else(|| "unsupported auth for upstream protocol".to_string())?;
+        let (header_name, header_value) =
+            auth_header(&self.channel.upstream_protocol, &self.channel.api_key)
+                .ok_or_else(|| "unsupported auth for upstream protocol".to_string())?;
         let resp = self
             .client
             .post(&url)
@@ -80,7 +85,10 @@ impl Embedder {
             .map_err(|_| "embedding request failed".to_string())?;
         let status = resp.status();
         if !status.is_success() {
-            return Err(format!("embedding upstream error: status {}", status.as_u16()));
+            return Err(format!(
+                "embedding upstream error: status {}",
+                status.as_u16()
+            ));
         }
         let parsed: EmbeddingResponse = resp
             .json()
@@ -147,7 +155,10 @@ mod tests {
                     st.hits.lock().unwrap().push(v);
                     let status = *st.status.lock().unwrap();
                     let body = st.body.lock().unwrap().clone();
-                    (axum::http::StatusCode::from_u16(status).unwrap(), Json(body))
+                    (
+                        axum::http::StatusCode::from_u16(status).unwrap(),
+                        Json(body),
+                    )
                 }),
             )
             .with_state(state.clone());
@@ -215,10 +226,16 @@ mod tests {
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        state.repo.insert_channel(&test_channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&test_channel("ch1", &base_url))
+            .unwrap();
         let kb = test_kb(Some("ch1"));
         let embedder = Embedder::from_kb(&state, &kb).unwrap();
-        let vecs = embedder.embed(&["a".into(), "b".into(), "c".into()]).await.unwrap();
+        let vecs = embedder
+            .embed(&["a".into(), "b".into(), "c".into()])
+            .await
+            .unwrap();
 
         assert_eq!(vecs.len(), 3);
         assert_eq!(vecs[0], vec![1.0, 0.0, 0.0, 0.0]);
@@ -234,26 +251,28 @@ mod tests {
         // 动态 mock：根据请求 input 长度返回对应数量的向量，以验证分批。
         let hits = Arc::new(Mutex::new(Vec::new()));
         let hits_clone = hits.clone();
-        let app = Router::new()
-            .route(
-                "/v1/embeddings",
-                post(move |Json(v): Json<Value>| async move {
-                    hits_clone.lock().unwrap().push(v.clone());
-                    let input = v["input"].as_array().cloned().unwrap_or_default();
-                    let data: Vec<Value> = input
-                        .iter()
-                        .enumerate()
-                        .map(|(i, _)| {
-                            serde_json::json!({
-                                "object": "embedding",
-                                "index": i,
-                                "embedding": vec![i as f32; 4]
-                            })
+        let app = Router::new().route(
+            "/v1/embeddings",
+            post(move |Json(v): Json<Value>| async move {
+                hits_clone.lock().unwrap().push(v.clone());
+                let input = v["input"].as_array().cloned().unwrap_or_default();
+                let data: Vec<Value> = input
+                    .iter()
+                    .enumerate()
+                    .map(|(i, _)| {
+                        serde_json::json!({
+                            "object": "embedding",
+                            "index": i,
+                            "embedding": vec![i as f32; 4]
                         })
-                        .collect();
-                    (axum::http::StatusCode::OK, Json(serde_json::json!({ "data": data })))
-                }),
-            );
+                    })
+                    .collect();
+                (
+                    axum::http::StatusCode::OK,
+                    Json(serde_json::json!({ "data": data })),
+                )
+            }),
+        );
         let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
             .await
             .unwrap();
@@ -263,7 +282,10 @@ mod tests {
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        state.repo.insert_channel(&test_channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&test_channel("ch1", &base_url))
+            .unwrap();
         let kb = test_kb(Some("ch1"));
         let embedder = Embedder::from_kb(&state, &kb).unwrap();
         let vecs = embedder.embed(&texts).await.unwrap();
@@ -292,21 +314,27 @@ mod tests {
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        state.repo.insert_channel(&test_channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&test_channel("ch1", &base_url))
+            .unwrap();
         let kb = test_kb(Some("ch1"));
         let embedder = Embedder::from_kb(&state, &kb).unwrap();
-        let err = embedder.embed(&["a".into(), "b".into(), "c".into()]).await.unwrap_err();
+        let err = embedder
+            .embed(&["a".into(), "b".into(), "c".into()])
+            .await
+            .unwrap_err();
 
-        assert!(err.contains("index mismatch"), "error should indicate index mismatch: {}", err);
+        assert!(
+            err.contains("index mismatch"),
+            "error should indicate index mismatch: {}",
+            err
+        );
     }
 
     #[tokio::test]
     async fn embed_upstream_error_surfaces() {
-        let (base_url, _) = spawn_mock(
-            500,
-            serde_json::json!({ "error": "boom" }),
-        )
-        .await;
+        let (base_url, _) = spawn_mock(500, serde_json::json!({ "error": "boom" })).await;
 
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
@@ -317,8 +345,20 @@ mod tests {
         let embedder = Embedder::from_kb(&state, &kb).unwrap();
         let err = embedder.embed(&["a".into(), "b".into()]).await.unwrap_err();
 
-        assert!(err.contains("upstream error"), "error should indicate upstream failure: {}", err);
-        assert!(!err.contains("sk-secret-key"), "error must not leak api key: {}", err);
-        assert!(!err.contains("boom"), "error must not leak upstream body: {}", err);
+        assert!(
+            err.contains("upstream error"),
+            "error should indicate upstream failure: {}",
+            err
+        );
+        assert!(
+            !err.contains("sk-secret-key"),
+            "error must not leak api key: {}",
+            err
+        );
+        assert!(
+            !err.contains("boom"),
+            "error must not leak upstream body: {}",
+            err
+        );
     }
 }

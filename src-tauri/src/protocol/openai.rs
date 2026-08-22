@@ -2,7 +2,11 @@ use super::types::{ChatMessage, ChatRequest, ChatResponse};
 
 /// OpenAI /v1/chat/completions 请求体 → 统一 ChatRequest。
 pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
-    let model = v.get("model").and_then(|m| m.as_str()).unwrap_or("").to_string();
+    let model = v
+        .get("model")
+        .and_then(|m| m.as_str())
+        .unwrap_or("")
+        .to_string();
     if model.is_empty() {
         return Err("missing model".into());
     }
@@ -10,7 +14,11 @@ pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
     if let Some(arr) = v.get("messages").and_then(|m| m.as_array()) {
         for m in arr {
             messages.push(ChatMessage {
-                role: m.get("role").and_then(|r| r.as_str()).unwrap_or("user").to_string(),
+                role: m
+                    .get("role")
+                    .and_then(|r| r.as_str())
+                    .unwrap_or("user")
+                    .to_string(),
                 content: m.get("content").cloned().unwrap_or(serde_json::Value::Null),
             });
         }
@@ -18,9 +26,15 @@ pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
     Ok(ChatRequest {
         model,
         messages,
-        max_tokens: v.get("max_tokens").and_then(|t| t.as_u64()).map(|t| t as u32),
+        max_tokens: v
+            .get("max_tokens")
+            .and_then(|t| t.as_u64())
+            .map(|t| t as u32),
         stream: v.get("stream").and_then(|s| s.as_bool()).unwrap_or(false),
-        temperature: v.get("temperature").and_then(|t| t.as_f64()).map(|t| t as f32),
+        temperature: v
+            .get("temperature")
+            .and_then(|t| t.as_f64())
+            .map(|t| t as f32),
         tools: v.get("tools").cloned(),
         extra: Default::default(),
     })

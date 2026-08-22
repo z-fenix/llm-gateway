@@ -11,7 +11,7 @@ use llm_gateway_lib::db::Db;
 use llm_gateway_lib::proxy::{server, state::AppState};
 use rmcp::model::ClientInfo;
 use rmcp::transport::streamable_http_client::StreamableHttpClientTransportConfig;
-use rmcp::{ServiceExt, transport::StreamableHttpClientTransport};
+use rmcp::{transport::StreamableHttpClientTransport, ServiceExt};
 
 const TEST_KEY: &str = "sk-lgw-mcp-test-key";
 

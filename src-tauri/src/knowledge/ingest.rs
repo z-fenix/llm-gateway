@@ -30,8 +30,12 @@ pub fn stage_content(state: &AppState, doc_id: &str, content: &[u8]) -> Result<(
     let dir = state.kb_index_dir.read().clone();
     std::fs::create_dir_all(&dir).map_err(|e| format!("failed to create kb index dir: {e}"))?;
     let path = dir.join(format!("{}.{}", doc_id, RAW_SUFFIX));
-    std::fs::write(&path, content)
-        .map_err(|e| format!("failed to stage document content at {}: {e}", path.display()))?;
+    std::fs::write(&path, content).map_err(|e| {
+        format!(
+            "failed to stage document content at {}: {e}",
+            path.display()
+        )
+    })?;
     Ok(())
 }
 
@@ -41,11 +45,7 @@ fn read_content(state: &AppState, doc_id: &str) -> Result<Vec<u8>, String> {
     let content = std::fs::read(&path)
         .map_err(|e| format!("failed to read staged content at {}: {e}", path.display()))?;
     if let Err(e) = std::fs::remove_file(&path) {
-        log::warn!(
-            "failed to remove staged content {}: {}",
-            path.display(),
-            e
-        );
+        log::warn!("failed to remove staged content {}: {}", path.display(), e);
     }
     Ok(content)
 }
@@ -57,7 +57,10 @@ fn read_content(state: &AppState, doc_id: &str) -> Result<Vec<u8>, String> {
 pub fn spawn_ingest(state: AppState, doc_id: String) {
     tauri::async_runtime::spawn(async move {
         if let Err(e) = run_ingest(&state, &doc_id).await {
-            if let Err(db_err) = state.repo.update_document_status(&doc_id, "failed", Some(&e)) {
+            if let Err(db_err) = state
+                .repo
+                .update_document_status(&doc_id, "failed", Some(&e))
+            {
                 log::error!(
                     "kb ingest failed to mark document {} failed: {}",
                     doc_id,
@@ -130,7 +133,10 @@ async fn run_ingest(state: &AppState, doc_id: &str) -> Result<(), String> {
         });
     }
 
-    state.repo.insert_chunks(&db_chunks).map_err(|e| e.to_string())?;
+    state
+        .repo
+        .insert_chunks(&db_chunks)
+        .map_err(|e| e.to_string())?;
 
     // 摄取尾段非原子:insert_chunks 已把 chunk 落库(含 FTS),此后 save/finalize 任一
     // 失败都必须回滚,否则「失败」文档的内容仍会被 FTS 检索命中,或在 save 成功后
@@ -402,7 +408,10 @@ mod tests {
         let state = AppState::new(db);
         *state.kb_index_dir.write() = test_index_dir("indexes");
 
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         let kb_id = "kb-ingest-ok".to_string();
         state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
 
@@ -477,7 +486,10 @@ mod tests {
         let dir = test_index_dir("save_failure");
         *state.kb_index_dir.write() = dir.clone();
 
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         let kb_id = "kb-ingest-savefail".to_string();
         state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
 
@@ -515,7 +527,10 @@ mod tests {
         let dir = test_index_dir("rollback_direct");
         *state.kb_index_dir.write() = dir.clone();
 
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         let kb_id = "kb-ingest-rollback".to_string();
         state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
 
@@ -538,7 +553,9 @@ mod tests {
             })
             .collect();
         for c in &chunks {
-            index.add(c.embedding_id as u64, &[1.0, 0.0, 0.0, 0.0]).unwrap();
+            index
+                .add(c.embedding_id as u64, &[1.0, 0.0, 0.0, 0.0])
+                .unwrap();
         }
         state.repo.insert_chunks(&chunks).unwrap();
         index.save().unwrap();
@@ -575,7 +592,10 @@ mod tests {
         let dir = test_index_dir("reindex");
         *state.kb_index_dir.write() = dir.clone();
 
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         let kb_id = "kb-reindex".to_string();
         state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
 
@@ -596,7 +616,9 @@ mod tests {
         std::fs::remove_file(&index_path).unwrap();
         assert!(!index_path.exists());
 
-        reindex_kb_contents(state.clone(), kb_id.clone()).await.unwrap();
+        reindex_kb_contents(state.clone(), kb_id.clone())
+            .await
+            .unwrap();
 
         // 索引文件已重建并落盘
         assert!(
@@ -631,7 +653,10 @@ mod tests {
         let dir = test_index_dir("reindex_clear_flag");
         *state.kb_index_dir.write() = dir.clone();
 
-        state.repo.insert_channel(&channel("ch1", &base_url)).unwrap();
+        state
+            .repo
+            .insert_channel(&channel("ch1", &base_url))
+            .unwrap();
         let kb_id = "kb-reindex-clear-flag".to_string();
         state.repo.create_kb(&kb(&kb_id, Some("ch1"))).unwrap();
 
@@ -646,14 +671,20 @@ mod tests {
         // 模拟 embedding model 变更,触发 needs_reindex 置位
         state
             .repo
-            .update_kb_embedding_channel(&kb_id, Some("ch1".into()), "text-embedding-3-small-v2".into())
+            .update_kb_embedding_channel(
+                &kb_id,
+                Some("ch1".into()),
+                "text-embedding-3-small-v2".into(),
+            )
             .unwrap();
         assert!(
             state.repo.get_kb(&kb_id).unwrap().unwrap().needs_reindex,
             "flag should be set after embedding model change"
         );
 
-        reindex_kb_contents(state.clone(), kb_id.clone()).await.unwrap();
+        reindex_kb_contents(state.clone(), kb_id.clone())
+            .await
+            .unwrap();
 
         assert!(
             !state.repo.get_kb(&kb_id).unwrap().unwrap().needs_reindex,

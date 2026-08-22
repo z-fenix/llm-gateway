@@ -100,7 +100,11 @@ async fn response_block_returns_451_and_no_secret_to_client() {
     assert_eq!(v["error"]["code"], "blocked_by_security");
     assert!(!v["error"]["trace_id"].as_str().unwrap().is_empty());
     let summary = v["error"]["summary"].as_str().unwrap();
-    assert!(summary.starts_with("响应侧："), "summary should fold phase: {}", summary);
+    assert!(
+        summary.starts_with("响应侧："),
+        "summary should fold phase: {}",
+        summary
+    );
     assert!(summary.contains("风险"));
 
     // 上游响应中的敏感内容不能到达调用方
@@ -115,7 +119,10 @@ async fn response_block_returns_451_and_no_secret_to_client() {
     assert_eq!(log.security_action, "block");
     assert!(log.blocked_reason.is_some(), "blocked_reason should be set");
 
-    let response_body = log.response_body.as_ref().expect("response_body should be logged");
+    let response_body = log
+        .response_body
+        .as_ref()
+        .expect("response_body should be logged");
     assert!(
         response_body.contains("sk-****"),
         "response_body in log should be masked: {}",
@@ -128,9 +135,17 @@ async fn response_block_returns_451_and_no_secret_to_client() {
     );
 
     let findings = repo.get_findings(&log.id).unwrap();
-    assert!(!findings.is_empty(), "response findings should be persisted");
-    assert!(findings.iter().any(|f| f.phase == "response"), "expected a response-phase finding");
-    assert!(findings.iter().any(|f| f.rule_id == "credential.secret_token"));
+    assert!(
+        !findings.is_empty(),
+        "response findings should be persisted"
+    );
+    assert!(
+        findings.iter().any(|f| f.phase == "response"),
+        "expected a response-phase finding"
+    );
+    assert!(findings
+        .iter()
+        .any(|f| f.rule_id == "credential.secret_token"));
 }
 
 #[tokio::test]
@@ -208,7 +223,11 @@ async fn response_redact_masks_secret_before_client() {
         "client-facing content should be masked: {}",
         content
     );
-    assert!(content.contains("sk-****"), "client-facing content should contain masked token: {}", content);
+    assert!(
+        content.contains("sk-****"),
+        "client-facing content should contain masked token: {}",
+        content
+    );
 
     assert_eq!(mock.hits.lock().unwrap().len(), 1);
 
@@ -302,4 +321,3 @@ async fn security_disabled_passes_through_and_leaves_no_findings() {
         "no response findings should be persisted when security disabled"
     );
 }
-

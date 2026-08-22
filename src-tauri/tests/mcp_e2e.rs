@@ -108,7 +108,10 @@ async fn setup() -> TestEnv {
     let state = AppState::new(db);
     *state.kb_index_dir.write() = temp.path().to_path_buf();
     state.repo.insert_api_key(&api_key(true)).unwrap();
-    state.repo.insert_channel(&embedding_channel("emb", &embed_base)).unwrap();
+    state
+        .repo
+        .insert_channel(&embedding_channel("emb", &embed_base))
+        .unwrap();
 
     let (_handle, addr) = server::start(state.clone(), 0).await.unwrap();
     let transport = StreamableHttpClientTransport::with_client(
@@ -301,7 +304,10 @@ async fn mcp_tools_list_exposes_all_seven_tools() {
     let mut expected: Vec<String> = TOOL_NAMES.iter().map(|s| s.to_string()).collect();
     names.sort_unstable();
     expected.sort_unstable();
-    assert_eq!(names, expected, "tool list should contain exactly the 7 kb/stats tools");
+    assert_eq!(
+        names, expected,
+        "tool list should contain exactly the 7 kb/stats tools"
+    );
 }
 
 /// 用例 2:全链路 —— kb_create → kb_upload → 轮询 indexed → kb_search 命中 → kb_get_base → kb_delete。
@@ -320,8 +326,14 @@ async fn mcp_kb_lifecycle_full_flow() {
     )
     .await;
     let hits: Vec<serde_json::Value> = serde_json::from_str(&search_json).unwrap();
-    assert!(!hits.is_empty(), "search should hit the ingested doc: {search_json}");
-    assert!(search_json.contains("quantum"), "chunk content should be present: {search_json}");
+    assert!(
+        !hits.is_empty(),
+        "search should hit the ingested doc: {search_json}"
+    );
+    assert!(
+        search_json.contains("quantum"),
+        "chunk content should be present: {search_json}"
+    );
     assert!(
         search_json.contains("notes.md"),
         "chunk source filename should be present: {search_json}"
@@ -466,8 +478,7 @@ async fn mcp_embedding_500_returns_mcp_error_not_http_5xx() {
         "gateway should answer the degraded tool call with 2xx, got HTTP {status}: {jsonrpc}"
     );
     assert_eq!(
-        jsonrpc["error"]["code"],
-        -32603,
+        jsonrpc["error"]["code"], -32603,
         "expected JSON-RPC INTERNAL_ERROR in body: {jsonrpc}"
     );
 

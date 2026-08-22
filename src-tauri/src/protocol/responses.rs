@@ -2,7 +2,11 @@ use super::types::{ChatMessage, ChatRequest, ChatResponse};
 
 /// Responses /v1/responses 请求体 → 统一 ChatRequest。
 pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
-    let model = v.get("model").and_then(|m| m.as_str()).unwrap_or("").to_string();
+    let model = v
+        .get("model")
+        .and_then(|m| m.as_str())
+        .unwrap_or("")
+        .to_string();
     if model.is_empty() {
         return Err("missing model".into());
     }
@@ -23,7 +27,8 @@ pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
         Some(serde_json::Value::Array(items)) => {
             for it in items {
                 let role = it.get("role").and_then(|r| r.as_str());
-                let is_msg = it.get("type").and_then(|t| t.as_str()) == Some("message") || role.is_some();
+                let is_msg =
+                    it.get("type").and_then(|t| t.as_str()) == Some("message") || role.is_some();
                 if !is_msg {
                     continue;
                 }
@@ -72,9 +77,15 @@ pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
     Ok(ChatRequest {
         model,
         messages,
-        max_tokens: v.get("max_output_tokens").and_then(|t| t.as_u64()).map(|t| t as u32),
+        max_tokens: v
+            .get("max_output_tokens")
+            .and_then(|t| t.as_u64())
+            .map(|t| t as u32),
         stream: v.get("stream").and_then(|s| s.as_bool()).unwrap_or(false),
-        temperature: v.get("temperature").and_then(|t| t.as_f64()).map(|t| t as f32),
+        temperature: v
+            .get("temperature")
+            .and_then(|t| t.as_f64())
+            .map(|t| t as f32),
         tools,
         extra: Default::default(),
     })
@@ -131,14 +142,38 @@ pub fn chat_to_sse_events(chat: &ChatResponse) -> String {
     let item = serde_json::json!({"type":"message","role":"assistant","status":"in_progress","content":[]});
     let part_empty = serde_json::json!({"type":"output_text","text":""});
     let events = vec![
-        ("response.created", serde_json::json!({"type":"response.created","response":base})),
-        ("response.output_item.added", serde_json::json!({"type":"response.output_item.added","output_index":0,"item":item})),
-        ("response.content_part.added", serde_json::json!({"type":"response.content_part.added","output_index":0,"content_index":0,"part":part_empty})),
-        ("response.output_text.delta", serde_json::json!({"type":"response.output_text.delta","output_index":0,"content_index":0,"delta":&text})),
-        ("response.output_text.done", serde_json::json!({"type":"response.output_text.done","output_index":0,"content_index":0,"text":&text})),
-        ("response.content_part.done", serde_json::json!({"type":"response.content_part.done","output_index":0,"content_index":0,"part":serde_json::json!({"type":"output_text","text":&text})})),
-        ("response.output_item.done", serde_json::json!({"type":"response.output_item.done","output_index":0,"item":serde_json::json!({"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":&text}]})})),
-        ("response.completed", serde_json::json!({"type":"response.completed","response":completed})),
+        (
+            "response.created",
+            serde_json::json!({"type":"response.created","response":base}),
+        ),
+        (
+            "response.output_item.added",
+            serde_json::json!({"type":"response.output_item.added","output_index":0,"item":item}),
+        ),
+        (
+            "response.content_part.added",
+            serde_json::json!({"type":"response.content_part.added","output_index":0,"content_index":0,"part":part_empty}),
+        ),
+        (
+            "response.output_text.delta",
+            serde_json::json!({"type":"response.output_text.delta","output_index":0,"content_index":0,"delta":&text}),
+        ),
+        (
+            "response.output_text.done",
+            serde_json::json!({"type":"response.output_text.done","output_index":0,"content_index":0,"text":&text}),
+        ),
+        (
+            "response.content_part.done",
+            serde_json::json!({"type":"response.content_part.done","output_index":0,"content_index":0,"part":serde_json::json!({"type":"output_text","text":&text})}),
+        ),
+        (
+            "response.output_item.done",
+            serde_json::json!({"type":"response.output_item.done","output_index":0,"item":serde_json::json!({"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":&text}]})}),
+        ),
+        (
+            "response.completed",
+            serde_json::json!({"type":"response.completed","response":completed}),
+        ),
     ];
     let mut out = String::new();
     for (name, data) in events {
@@ -242,12 +277,20 @@ mod tests {
     #[test]
     fn responses_resp_shape() {
         let chat = crate::protocol::types::ChatResponse {
-            id: "x".into(), model: "m".into(), content: serde_json::json!("answer"),
-            stop_reason: Some("stop".into()), input_tokens: 3, output_tokens: 5, raw: serde_json::json!({}),
+            id: "x".into(),
+            model: "m".into(),
+            content: serde_json::json!("answer"),
+            stop_reason: Some("stop".into()),
+            input_tokens: 3,
+            output_tokens: 5,
+            raw: serde_json::json!({}),
         };
         let out = chat_to_response(&chat);
         assert_eq!(out["object"], serde_json::json!("response"));
-        assert_eq!(out["output"][0]["content"][0]["text"], serde_json::json!("answer"));
+        assert_eq!(
+            out["output"][0]["content"][0]["text"],
+            serde_json::json!("answer")
+        );
         assert_eq!(out["usage"]["total_tokens"], serde_json::json!(8));
     }
 
@@ -256,8 +299,14 @@ mod tests {
         let chat = crate::protocol::types::ChatRequest {
             model: "gpt-4".into(),
             messages: vec![
-                crate::protocol::types::ChatMessage { role: "system".into(), content: serde_json::json!("you are helpful") },
-                crate::protocol::types::ChatMessage { role: "user".into(), content: serde_json::json!("hi") },
+                crate::protocol::types::ChatMessage {
+                    role: "system".into(),
+                    content: serde_json::json!("you are helpful"),
+                },
+                crate::protocol::types::ChatMessage {
+                    role: "user".into(),
+                    content: serde_json::json!("hi"),
+                },
             ],
             max_tokens: Some(64),
             stream: false,

@@ -4,7 +4,9 @@ use tauri::State;
 use tauri_plugin_store::StoreExt;
 
 #[tauri::command]
-pub fn get_security_settings(state: State<AppState>) -> Result<crate::security::SecuritySettings, String> {
+pub fn get_security_settings(
+    state: State<AppState>,
+) -> Result<crate::security::SecuritySettings, String> {
     Ok(state.security.read().clone())
 }
 
@@ -68,7 +70,8 @@ pub fn set_security_setting(
             "max_scan_bytes" => {
                 settings.max_scan_bytes = value
                     .as_u64()
-                    .ok_or_else(|| format!("security.{} must be a number", key))? as usize;
+                    .ok_or_else(|| format!("security.{} must be a number", key))?
+                    as usize;
             }
             _ => return Err(format!("unknown security setting: {}", key)),
         }
@@ -170,7 +173,10 @@ pub fn toggle_custom_security_rule(
 
 #[tauri::command]
 pub fn delete_custom_security_rule(state: State<AppState>, id: String) -> Result<(), String> {
-    state.repo.delete_custom_rule(&id).map_err(|e| e.to_string())
+    state
+        .repo
+        .delete_custom_rule(&id)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -134,7 +134,10 @@ async fn wait_for_status(state: &AppState, doc_id: &str, expected: &str) {
         }
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
-    panic!("timed out waiting for document {} to become {}", doc_id, expected);
+    panic!(
+        "timed out waiting for document {} to become {}",
+        doc_id, expected
+    );
 }
 
 /// 公共 setup：建聊天渠道 + embedding 渠道 + 知识库，摄取一文档并等待 indexed。
@@ -150,8 +153,10 @@ async fn setup_rag(
     let db = Db::new_in_memory().unwrap();
     let repo = Repository::new(db.clone());
     repo.insert_api_key(&api_key()).unwrap();
-    repo.insert_channel(&chat_channel("chat", chat_base)).unwrap();
-    repo.insert_channel(&embedding_channel("emb", embed_base)).unwrap();
+    repo.insert_channel(&chat_channel("chat", chat_base))
+        .unwrap();
+    repo.insert_channel(&embedding_channel("emb", embed_base))
+        .unwrap();
 
     let state = AppState::new(db);
     *state.kb_index_dir.write() = index_dir.to_path_buf();
@@ -203,12 +208,16 @@ async fn rag_injects_context_into_upstream() {
 
     let hits = mocks.chat.hits.lock().unwrap();
     assert_eq!(hits.len(), 1, "chat upstream should be hit exactly once");
-    let msgs = hits[0]["messages"].as_array().expect("upstream body must have messages");
+    let msgs = hits[0]["messages"]
+        .as_array()
+        .expect("upstream body must have messages");
     let system = msgs
         .iter()
         .find(|m| m["role"] == "system")
         .expect("injected context should add a system message");
-    let content = system["content"].as_str().expect("system content should be a string");
+    let content = system["content"]
+        .as_str()
+        .expect("system content should be a string");
     assert!(
         content.contains("[知识库参考资料]"),
         "system content should contain the kb header: {content}"
@@ -350,7 +359,10 @@ async fn injected_context_passes_request_security() {
     let content = system["content"].as_str().unwrap();
     // 注入确实发生(头文案仍在),且注入的敏感串已被请求侧安检脱敏。
     assert!(content.contains("[知识库参考资料]"), "{content}");
-    assert!(content.contains("sk-****"), "secret should be redacted: {content}");
+    assert!(
+        content.contains("sk-****"),
+        "secret should be redacted: {content}"
+    );
     assert!(
         !content.contains("sk-123456789012345678901234"),
         "raw secret must not reach upstream: {content}"

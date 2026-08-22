@@ -35,7 +35,10 @@ pub fn set_api_key_enabled(
     id: String,
     enabled: bool,
 ) -> Result<(), String> {
-    state.repo.set_api_key_enabled(&id, enabled).map_err(|e| e.to_string())
+    state
+        .repo
+        .set_api_key_enabled(&id, enabled)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -49,7 +52,10 @@ pub fn update_quota(
     id: String,
     quota_total: Option<i64>,
 ) -> Result<(), String> {
-    state.repo.update_quota(&id, quota_total).map_err(|e| e.to_string())
+    state
+        .repo
+        .update_quota(&id, quota_total)
+        .map_err(|e| e.to_string())
 }
 
 fn update_api_key_with_state(
@@ -120,8 +126,7 @@ mod tests {
         let state = AppState::new(db);
         state.repo.insert_api_key(&sample_key("k1")).unwrap();
 
-        update_api_key_with_state(&state, "k1".into(), "Alice Renamed".into(), Some(5000))
-            .unwrap();
+        update_api_key_with_state(&state, "k1".into(), "Alice Renamed".into(), Some(5000)).unwrap();
 
         let got = state
             .repo
@@ -162,8 +167,8 @@ mod tests {
         let state = AppState::new(db);
         state.repo.insert_api_key(&sample_key("k1")).unwrap();
 
-        let err = update_api_key_with_state(&state, "k1".into(), "   ".into(), Some(100))
-            .unwrap_err();
+        let err =
+            update_api_key_with_state(&state, "k1".into(), "   ".into(), Some(100)).unwrap_err();
         assert_eq!(err, "名称不能为空");
     }
 
@@ -173,8 +178,8 @@ mod tests {
         let state = AppState::new(db);
         state.repo.insert_api_key(&sample_key("k1")).unwrap();
 
-        let err = update_api_key_with_state(&state, "k1".into(), "alice".into(), Some(-1))
-            .unwrap_err();
+        let err =
+            update_api_key_with_state(&state, "k1".into(), "alice".into(), Some(-1)).unwrap_err();
         assert_eq!(err, "配额不能为负数");
     }
 

@@ -11,11 +11,17 @@ pub fn extract_openai_usage(v: &serde_json::Value) -> Option<Usage> {
         return None;
     }
     let input = u.get("prompt_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
-    let output = u.get("completion_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+    let output = u
+        .get("completion_tokens")
+        .and_then(|t| t.as_u64())
+        .unwrap_or(0);
     if input == 0 && output == 0 {
         return None;
     }
-    Some(Usage { input_tokens: input, output_tokens: output })
+    Some(Usage {
+        input_tokens: input,
+        output_tokens: output,
+    })
 }
 
 /// 应用一条 Anthropic SSE 事件到 usage 累积。
@@ -58,7 +64,11 @@ pub enum Protocol {
 
 impl SseAccumulator {
     pub fn new(protocol: Protocol) -> Self {
-        Self { usage: Usage::default(), protocol, text: String::new() }
+        Self {
+            usage: Usage::default(),
+            protocol,
+            text: String::new(),
+        }
     }
 
     /// 喂入一行原始 SSE 文本（可能是 "data: {...}" 或空行/event 行）。

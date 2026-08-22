@@ -209,7 +209,10 @@ async fn log_stats_reflects_real_requests() {
     assert_eq!(stats.top_api_keys, vec![("t".into(), 2)]);
 
     // 趋势接口同样不返回 body，仅做聚合断言
-    let buckets = state.repo.log_timeseries(&LogFilter::default(), 60).unwrap();
+    let buckets = state
+        .repo
+        .log_timeseries(&LogFilter::default(), 60)
+        .unwrap();
     assert_eq!(buckets.len(), 1);
     let bucket = &buckets[0];
     assert_eq!(bucket.calls, 3);

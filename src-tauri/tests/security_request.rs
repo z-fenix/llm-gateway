@@ -151,7 +151,11 @@ async fn request_redact_masks_secret_before_upstream() {
         "upstream should not receive raw secret: {}",
         content
     );
-    assert!(content.contains("sk-****"), "upstream body should contain masked token: {}", content);
+    assert!(
+        content.contains("sk-****"),
+        "upstream body should contain masked token: {}",
+        content
+    );
 
     let log = repo.latest_log().unwrap().unwrap();
     assert!(log.sanitized);
@@ -262,7 +266,9 @@ async fn request_audit_persists_request_phase_findings() {
         findings
     );
     assert!(
-        findings.iter().any(|f| f.rule_id == "credential.secret_token"),
+        findings
+            .iter()
+            .any(|f| f.rule_id == "credential.secret_token"),
         "expected credential.secret_token finding: {:?}",
         findings
     );
@@ -279,7 +285,9 @@ async fn spawn_sse_upstream() -> String {
             .body(axum::body::Body::from_stream(stream::iter(chunks)))
             .unwrap()
     }));
-    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0))).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     format!("http://{}", addr)
@@ -325,4 +333,3 @@ async fn stream_audit_masks_persisted_body_even_when_forwarding_original() {
         persisted
     );
 }
-

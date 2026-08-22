@@ -51,9 +51,16 @@ mod tests {
 
     fn base_key() -> ApiKey {
         ApiKey {
-            id: "k1".into(), key: "sk-lgw-x".into(), name: "a".into(), enabled: true,
-            quota_total: None, quota_used: 0, total_calls: 0, total_tokens: 0,
-            created_at: 1, last_used_at: None,
+            id: "k1".into(),
+            key: "sk-lgw-x".into(),
+            name: "a".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
         }
     }
 

@@ -307,9 +307,16 @@ mod tests {
             assert!(
                 !out.contains(body),
                 "expected token body {:?} masked in {:?}, got {:?}",
-                body, raw, out
+                body,
+                raw,
+                out
             );
-            assert!(out.contains("****"), "expected mask in {:?} -> {:?}", raw, out);
+            assert!(
+                out.contains("****"),
+                "expected mask in {:?} -> {:?}",
+                raw,
+                out
+            );
         }
     }
 

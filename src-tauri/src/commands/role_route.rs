@@ -28,7 +28,10 @@ pub fn set_role_route(
 
 #[tauri::command]
 pub fn delete_role_route(state: State<AppState>, role: String) -> Result<(), String> {
-    state.repo.delete_role_route(&role).map_err(|e| e.to_string())
+    state
+        .repo
+        .delete_role_route(&role)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -37,19 +40,22 @@ pub fn list_role_patterns(state: State<AppState>) -> Result<Vec<RolePattern>, St
 }
 
 #[tauri::command]
-pub fn upsert_role_pattern(
-    state: State<AppState>,
-    mut p: RolePattern,
-) -> Result<(), String> {
+pub fn upsert_role_pattern(state: State<AppState>, mut p: RolePattern) -> Result<(), String> {
     if p.id.is_empty() {
         p.id = uuid::Uuid::new_v4().to_string();
     }
-    state.repo.upsert_role_pattern(&p).map_err(|e| e.to_string())
+    state
+        .repo
+        .upsert_role_pattern(&p)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn delete_role_pattern(state: State<AppState>, id: String) -> Result<(), String> {
-    state.repo.delete_role_pattern(&id).map_err(|e| e.to_string())
+    state
+        .repo
+        .delete_role_pattern(&id)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

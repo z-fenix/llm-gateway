@@ -2,7 +2,11 @@ use super::types::{ChatMessage, ChatRequest, ChatResponse};
 
 /// Anthropic /v1/messages 请求体 → 统一 ChatRequest。
 pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
-    let model = v.get("model").and_then(|m| m.as_str()).unwrap_or("").to_string();
+    let model = v
+        .get("model")
+        .and_then(|m| m.as_str())
+        .unwrap_or("")
+        .to_string();
     if model.is_empty() {
         return Err("missing model".into());
     }
@@ -13,21 +17,39 @@ pub fn request_to_chat(v: &serde_json::Value) -> Result<ChatRequest, String> {
             serde_json::Value::String(s) => serde_json::Value::String(s.clone()),
             other => other.clone(),
         };
-        messages.push(ChatMessage { role: "system".into(), content });
+        messages.push(ChatMessage {
+            role: "system".into(),
+            content,
+        });
     }
     if let Some(arr) = v.get("messages").and_then(|m| m.as_array()) {
         for m in arr {
-            let role = m.get("role").and_then(|r| r.as_str()).unwrap_or("user").to_string();
+            let role = m
+                .get("role")
+                .and_then(|r| r.as_str())
+                .unwrap_or("user")
+                .to_string();
             let content = m.get("content").cloned().unwrap_or(serde_json::Value::Null);
             messages.push(ChatMessage { role, content });
         }
     }
-    let max_tokens = v.get("max_tokens").and_then(|t| t.as_u64()).map(|t| t as u32);
+    let max_tokens = v
+        .get("max_tokens")
+        .and_then(|t| t.as_u64())
+        .map(|t| t as u32);
     let stream = v.get("stream").and_then(|s| s.as_bool()).unwrap_or(false);
-    let temperature = v.get("temperature").and_then(|t| t.as_f64()).map(|t| t as f32);
+    let temperature = v
+        .get("temperature")
+        .and_then(|t| t.as_f64())
+        .map(|t| t as f32);
     let tools = v.get("tools").cloned();
     Ok(ChatRequest {
-        model, messages, max_tokens, stream, temperature, tools,
+        model,
+        messages,
+        max_tokens,
+        stream,
+        temperature,
+        tools,
         extra: Default::default(),
     })
 }
