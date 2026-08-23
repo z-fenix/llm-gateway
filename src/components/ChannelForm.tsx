@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import type { Channel, ModelMapEntry } from "../types";
 import { Button } from "./ui/button";
@@ -63,6 +64,34 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   // 提交过一次后才展示错误，之后随输入实时更新
   const errors = attempted ? validateForm(f) : {};
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
+
+  // ---- 支持模型：动态多输入框（可增删） ----
+  const uid = () => crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+  const modelKeys = useRef<string[]>((initial?.models ?? []).map(() => uid()));
+  useEffect(() => {
+    // 挂载时若长度不一致（如 initial 变化）则重置为对应长度
+    const n = (f.models ?? []).length;
+    if (modelKeys.current.length !== n) {
+      modelKeys.current = Array.from({ length: n }, () => uid());
+    }
+    // 仅在挂载时同步一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const addModel = () => {
+    modelKeys.current.push(uid());
+    set("models", [...(f.models ?? []), ""]);
+  };
+  const removeModel = (i: number) => {
+    modelKeys.current.splice(i, 1);
+    const next = [...(f.models ?? [])];
+    next.splice(i, 1);
+    set("models", next);
+  };
+  const updateModel = (i: number, v: string) => {
+    const next = [...(f.models ?? [])];
+    next[i] = v;
+    set("models", next);
+  };
 
   // ---- 模型映射（仅编辑已有渠道时展示） ----
   const channelId = initial?.id;
@@ -177,12 +206,23 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         {errMsg("api_key")}
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="channel-models">支持模型</Label>
-        <Input id="channel-models" className={inputCls("models")}
-          placeholder="支持模型（逗号分隔）"
-          value={(f.models ?? []).join(",")}
-          onChange={(e) => set("models", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))} />
+      <div className="space-y-2">
+        <Label>支持模型</Label>
+        {(f.models ?? []).map((m, i) => (
+          <div key={modelKeys.current[i] ?? `m${i}`} className="flex items-center gap-2">
+            <Input value={m}
+              onChange={(e) => updateModel(i, e.target.value)}
+              placeholder="模型 ID，如 deepseek-chat"
+              className={inputCls("models")} />
+            <Button type="button" variant="ghost" size="icon"
+              aria-label="删除模型" onClick={() => removeModel(i)}>
+              <Trash2 size={16} />
+            </Button>
+          </div>
+        ))}
+        <Button type="button" variant="outline" size="sm" onClick={addModel}>
+          <Plus size={16} /> 添加模型
+        </Button>
         {errMsg("models")}
       </div>
 

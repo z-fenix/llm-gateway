@@ -23,11 +23,19 @@ function renderForm(initial?: Partial<Channel>) {
   return { onSubmit, onCancel };
 }
 
+/** 点击「添加模型」并在新出现的输入框中输入值。 */
+function addModel(value: string) {
+  fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
+  const inputs = screen.getAllByPlaceholderText(/模型 ID/);
+  fireEvent.change(inputs[inputs.length - 1], { target: { value } });
+}
+
 function fillValidInputs() {
   fireEvent.change(screen.getByPlaceholderText("名称"), { target: { value: "测试渠道" } });
   fireEvent.change(screen.getByPlaceholderText(/Base URL/), { target: { value: "https://api.openai.com" } });
   fireEvent.change(screen.getByPlaceholderText("真实上游 API Key"), { target: { value: "sk-test" } });
-  fireEvent.change(screen.getByPlaceholderText(/支持模型/), { target: { value: "gpt-4o, claude-sonnet" } });
+  addModel("gpt-4o");
+  addModel("claude-sonnet");
   fireEvent.change(screen.getByPlaceholderText(/超时秒数/), { target: { value: "30" } });
 }
 
@@ -83,5 +91,37 @@ describe("ChannelForm validation", () => {
     fireEvent.click(screen.getByText("保存"));
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0].api_key).toBe("sk-test");
+  });
+
+  it("添加模型后输入并提交：onSubmit 收到 models 数组", () => {
+    const { onSubmit } = renderForm();
+    fireEvent.change(screen.getByPlaceholderText("名称"), { target: { value: "测试渠道" } });
+    fireEvent.change(screen.getByPlaceholderText(/Base URL/), { target: { value: "https://api.openai.com" } });
+    fireEvent.change(screen.getByPlaceholderText("真实上游 API Key"), { target: { value: "sk-test" } });
+    addModel("deepseek-chat");
+    addModel("deepseek-reasoner");
+    fireEvent.change(screen.getByPlaceholderText(/超时秒数/), { target: { value: "30" } });
+    fireEvent.click(screen.getByText("保存"));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].models).toEqual(["deepseek-chat", "deepseek-reasoner"]);
+  });
+
+  it("删除模型移除对应行：删除后提交只保留剩余模型", () => {
+    const { onSubmit } = renderForm(validForm()); // models: ["gpt-4o"]
+    // 再添加一个模型，使列表有 2 行
+    addModel("claude-sonnet");
+    fireEvent.click(screen.getAllByRole("button", { name: "删除模型" })[0]);
+    fireEvent.click(screen.getByText("保存"));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].models).toEqual(["claude-sonnet"]);
+  });
+
+  it("删除全部模型后提交：仍触发「至少需要一个模型」", () => {
+    const { onSubmit } = renderForm(validForm()); // models: ["gpt-4o"]
+    fireEvent.click(screen.getByRole("button", { name: "删除模型" }));
+    expect(screen.queryByPlaceholderText(/模型 ID/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("保存"));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText("至少需要一个模型")).toBeInTheDocument();
   });
 });
