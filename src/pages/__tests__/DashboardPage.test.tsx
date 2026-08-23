@@ -62,13 +62,35 @@ describe("DashboardPage", () => {
     expect(screen.getByText("活跃渠道")).toBeInTheDocument();
   });
 
-  it("挂载时请求 getStats 与 getLogTimeseries(今日时间窗, 3600)", async () => {
+  it("挂载时请求 getStats 与 getLogTimeseries(当天 0 点 → now, 3600)", async () => {
     render(<DashboardPage />);
     await waitFor(() => expect(mockedApi.getStats).toHaveBeenCalled());
     const [filter, bucketSecs] = mockedApi.getLogTimeseries.mock.calls[0];
     expect(bucketSecs).toBe(3600);
-    const expectedAfter = Math.floor(Date.now() / 1000) - 86400;
+    const now = new Date();
+    const expectedAfter = Math.floor(
+      new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000
+    );
     expect(filter.after).toBeDefined();
+    expect(Math.abs((filter.after ?? 0) - expectedAfter)).toBeLessThan(5);
+    expect(filter.before).toBeDefined();
+    expect(Math.abs((filter.before ?? 0) - Math.floor(Date.now() / 1000))).toBeLessThan(5);
+  });
+
+  it("选择 30d 预设 → 按天 bucket 重新拉取趋势", async () => {
+    render(<DashboardPage />);
+    await waitFor(() => expect(mockedApi.getLogTimeseries).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /当天/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "30d" }));
+
+    await waitFor(() => expect(mockedApi.getLogTimeseries).toHaveBeenCalledTimes(2));
+    const [filter, bucketSecs] = mockedApi.getLogTimeseries.mock.calls[1];
+    expect(bucketSecs).toBe(86400);
+    const now = new Date();
+    const expectedAfter = Math.floor(
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).getTime() / 1000
+    );
     expect(Math.abs((filter.after ?? 0) - expectedAfter)).toBeLessThan(5);
   });
 

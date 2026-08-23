@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
-import type { Stats, TimeBucket } from "../types";
+import type { Stats, TimeBucket, UsageRangeSelection } from "../types";
+import { getUsageRangePresetLabel, resolveUsageRange } from "../lib/usageRange";
+import { UsageDateRangePicker } from "../components/UsageDateRangePicker";
 import PageHeader from "../components/PageHeader";
 import LoadingState from "../components/LoadingState";
 import EmptyState from "../components/EmptyState";
@@ -14,23 +16,26 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
   { label: "风险分布", value: "risk" },
 ];
 
-const TREND_BUCKET_SECS = 3600;
-
-// “今日趋势”只统计最近 24h,避免把全部历史都画成 1px 竖条还标注“今日”。
-const TREND_WINDOW_SECS = 86400;
-
 export default function DashboardPage() {
   const [s, setS] = useState<Stats | null>(null);
   const [buckets, setBuckets] = useState<TimeBucket[] | null>(null);
+  const [bucketSecs, setBucketSecs] = useState(3600);
   const [dimension, setDimension] = useState<Dimension>("calls");
+  const [rangeSel, setRangeSel] = useState<UsageRangeSelection>({ preset: "today" });
 
   useEffect(() => {
     api.getStats().then(setS).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const r = resolveUsageRange(rangeSel);
+    const bs = r.endDate - r.startDate <= 48 * 3600 ? 3600 : 86400;
+    setBucketSecs(bs);
     api
-      .getLogTimeseries({ after: Math.floor(Date.now() / 1000) - TREND_WINDOW_SECS }, TREND_BUCKET_SECS)
+      .getLogTimeseries({ after: r.startDate, before: r.endDate }, bs)
       .then(setBuckets)
       .catch(console.error);
-  }, []);
+  }, [rangeSel]);
 
   if (!s) return <LoadingState />;
 
@@ -42,6 +47,8 @@ export default function DashboardPage() {
     { label: "活跃渠道", value: s.active_channels },
     { label: "平均延迟(ms)", value: s.avg_latency_ms },
   ];
+
+  const rangeLabel = getUsageRangePresetLabel(rangeSel.preset);
 
   return (
     <div>
@@ -59,18 +66,25 @@ export default function DashboardPage() {
       <Card className="mt-6">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base">今日趋势</CardTitle>
-          <div className="flex gap-1 text-sm" role="tablist" aria-label="趋势维度">
-            {DIMENSION_TABS.map((tab) => (
-              <button key={tab.value} role="tab" aria-selected={dimension === tab.value}
-                onClick={() => setDimension(tab.value)}
-                className={`rounded-md px-2 py-1 transition-colors ${
-                  dimension === tab.value
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}>
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <UsageDateRangePicker
+              selection={rangeSel}
+              onApply={setRangeSel}
+              triggerLabel={rangeLabel}
+            />
+            <div className="flex gap-1 text-sm" role="tablist" aria-label="趋势维度">
+              {DIMENSION_TABS.map((tab) => (
+                <button key={tab.value} role="tab" aria-selected={dimension === tab.value}
+                  onClick={() => setDimension(tab.value)}
+                  className={`rounded-md px-2 py-1 transition-colors ${
+                    dimension === tab.value
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -79,7 +93,7 @@ export default function DashboardPage() {
           ) : buckets.length === 0 ? (
             <EmptyState title="暂无数据" description="今天还没有请求记录" />
           ) : (
-            <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={TREND_BUCKET_SECS} />
+            <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={bucketSecs} />
           )}
         </CardContent>
       </Card>
