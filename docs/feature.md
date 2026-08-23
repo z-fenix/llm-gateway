@@ -1,0 +1,1 @@
+- 添加 cc-switch `会话管理` `Skills 管理` `prompt 管理` `MCP 服务器管理`
