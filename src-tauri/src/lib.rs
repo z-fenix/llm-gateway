@@ -57,6 +57,10 @@ pub fn run() {
             let sec = security::get_security_settings(&app.handle());
             security::apply_settings(&state, &sec);
 
+            // 从 tauri-plugin-store 加载整流器配置并同步到 AppState
+            let rect = crate::proxy::rectifier::get_rectifier_config(&app.handle());
+            crate::proxy::rectifier::apply_settings(&state, &rect);
+
             // 从 tauri-plugin-store 加载 RAG 设置并同步到 AppState
             let rag = knowledge::settings::get_rag_settings(&app.handle());
             knowledge::settings::apply_settings(&state, &rag);

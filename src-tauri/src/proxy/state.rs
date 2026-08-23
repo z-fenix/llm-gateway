@@ -2,6 +2,7 @@ use crate::config::settings::AppConfig;
 use crate::db::repository::Repository;
 use crate::db::Db;
 use crate::knowledge::settings::RagSettings;
+use crate::proxy::rectifier::RectifierConfig;
 use crate::security::SecuritySettings;
 use parking_lot::RwLock;
 use std::net::SocketAddr;
@@ -17,6 +18,8 @@ pub struct AppState {
     pub fallback: Arc<RwLock<Option<(String, String)>>>,
     pub retry_count: usize,
     pub security: Arc<RwLock<SecuritySettings>>,
+    /// 整流器设置（Anthropic 兼容性整流，镜像 cc-switch）
+    pub rectifier: Arc<RwLock<RectifierConfig>>,
     /// RAG 设置(开关、默认知识库、默认 embedding 渠道)
     pub rag: Arc<RwLock<RagSettings>>,
     /// 知识库 usearch 索引文件存放目录（生产为 app_data_dir/kb，测试用临时目录）
@@ -48,6 +51,7 @@ impl AppState {
             fallback: Arc::new(RwLock::new(None)),
             retry_count: 2,
             security: Arc::new(RwLock::new(SecuritySettings::default())),
+            rectifier: Arc::new(RwLock::new(RectifierConfig::default())),
             rag: Arc::new(RwLock::new(RagSettings::default())),
             kb_index_dir: Arc::new(RwLock::new(kb_index_dir)),
             bound_addr: Arc::new(RwLock::new(None)),
