@@ -1,7 +1,6 @@
 use super::models::{
     ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, McpServer,
-    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, SessionMessage,
-    SessionMeta, Skill,
+    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, SessionMeta, Skill,
 };
 use super::Db;
 use crate::error::AppResult;
@@ -1383,6 +1382,30 @@ impl Repository {
         }
     }
 
+    /// 按目录查找 Skill（用于目录唯一性校验：防止两个 Skill 互相覆盖同一 SKILL.md）。
+    pub fn get_skill_by_directory(&self, directory: &str) -> AppResult<Option<Skill>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,description,directory,content,enabled,created_at,updated_at FROM skills WHERE directory=?1",
+        )?;
+        let mut rows = stmt.query(params![directory])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(Skill {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                description: r.get(2)?,
+                directory: r.get(3)?,
+                content: r.get(4)?,
+                enabled: r.get::<_, i64>(5)? != 0,
+                created_at: r.get(6)?,
+                updated_at: r.get(7)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn upsert_skill(&self, s: &Skill) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
@@ -1540,24 +1563,26 @@ impl Repository {
         Ok(out)
     }
 
-    pub fn get_session_messages(&self, trace_id: &str) -> AppResult<Vec<SessionMessage>> {
+    /// 一次性返回每个 trace 的首条 user 消息 request_body（用于会话标题），无则缺失。
+    ///
+    /// 取代原先“逐 trace 全量加载会话消息再提取标题”的 N+1 路径：这里单条 SQL
+    /// 每个 trace 只取 seq 最小的 user（含空 role/NULL role）且带 request_body 的行。
+    pub fn list_session_titles(&self) -> AppResult<Vec<(String, Option<String>)>> {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT seq, role, status_code, created_at, error, request_body, response_body FROM request_logs WHERE trace_id=?1 ORDER BY seq ASC",
+            "SELECT trace_id, request_body FROM (
+                SELECT trace_id, request_body,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY trace_id
+                           ORDER BY seq ASC, created_at ASC, id ASC
+                       ) AS rn
+                FROM request_logs
+                WHERE request_body IS NOT NULL
+                  AND (role = 'user' OR role IS NULL OR role = '')
+            ) WHERE rn = 1",
         )?;
-        let rows = stmt.query_map(params![trace_id], |r| {
-            Ok(SessionMessage {
-                seq: r.get(0)?,
-                role: r.get(1)?,
-                content: None,
-                status_code: r.get(2)?,
-                created_at: r.get(3)?,
-                error: r.get(4)?,
-                request_body: r.get(5)?,
-                response_body: r.get(6)?,
-            })
-        })?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
         let mut out = Vec::new();
         for r in rows {
             out.push(r?);
@@ -3319,7 +3344,7 @@ mod tests {
     }
 
     #[test]
-    fn get_session_messages_orders_by_seq() {
+    fn list_session_titles_returns_first_user_body() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
         repo.insert_api_key(&ApiKey {
@@ -3336,26 +3361,44 @@ mod tests {
         })
         .unwrap();
 
+        // tr1: 首条 user 消息（seq 1）→ 标题取自它，而不是 seq 3 的后续 user 消息
         let mut m1 = log_in_trace(1, "tr1", "user", 100);
-        m1.status_code = Some(200);
+        m1.request_body =
+            Some(r#"{"messages":[{"role":"user","content":"First user title"}]}"#.into());
         repo.insert_log(&m1).unwrap();
         let mut m2 = log_in_trace(2, "tr1", "assistant", 200);
-        m2.status_code = Some(200);
+        m2.response_body = Some(r#"{"content":"reply"}"#.into());
         repo.insert_log(&m2).unwrap();
         let mut m3 = log_in_trace(3, "tr1", "user", 300);
-        m3.status_code = Some(500);
-        m3.error = Some("boom".into());
+        m3.request_body =
+            Some(r#"{"messages":[{"role":"user","content":"Later user title"}]}"#.into());
         repo.insert_log(&m3).unwrap();
 
-        let msgs = repo.get_session_messages("tr1").unwrap();
-        assert_eq!(msgs.len(), 3);
-        assert_eq!(msgs[0].seq, 1);
-        assert_eq!(msgs[0].role.as_deref(), Some("user"));
-        assert_eq!(msgs[0].status_code, Some(200));
-        assert!(msgs[0].content.is_none(), "content 由后续任务填充");
-        assert_eq!(msgs[2].seq, 3);
-        assert_eq!(msgs[2].status_code, Some(500));
-        assert_eq!(msgs[2].error.as_deref(), Some("boom"));
+        // tr2: 无 user 消息 → 不返回该 trace（标题候选为 None）
+        let mut a1 = log_in_trace(4, "tr2", "assistant", 400);
+        a1.response_body = Some(r#"{"content":"hi"}"#.into());
+        repo.insert_log(&a1).unwrap();
+
+        // tr3: user 消息 role 为空字符串 → 仍视为标题候选
+        let mut c1 = log_in_trace(5, "tr3", "", 500);
+        c1.request_body =
+            Some(r#"{"messages":[{"role":"user","content":"Empty role title"}]}"#.into());
+        repo.insert_log(&c1).unwrap();
+
+        let titles: std::collections::HashMap<String, Option<String>> =
+            repo.list_session_titles().unwrap().into_iter().collect();
+        assert_eq!(
+            titles.get("tr1").cloned().flatten().as_deref(),
+            Some(r#"{"messages":[{"role":"user","content":"First user title"}]}"#)
+        );
+        assert!(
+            titles.get("tr2").cloned().flatten().is_none(),
+            "no user message → no title candidate"
+        );
+        assert_eq!(
+            titles.get("tr3").cloned().flatten().as_deref(),
+            Some(r#"{"messages":[{"role":"user","content":"Empty role title"}]}"#)
+        );
     }
 
     #[test]
@@ -3390,7 +3433,7 @@ mod tests {
         assert_eq!(deleted, 2);
         assert_eq!(count_table(&repo, "request_logs"), 1);
         assert_eq!(count_table(&repo, "request_security_findings"), 1);
-        assert!(repo.get_session_messages("tr1").unwrap().is_empty());
+        assert!(repo.get_session_logs("tr1").unwrap().is_empty());
         assert!(repo.get_findings("l1").unwrap().is_empty());
         assert!(repo.get_findings("l2").unwrap().is_empty());
         assert_eq!(repo.get_findings("l3").unwrap().len(), 1);

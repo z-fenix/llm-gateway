@@ -84,6 +84,12 @@ pub fn run() {
 
             app.manage(state.clone());
 
+            // 启动时重连启用中的 MCP server（尽力而为，失败仅记录，不阻塞启动/不等待握手）
+            let mcp_state = state.clone();
+            tauri::async_runtime::spawn(async move {
+                commands::mcp_server::reconnect_enabled(&mcp_state).await;
+            });
+
             // 系统托盘：退出 + 点击显示窗口
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&quit_item])?;

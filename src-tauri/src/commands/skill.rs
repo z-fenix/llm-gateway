@@ -68,7 +68,16 @@ pub fn upsert_skill(state: State<AppState>, skill: Skill) -> Result<Skill, Strin
     upsert_skill_with_state(&state, skill)
 }
 
-pub(crate) fn upsert_skill_with_state(state: &AppState, mut skill: Skill) -> Result<Skill, String> {
+pub(crate) fn upsert_skill_with_state(state: &AppState, skill: Skill) -> Result<Skill, String> {
+    let home = dirs::home_dir().ok_or("无法确定用户主目录")?;
+    upsert_skill_with_home(state, &home, skill)
+}
+
+pub(crate) fn upsert_skill_with_home(
+    state: &AppState,
+    home: &Path,
+    skill: Skill,
+) -> Result<Skill, String> {
     let name = skill.name.trim();
     if name.is_empty() {
         return Err("名称不能为空".into());
@@ -82,20 +91,50 @@ pub(crate) fn upsert_skill_with_state(state: &AppState, mut skill: Skill) -> Res
         return Err("目录名仅允许字母、数字、_ 和 -".into());
     }
 
-    if skill.id.is_empty() {
-        skill.id = uuid::Uuid::new_v4().to_string();
-    }
     let now = chrono::Utc::now().timestamp();
-    if skill.created_at == 0 {
-        skill.created_at = now;
-    }
-    skill.updated_at = now;
-    skill.name = name.to_string();
-    skill.content = content.to_string();
-    skill.directory = directory.to_string();
+    // 已存在的 Skill：保留现有 enabled/created_at，不信任前端传入的开关/时间戳字段。
+    let (id, created_at, enabled) = if skill.id.is_empty() {
+        (uuid::Uuid::new_v4().to_string(), now, false)
+    } else {
+        match state.repo.get_skill(&skill.id).map_err(|e| e.to_string())? {
+            Some(existing) => (skill.id.clone(), existing.created_at, existing.enabled),
+            None => (skill.id.clone(), now, false),
+        }
+    };
 
-    state.repo.upsert_skill(&skill).map_err(|e| e.to_string())?;
-    Ok(skill)
+    // 目录唯一性：另一 id 的 Skill 已占用同一 directory → 拒绝（防互相覆盖 SKILL.md）。
+    if let Some(other) = state
+        .repo
+        .get_skill_by_directory(directory)
+        .map_err(|e| e.to_string())?
+    {
+        if other.id != id {
+            return Err("该目录已被其他 Skill 使用".into());
+        }
+    }
+
+    let saved = Skill {
+        id,
+        name: name.to_string(),
+        description: skill.description,
+        directory: directory.to_string(),
+        content: content.to_string(),
+        enabled,
+        created_at,
+        updated_at: now,
+    };
+
+    state.repo.upsert_skill(&saved).map_err(|e| e.to_string())?;
+
+    // 启用中 Skill 编辑后同步重写 SKILL.md（保留备份）；失败仅报错，DB 保留用户编辑，
+    // 前端 `synced` 徽标会据此显示 未同步。
+    if saved.enabled {
+        let path = skill_path(home, &saved.directory);
+        if let Err(e) = crate::cli_config::backup_and_write_ts(&path, &saved.content) {
+            return Err(format!("已保存，但写入 {} 失败: {}", path.display(), e));
+        }
+    }
+    Ok(saved)
 }
 
 #[tauri::command]
@@ -230,6 +269,30 @@ mod tests {
     }
 
     #[test]
+    fn upsert_rejects_duplicate_directory() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+
+        // 先建一个占用 "dup-dir" 的 skill
+        upsert_skill_with_state(&state, make_skill("a", "dup-dir", "content A")).unwrap();
+
+        // 另一 id 的 skill 使用相同目录 → 拒绝
+        let err =
+            upsert_skill_with_state(&state, make_skill("b", "dup-dir", "content B")).unwrap_err();
+        assert_eq!(err, "该目录已被其他 Skill 使用");
+
+        // 同一 id 重复 upsert 相同目录 → 允许（更新自身）
+        upsert_skill_with_state(&state, make_skill("a", "dup-dir", "content A updated")).unwrap();
+
+        // 拒绝后 DB 仍只有一条记录
+        assert_eq!(state.repo.list_skills().unwrap().len(), 1);
+        assert_eq!(
+            state.repo.get_skill("a").unwrap().unwrap().content,
+            "content A updated"
+        );
+    }
+
+    #[test]
     fn toggle_enabled_writes_and_syncs() {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
@@ -281,6 +344,100 @@ mod tests {
 
         // 再次禁用：文件已不存在也应成功（容忍 NotFound）
         toggle_skill_enabled_with_home(&state, home, &skill.id, false).unwrap();
+    }
+
+    #[test]
+    fn upsert_enabled_skill_rewrites_skilmd() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path();
+
+        let skill = upsert_skill_with_state(&state, make_skill("", "sync-dir", "v1")).unwrap();
+        toggle_skill_enabled_with_home(&state, home, &skill.id, true).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(skill_path(home, "sync-dir")).unwrap(),
+            "v1"
+        );
+
+        // 编辑启用中的 Skill → upsert 后 SKILL.md 应同步为新内容（保留备份）
+        let mut updated = make_skill(&skill.id, "sync-dir", "v2");
+        updated.enabled = true;
+        let saved = upsert_skill_with_home(&state, home, updated).unwrap();
+        assert_eq!(saved.content, "v2");
+        assert!(saved.enabled);
+        assert_eq!(
+            std::fs::read_to_string(skill_path(home, "sync-dir")).unwrap(),
+            "v2"
+        );
+        // 写盘成功 → synced
+        let listed = list_skills_with_home(&state, home).unwrap();
+        assert!(listed[0].synced);
+
+        // 备份存在（v1 被保留为 .bak-*）
+        let bak_exists = std::fs::read_dir(skills_root(home).join("sync-dir"))
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .any(|e| {
+                e.file_name()
+                    .to_str()
+                    .map(|s| s.starts_with("SKILL.md.bak-"))
+                    .unwrap_or(false)
+            });
+        assert!(bak_exists, "expected a SKILL.md.bak-* backup");
+    }
+
+    #[test]
+    fn upsert_enabled_skill_write_failure_reports_but_keeps_db() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path();
+
+        let skill = upsert_skill_with_state(&state, make_skill("", "f-dir", "v1")).unwrap();
+        toggle_skill_enabled_with_home(&state, home, &skill.id, true).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(skill_path(home, "f-dir")).unwrap(),
+            "v1"
+        );
+
+        // 让目标 SKILL.md 位置变成目录 → 写盘必然失败
+        std::fs::remove_file(skill_path(home, "f-dir")).unwrap();
+        std::fs::create_dir_all(skill_path(home, "f-dir")).unwrap();
+
+        let mut updated = make_skill(&skill.id, "f-dir", "v2");
+        updated.enabled = true;
+        let err = upsert_skill_with_home(&state, home, updated).unwrap_err();
+        assert!(err.contains("已保存"), "err: {err}");
+        assert!(err.contains("SKILL.md"), "err: {err}");
+
+        // DB 保留用户编辑，enabled 不变
+        let stored = state.repo.get_skill(&skill.id).unwrap().unwrap();
+        assert_eq!(stored.content, "v2");
+        assert!(stored.enabled);
+    }
+
+    #[test]
+    fn upsert_skill_preserves_enabled_state() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path();
+
+        let skill = upsert_skill_with_state(&state, make_skill("", "keep-dir", "v1")).unwrap();
+        toggle_skill_enabled_with_home(&state, home, &skill.id, true).unwrap();
+        assert!(state.repo.get_skill(&skill.id).unwrap().unwrap().enabled);
+
+        // 前端回传 enabled=false（表单未携带开关）→ 不得把启用项悄悄关掉
+        let incoming = make_skill(&skill.id, "keep-dir", "v2"); // enabled=false
+        let saved = upsert_skill_with_home(&state, home, incoming).unwrap();
+        assert!(saved.enabled, "existing enabled must be preserved");
+        assert_eq!(saved.content, "v2");
+        // 文件同步为新内容
+        assert_eq!(
+            std::fs::read_to_string(skill_path(home, "keep-dir")).unwrap(),
+            "v2"
+        );
     }
 
     #[test]

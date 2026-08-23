@@ -9,20 +9,20 @@ pub fn list_sessions(state: State<AppState>) -> Result<Vec<SessionMeta>, String>
 
 pub(crate) fn list_sessions_with_state(state: &AppState) -> Result<Vec<SessionMeta>, String> {
     let mut sessions = state.repo.list_sessions().map_err(|e| e.to_string())?;
+    // 标题候选：单条查询一次取回每个 trace 的首条 user 消息 request_body，避免 N+1。
+    let titles: std::collections::HashMap<String, Option<String>> = state
+        .repo
+        .list_session_titles()
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .collect();
     for session in &mut sessions {
         if session.title.is_some() {
             continue;
         }
-        // Do not abort the whole listing if one trace's enrichment fails.
-        if let Ok(messages) = get_session_messages_with_state(state, &session.trace_id) {
-            if let Some(user_msg) = messages.iter().find(|m| {
-                m.role.as_deref() == Some("user")
-                    || m.role.as_deref().is_none()
-                    || m.role.as_deref() == Some("")
-            }) {
-                if let Some(content) = &user_msg.content {
-                    session.title = Some(truncate(content, 80));
-                }
+        if let Some(body) = titles.get(&session.trace_id).cloned().flatten() {
+            if let Some(content) = extract_content(Some(&body), 80) {
+                session.title = Some(truncate(&content, 80));
             }
         }
     }
@@ -75,11 +75,11 @@ pub fn delete_session(state: State<AppState>, trace_id: String) -> Result<usize,
     delete_session_with_state(&state, &trace_id)
 }
 
-pub(crate) fn delete_session_with_state(
-    state: &AppState,
-    trace_id: &str,
-) -> Result<usize, String> {
-    state.repo.delete_session(trace_id).map_err(|e| e.to_string())
+pub(crate) fn delete_session_with_state(state: &AppState, trace_id: &str) -> Result<usize, String> {
+    state
+        .repo
+        .delete_session(trace_id)
+        .map_err(|e| e.to_string())
 }
 
 fn extract_content(body: Option<&str>, max_len: usize) -> Option<String> {
@@ -277,14 +277,8 @@ mod tests {
 
         let sessions = list_sessions_with_state(&state).unwrap();
         assert_eq!(sessions.len(), 2);
-        let a = sessions
-            .iter()
-            .find(|s| s.trace_id == "trace-a")
-            .unwrap();
-        let b = sessions
-            .iter()
-            .find(|s| s.trace_id == "trace-b")
-            .unwrap();
+        let a = sessions.iter().find(|s| s.trace_id == "trace-a").unwrap();
+        let b = sessions.iter().find(|s| s.trace_id == "trace-b").unwrap();
         assert_eq!(a.title, Some(format!("{}...", "a".repeat(80))));
         assert_eq!(b.title, Some("Short title".into()));
     }
@@ -336,7 +330,8 @@ mod tests {
     #[test]
     fn get_session_messages_extracts_array_text_blocks() {
         let state = setup_state();
-        let req_body = r#"{"messages":[{"role":"user","content":[{"type":"text","text":"Vision prompt"}]}]}"#;
+        let req_body =
+            r#"{"messages":[{"role":"user","content":[{"type":"text","text":"Vision prompt"}]}]}"#;
         let resp_body = r#"{"content":[{"type":"text","text":"Anthropic reply"}]}"#;
 
         state
@@ -424,10 +419,7 @@ mod tests {
             .iter()
             .find(|s| s.trace_id == "trace-good")
             .unwrap();
-        let bad = sessions
-            .iter()
-            .find(|s| s.trace_id == "trace-bad")
-            .unwrap();
+        let bad = sessions.iter().find(|s| s.trace_id == "trace-bad").unwrap();
         assert_eq!(good.title, Some("Good title".into()));
         // The bad trace still gets a title from the raw-body fallback.
         assert_eq!(

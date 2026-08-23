@@ -33,10 +33,7 @@ pub(crate) fn list_mcp_servers_with_state(state: &AppState) -> Result<Vec<McpSer
 }
 
 #[tauri::command]
-pub fn upsert_mcp_server(
-    state: State<AppState>,
-    server: McpServer,
-) -> Result<McpServer, String> {
+pub fn upsert_mcp_server(state: State<AppState>, server: McpServer) -> Result<McpServer, String> {
     upsert_mcp_server_with_state(&state, server)
 }
 
@@ -53,7 +50,10 @@ pub(crate) fn upsert_mcp_server_with_state(
         server.created_at = now;
     }
     server.updated_at = now;
-    state.repo.upsert_mcp_server(&server).map_err(|e| e.to_string())?;
+    state
+        .repo
+        .upsert_mcp_server(&server)
+        .map_err(|e| e.to_string())?;
     // 编辑配置后旧连接可能已过期：断开该 id 的活跃连接，避免陈旧连接继续运行。
     if let Some(handle) = state.mcp_clients.write().remove(&server.id) {
         handle.abort();
@@ -136,11 +136,7 @@ pub(crate) async fn connect_mcp_server_with_state(
 ) -> Result<(), String> {
     {
         let clients = state.mcp_clients.read();
-        if clients
-            .get(id)
-            .map(|h| !h.is_finished())
-            .unwrap_or(false)
-        {
+        if clients.get(id).map(|h| !h.is_finished()).unwrap_or(false) {
             return Ok(());
         }
     }
@@ -176,6 +172,33 @@ pub(crate) async fn disconnect_mcp_server_with_state(
         handle.abort();
     }
     Ok(())
+}
+
+/// 启动时重连所有 `enabled=true` 的 MCP server（尽力而为）。
+///
+/// 仅在启动路径调用：逐台复用 `connect_mcp_server_with_state` 的完整握手路径；
+/// 任何失败仅记录日志，绝不让启动失败或阻塞。已在 `mcp_clients` 中的连接会被跳过。
+pub(crate) async fn reconnect_enabled(state: &AppState) {
+    let servers = match state.repo.list_mcp_servers() {
+        Ok(servers) => servers,
+        Err(e) => {
+            log::error!("mcp reconnect: list servers failed: {}", e);
+            return;
+        }
+    };
+    for server in servers {
+        if !server.enabled {
+            continue;
+        }
+        if let Err(e) = connect_mcp_server_with_state(state, &server.id).await {
+            log::warn!(
+                "mcp reconnect {} ({}) failed: {}",
+                server.name,
+                server.id,
+                e
+            );
+        }
+    }
 }
 
 #[tauri::command]
@@ -299,5 +322,31 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err, "http 类型需要 url");
+    }
+
+    #[tokio::test]
+    async fn reconnect_enabled_attempts_enabled_only_and_never_panics() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        // enabled=true 且命令必然启动失败 → 触发 connect 尝试，失败不 panic、不进入 mcp_clients
+        let mut enabled = stdio_server("s1", "this-command-does-not-exist-xyz");
+        enabled.enabled = true;
+        state.repo.upsert_mcp_server(&enabled).unwrap();
+        // enabled=false → 启动重连必须跳过，不触发任何 connect
+        state
+            .repo
+            .upsert_mcp_server(&stdio_server("s2", "this-command-does-not-exist-xyz"))
+            .unwrap();
+
+        reconnect_enabled(&state).await;
+
+        // 握手失败路径不得把 handle 记入 mcp_clients，也不得 panic
+        assert!(
+            state.mcp_clients.read().is_empty(),
+            "failed handshake must not be tracked in mcp_clients"
+        );
+        // DB 记录原样保留
+        assert!(state.repo.get_mcp_server("s1").unwrap().unwrap().enabled);
+        assert!(!state.repo.get_mcp_server("s2").unwrap().unwrap().enabled);
     }
 }

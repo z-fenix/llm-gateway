@@ -21,6 +21,18 @@ fn upsert_prompt_with_state(
     content: String,
     description: Option<String>,
 ) -> Result<Prompt, String> {
+    let home = dirs::home_dir().ok_or("无法确定用户主目录")?;
+    upsert_prompt_with_home(state, &home, id, name, content, description)
+}
+
+pub(crate) fn upsert_prompt_with_home(
+    state: &AppState,
+    home: &Path,
+    id: Option<String>,
+    name: String,
+    content: String,
+    description: Option<String>,
+) -> Result<Prompt, String> {
     let name = name.trim();
     let content = content.trim();
     if name.is_empty() || content.is_empty() {
@@ -50,7 +62,19 @@ fn upsert_prompt_with_state(
         updated_at: now,
     };
 
-    state.repo.upsert_prompt(&prompt).map_err(|e| e.to_string())?;
+    state
+        .repo
+        .upsert_prompt(&prompt)
+        .map_err(|e| e.to_string())?;
+
+    // 启用中 Prompt 编辑后同步重写 ~/.claude/CLAUDE.md（保留备份）；失败仅报错，
+    // DB 保留用户编辑，错误信息会回到 UI。
+    if prompt.enabled {
+        let path = settings_path(home);
+        if let Err(e) = crate::cli_config::backup_and_write_ts(&path, &prompt.content) {
+            return Err(format!("已保存，但写入 {} 失败: {}", path.display(), e));
+        }
+    }
     Ok(prompt)
 }
 
@@ -123,24 +147,12 @@ mod tests {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
 
-        let err = upsert_prompt_with_state(
-            &state,
-            None,
-            "   ".into(),
-            "content".into(),
-            None,
-        )
-        .unwrap_err();
+        let err = upsert_prompt_with_state(&state, None, "   ".into(), "content".into(), None)
+            .unwrap_err();
         assert_eq!(err, "名称和内容不能为空");
 
-        let err = upsert_prompt_with_state(
-            &state,
-            None,
-            "name".into(),
-            "   ".into(),
-            None,
-        )
-        .unwrap_err();
+        let err =
+            upsert_prompt_with_state(&state, None, "name".into(), "   ".into(), None).unwrap_err();
         assert_eq!(err, "名称和内容不能为空");
 
         let prompt = upsert_prompt_with_state(
@@ -169,8 +181,9 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let home = tmp.path();
 
-        let a = upsert_prompt_with_state(
+        let a = upsert_prompt_with_home(
             &state,
+            home,
             Some("p-a".into()),
             "Prompt A".into(),
             "content A".into(),
@@ -182,8 +195,9 @@ mod tests {
         enable_prompt_with_home(&state, home, &a.id).unwrap();
         assert!(state.repo.get_prompt(&a.id).unwrap().unwrap().enabled);
 
-        let updated = upsert_prompt_with_state(
+        let updated = upsert_prompt_with_home(
             &state,
+            home,
             Some("p-a".into()),
             "Prompt A Updated".into(),
             "content A updated".into(),
@@ -197,6 +211,91 @@ mod tests {
         let stored = state.repo.get_prompt(&a.id).unwrap().unwrap();
         assert!(stored.enabled);
         assert_eq!(stored.content, "content A updated");
+    }
+
+    #[test]
+    fn upsert_enabled_prompt_rewrites_claude_md() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path();
+
+        let a = upsert_prompt_with_home(
+            &state,
+            home,
+            Some("p-a".into()),
+            "Prompt A".into(),
+            "v1".into(),
+            None,
+        )
+        .unwrap();
+        enable_prompt_with_home(&state, home, &a.id).unwrap();
+        assert_eq!(std::fs::read_to_string(settings_path(home)).unwrap(), "v1");
+
+        // 编辑启用中的 Prompt → upsert 后 CLAUDE.md 应同步为新内容（保留备份）
+        let updated = upsert_prompt_with_home(
+            &state,
+            home,
+            Some(a.id.clone()),
+            "Prompt A Updated".into(),
+            "v2".into(),
+            None,
+        )
+        .unwrap();
+        assert!(updated.enabled);
+        assert_eq!(updated.content, "v2");
+        assert_eq!(std::fs::read_to_string(settings_path(home)).unwrap(), "v2");
+
+        let bak_exists = std::fs::read_dir(claude_dir(home))
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .any(|e| {
+                e.file_name()
+                    .to_str()
+                    .map(|s| s.starts_with("CLAUDE.md.bak-"))
+                    .unwrap_or(false)
+            });
+        assert!(bak_exists, "expected a CLAUDE.md.bak-* backup");
+    }
+
+    #[test]
+    fn upsert_enabled_prompt_write_failure_reports_but_keeps_db() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path();
+
+        let a = upsert_prompt_with_home(
+            &state,
+            home,
+            Some("p-a".into()),
+            "Prompt A".into(),
+            "v1".into(),
+            None,
+        )
+        .unwrap();
+        enable_prompt_with_home(&state, home, &a.id).unwrap();
+
+        // 让 CLAUDE.md 位置变成目录 → 备份/写盘必然失败
+        std::fs::remove_file(settings_path(home)).unwrap();
+        std::fs::create_dir_all(settings_path(home)).unwrap();
+
+        let err = upsert_prompt_with_home(
+            &state,
+            home,
+            Some(a.id.clone()),
+            "Prompt A Updated".into(),
+            "v2".into(),
+            None,
+        )
+        .unwrap_err();
+        assert!(err.contains("已保存"), "err: {err}");
+        assert!(err.contains("CLAUDE.md"), "err: {err}");
+
+        // DB 保留用户编辑，enabled 不变
+        let stored = state.repo.get_prompt(&a.id).unwrap().unwrap();
+        assert_eq!(stored.content, "v2");
+        assert!(stored.enabled);
     }
 
     #[test]
