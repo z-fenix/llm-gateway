@@ -4,9 +4,6 @@ use std::path::{Path, PathBuf};
 pub fn settings_path(home: &Path) -> PathBuf {
     home.join(".claude").join("settings.json")
 }
-pub fn dotclaude_path(home: &Path) -> PathBuf {
-    home.join(".claude.json")
-}
 
 fn load_root(existing: Option<&str>) -> Result<serde_json::Value, String> {
     match existing {
@@ -54,24 +51,6 @@ pub fn merge_settings(
     ))
 }
 
-/// 确保 .claude.json hasCompletedOnboarding=true(否则 CC 强制登录页忽略 env)。
-pub fn merge_dotclaude(existing: Option<&str>) -> Result<(String, Vec<String>), String> {
-    let mut root = load_root(existing)?;
-    let obj = root.as_object_mut().unwrap();
-    let mut changed = vec![];
-    if obj.get("hasCompletedOnboarding").and_then(|v| v.as_bool()) != Some(true) {
-        obj.insert(
-            "hasCompletedOnboarding".to_string(),
-            serde_json::Value::Bool(true),
-        );
-        changed.push("hasCompletedOnboarding".to_string());
-    }
-    Ok((
-        serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?,
-        changed,
-    ))
-}
-
 /// 读取可选的配置文件。
 ///
 /// - `Ok(None)`：文件不存在，调用方应按空对象处理。
@@ -86,27 +65,18 @@ fn read_opt(path: &Path) -> Result<Option<String>, String> {
     }
 }
 
-/// 写 settings.json + .claude.json,各返回一个 CliWriteResult。
+/// 写 settings.json(仅 env.ANTHROPIC_BASE_URL + env.ANTHROPIC_AUTH_TOKEN 两个变量,
+/// 保留其余全部键),不触碰 .claude.json。返回单个 CliWriteResult。
 pub fn write(home: &Path, base_url: &str, token: &str) -> Result<Vec<CliWriteResult>, String> {
     let sp = settings_path(home);
     let (content, changed) = merge_settings(read_opt(&sp)?.as_deref(), base_url, token)?;
     let backup = backup_and_write(&sp, &content)?;
-    let mut out = vec![CliWriteResult {
+    Ok(vec![CliWriteResult {
         path: sp.display().to_string(),
         changed_keys: changed,
         backup_path: backup,
         env_instructions: None,
-    }];
-    let dp = dotclaude_path(home);
-    let (dcontent, dchanged) = merge_dotclaude(read_opt(&dp)?.as_deref())?;
-    let dbackup = backup_and_write(&dp, &dcontent)?;
-    out.push(CliWriteResult {
-        path: dp.display().to_string(),
-        changed_keys: dchanged,
-        backup_path: dbackup,
-        env_instructions: None,
-    });
-    Ok(out)
+    }])
 }
 
 #[cfg(test)]
@@ -141,12 +111,35 @@ mod tests {
     }
 
     #[test]
-    fn merge_dotclaude_sets_onboarding_keeps_rest() {
-        let (out, changed) = merge_dotclaude(Some(r#"{"userID":"u1"}"#)).unwrap();
-        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
-        assert_eq!(v["hasCompletedOnboarding"], serde_json::json!(true));
-        assert_eq!(v["userID"], serde_json::json!("u1"));
-        assert!(changed.contains(&"hasCompletedOnboarding".to_string()));
+    fn write_only_writes_settings_returns_single_result_and_preserves_dotclaude() {
+        let home = tempfile::tempdir().unwrap();
+        // 预置 .claude.json,确保 write 不修改它
+        let dp = home.path().join(".claude.json");
+        std::fs::write(&dp, r#"{"userID":"u1"}"#).unwrap();
+
+        // 先写一次(无备份),再写一次(有备份)
+        let r1 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-a").unwrap();
+        assert!(settings_path(home.path()).exists());
+        assert_eq!(r1.len(), 1, "只写 settings.json,只返回一个结果");
+        assert!(r1[0].backup_path.is_none());
+
+        let r2 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-b").unwrap();
+        assert_eq!(r2.len(), 1);
+        assert!(r2[0].backup_path.is_some());
+
+        let v: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap()).unwrap();
+        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-b"));
+
+        // .claude.json 保持原样(不新增 onboarding 注入)
+        assert_eq!(std::fs::read_to_string(&dp).unwrap(), r#"{"userID":"u1"}"#);
+    }
+
+    #[test]
+    fn write_never_creates_dotclaude_when_absent() {
+        let home = tempfile::tempdir().unwrap();
+        write(home.path(), "http://127.0.0.1:8779", "sk-lgw-a").unwrap();
+        assert!(!home.path().join(".claude.json").exists());
     }
 
     #[test]
@@ -177,28 +170,6 @@ mod tests {
         let err = read_opt(&p).unwrap_err();
         assert!(err.contains("read"));
         assert!(err.contains(p.display().to_string().as_str()));
-    }
-
-    #[test]
-    fn write_creates_files_and_backup() {
-        let home = tempfile::tempdir().unwrap();
-        // 先写一次（无备份），再写一次（有备份）。
-        let r1 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-a").unwrap();
-        assert!(settings_path(home.path()).exists());
-        assert!(dotclaude_path(home.path()).exists());
-        assert_eq!(r1.len(), 2);
-        assert!(r1[0].backup_path.is_none());
-
-        let r2 = write(home.path(), "http://127.0.0.1:8779", "sk-lgw-b").unwrap();
-        assert!(r2[0].backup_path.is_some());
-
-        let v: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap())
-                .unwrap();
-        assert_eq!(
-            v["env"]["ANTHROPIC_AUTH_TOKEN"],
-            serde_json::json!("sk-lgw-b")
-        );
     }
 
     #[test]

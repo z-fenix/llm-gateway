@@ -66,17 +66,13 @@ pub(crate) fn write_cli_config_content_with_home(
             let sp = claude_code::settings_path(home);
             let pretty = serde_json::to_string_pretty(&v).map_err(|e| e.to_string())?;
             let backup = backup_and_write(&sp, &pretty)?;
-            // 保持 .claude.json onboarding 处理(hasCompletedOnboarding=true),否则 CC 忽略 env
-            let dp = claude_code::dotclaude_path(home);
-            let dcontent = claude_code::merge_dotclaude(read_file(&dp)?.as_deref())?.0;
-            let _ = backup_and_write(&dp, &dcontent)?;
+            // 严格只写 settings.json;不再注入 .claude.json hasCompletedOnboarding
             Ok(CliWriteResult {
                 path: sp.display().to_string(),
                 changed_keys: vec!["env".to_string()],
                 backup_path: backup,
                 env_instructions: None,
             })
-            // 注:.claude.json 的备份路径暂不展示(与现有 write 行为一致展示主文件备份)
         }
         "codex" => {
             // toml 1.1.4 无 json feature / TryFrom<serde_json::Value>,故用 serde 反序列化转换。
@@ -260,12 +256,8 @@ mod tests {
         let written = std::fs::read_to_string(&p).unwrap();
         let v: serde_json::Value = serde_json::from_str(&written).unwrap();
         assert_eq!(v["model"], serde_json::json!("sonnet"));
-
-        // .claude.json onboarding 同步创建
-        assert!(claude_code::dotclaude_path(home.path()).exists());
-        let dot = std::fs::read_to_string(claude_code::dotclaude_path(home.path())).unwrap();
-        let dv: serde_json::Value = serde_json::from_str(&dot).unwrap();
-        assert_eq!(dv["hasCompletedOnboarding"], serde_json::json!(true));
+        // .claude.json 不再被创建或修改
+        assert!(!home.path().join(".claude.json").exists());
     }
 
     #[test]
