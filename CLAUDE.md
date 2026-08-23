@@ -90,7 +90,7 @@ A request enters through `proxy::handlers` and flows through these stages:
 - `mcp`: Streamable HTTP MCP server exposing knowledge-base tools, protected by API-key auth.
 - `mcp_client`: upstream MCP server *client* connections (stdio child-process + streamable-http), kept alive as background tasks in `AppState.mcp_clients`; a handle implies a completed handshake (connect awaits the handshake outcome).
 - `commands`: Tauri invoke handlers wired in `lib.rs`; the frontend calls them through `src/lib/api.ts`. Feature-management modules: `prompt` (CLAUDE.md templates + enable-exclusive write-to-disk), `session` (request_logs grouped by `trace_id`), `mcp_server` (upstream MCP server CRUD + connect/test/disconnect), `skill` (skills library synced to `~/.claude/skills/<dir>/SKILL.md`).
-- `cli_config`: writes Claude Code (`~/.claude/settings.json` + `~/.claude.json`) and Codex (`~/.codex/config.toml`) configuration so local CLI tools point at the gateway.
+- `cli_config`: writes Claude Code (`~/.claude/settings.json` — only the `env.ANTHROPIC_BASE_URL`/`env.ANTHROPIC_AUTH_TOKEN` vars) and Codex (`~/.codex/config.toml`) configuration so local CLI tools point at the gateway.
 
 ### Persistence
 
@@ -109,6 +109,7 @@ A request enters through `proxy::handlers` and flows through these stages:
 - `src/App.tsx` defines the page routes; `src/components/Layout.tsx` is the chrome.
 - Pages: Dashboard, Channels, API Keys, Role Routes, Security, Logs, Knowledge, Settings, Prompts, Sessions, MCP Servers, Skills.
 - `src/lib/api.ts` is the typed wrapper around Tauri invoke commands; `src/types/index.ts` mirrors the Rust models.
+- `src/lib/usageRange.ts` + `src/components/UsageDateRangePicker.tsx`: cc-switch-style trend date-range selection (presets 当天/1d/7d/14d/30d + custom calendar with live end) used by the Logs page (default 7d) and Dashboard trend (default today).
 - UI text is mostly in Chinese to match the original `cc-switch` style.
 
 ## Conventions worth knowing
