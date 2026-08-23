@@ -79,12 +79,16 @@ export function resolveUsageRange(selection, nowMs?): { startDate: number; endDa
 
 新增 `UsageRangePreset`、`UsageRangeSelection`（与 3.1 一致）。
 
-### 3.6 CLI 写盘严格化 `src-tauri/src/cli_config/claude_code.rs`（修改）
+### 3.6 CLI 写盘严格化 `src-tauri/src/cli_config/claude_code.rs` + `src-tauri/src/commands/cli.rs`（修改）
 
-- `write(home, base_url, token)`：**只返回 settings.json 一个结果**——`merge_settings`（已只改两个 env 变量）+ `backup_and_write`；**删除 `.claude.json` 的 `merge_dotclaude` 调用与写入**。
-- 删除 `merge_dotclaude` 函数、`dotclaude_path` 辅助、以及对应的测试（`merge_dotclaude_sets_onboarding_keeps_rest`、`write_creates_files_and_backup` 中 `.claude.json` 相关断言）。
+- `claude_code::write(home, base_url, token)`（一键写入路径）：**只返回 settings.json 一个结果**——`merge_settings`（已只改两个 env 变量）+ `backup_and_write`；**删除 `.claude.json` 的 `merge_dotclaude` 调用与写入**。
+- `cli::write_cli_config_content_with_home`（JSON 编辑器写回路径，"claude_code" 分支）：同样删除 `merge_dotclaude` 的 `.claude.json` 写入（cli.rs:69-72），只写 settings.json。
+- 删除 `merge_dotclaude` 函数、`dotclaude_path` 辅助（`claude_code.rs` 与 `cli.rs` 均不再引用）。
+- 删除/修正相关测试：
+  - `claude_code.rs`：删 `merge_dotclaude_sets_onboarding_keeps_rest`；`write_creates_files_and_backup` 改为断言只返回 1 个结果、`.claude.json` 不被创建/不被改动。
+  - `cli.rs`：`write_cli_config_content_creates_backup` 删除 `.claude.json` onboarding 断言（cli.rs:264-268）。
 - `read_opt` 保留（settings.json 读取仍用）。
-- 检查 `dotclaude_path` 是否被 `commands/config.rs::get_cli_targets` 引用——若引用则相应移除该引用。
+- 检查 `dotclaude_path` 是否被其它模块引用——`commands/config.rs::get_cli_targets` 不引用（已验证）；`commands/cli.rs` 引用（上述一并处理）。
 - ⚠️ 权衡（按用户选择接受）：不再注入 `hasCompletedOnboarding`，若用户从未完成过 Claude Code onboarding，CC 可能忽略 env（需手动过一次登录页）。
 
 ## 4. 数据流
@@ -96,7 +100,7 @@ export function resolveUsageRange(selection, nowMs?): { startDate: number; endDa
 ## 5. 测试计划
 
 - **Rust**（项 6）：
-  - `write` 只写 settings.json、不再创建/修改 `.claude.json`（tempdir 断言 `.claude.json` 不存在或内容不变）。
+  - `write` 与 `write_cli_config_content_with_home` 只写 settings.json、不再创建/修改 `.claude.json`（tempdir 断言 `.claude.json` 不存在或内容不变）。
   - `merge_settings` 既有测试保留（两变量 + 无关键保留）。
   - `cargo test --lib` 全绿（354 现有 + 调整）。
 - **前端**（项 5）：
@@ -117,7 +121,7 @@ export function resolveUsageRange(selection, nowMs?): { startDate: number; endDa
 
 ## 7. 交付物
 
-- 后端：`cli_config/claude_code.rs` 严格化（删 `.claude.json` 写入 + 死代码 + 测试）。
+- 后端：`cli_config/claude_code.rs` + `commands/cli.rs` 严格化（删 `.claude.json` 写入 + 死代码 + 测试）。
 - 前端：`src/lib/usageRange.ts`、`src/components/UsageDateRangePicker.tsx`（新建）；`LogsPage`、`DashboardPage`、`types/index.ts`（修改）。
 - 测试：Rust 单测 + 前端单测。
 - 更新的 `CLAUDE.md`（新组件/工具）。
