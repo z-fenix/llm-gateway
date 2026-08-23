@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen, Settings, FileText, MessagesSquare, Cable } from "lucide-react";
+import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen, Settings, FileText, MessagesSquare, Cable, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
 
 const nav = [
@@ -13,6 +13,7 @@ const nav = [
   { to: "/knowledge", label: "知识库", icon: BookOpen },
   { to: "/prompts", label: "Prompt", icon: FileText },
   { to: "/mcp-servers", label: "MCP", icon: Cable },
+  { to: "/skills", label: "Skills", icon: Sparkles },
   { to: "/settings", label: "设置", icon: Settings },
 ];
 

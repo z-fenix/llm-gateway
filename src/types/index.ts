@@ -307,3 +307,19 @@ export interface McpServerView {
   server: McpServer;
   connected: boolean;
 }
+
+export interface Skill {
+  id: string;
+  name: string;
+  description: string | null;
+  directory: string;
+  content: string;
+  enabled: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface SkillView {
+  skill: Skill;
+  synced: boolean;
+}

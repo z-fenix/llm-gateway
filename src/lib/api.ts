@@ -31,6 +31,8 @@ import type {
   TestResult,
   TimeBucket,
   Prompt,
+  Skill,
+  SkillView,
 } from "../types";
 
 export const api = {
@@ -206,5 +208,11 @@ export const api = {
     invoke<void>("disconnect_mcp_server", { id }),
   testMcpConnection: (id: string) =>
     invoke<string>("test_mcp_connection", { id }),
+
+  listSkills: () => invoke<SkillView[]>("list_skills"),
+  upsertSkill: (skill: Skill) => invoke<Skill>("upsert_skill", { skill }),
+  deleteSkill: (id: string) => invoke<void>("delete_skill", { id }),
+  toggleSkillEnabled: (id: string, enabled: boolean) =>
+    invoke<void>("toggle_skill_enabled", { id, enabled }),
 };
 export type { RequestLog };
