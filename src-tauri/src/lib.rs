@@ -178,6 +178,8 @@ pub fn run() {
             commands::config::restart_gateway,
             commands::config::get_cli_targets,
             commands::config::write_cli_config,
+            commands::cli::read_cli_config,
+            commands::cli::write_cli_config_content,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -167,6 +167,9 @@ export const api = {
   getCliTargets: () => invoke<CliTargetInfo[]>("get_cli_targets"),
   writeCliConfig: (target: string, apiKeyId: string, writeEnv: boolean) =>
     invoke<CliWriteResult[]>("write_cli_config", { target, apiKeyId, writeEnv }),
+  readCliConfig: (target: string) => invoke<string>("read_cli_config", { target }),
+  writeCliConfigContent: (target: string, jsonContent: string) =>
+    invoke<CliWriteResult>("write_cli_config_content", { target, jsonContent }),
   exportConfig: (path: string) => invoke<number>("export_config", { path }),
   defaultExportPath: () => invoke<string>("default_export_path"),
   previewImport: (path: string) => invoke<ImportPreview>("preview_import", { path }),
