@@ -61,6 +61,9 @@ export default function SettingsPage() {
   const [apiKeyId, setApiKeyId] = useState<string>("");
   const [writeEnv, setWriteEnv] = useState(true);
   const [cliResults, setCliResults] = useState<CliWriteResult[] | null>(null);
+  const [cliEditorOpen, setCliEditorOpen] = useState(false);
+  const [cliJson, setCliJson] = useState("");
+  const [cliLoading, setCliLoading] = useState(false);
 
   const [exportPath, setExportPath] = useState("");
   const [exportBytes, setExportBytes] = useState<number | null>(null);
@@ -175,6 +178,63 @@ export default function SettingsPage() {
     } catch (err) {
       handleError(err);
     }
+  };
+
+  const cliJsonInvalid = (() => {
+    const trimmed = cliJson.trim();
+    if (trimmed === "") return false;
+    try {
+      JSON.parse(cliJson);
+      return false;
+    } catch {
+      return true;
+    }
+  })();
+
+  const readCliConfigFor = async (t: string) => {
+    setCliLoading(true);
+    try {
+      const content = await api.readCliConfig(t);
+      setCliJson(content ?? "");
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setCliLoading(false);
+    }
+  };
+
+  const toggleCliEditor = () => {
+    if (cliEditorOpen) {
+      setCliEditorOpen(false);
+      return;
+    }
+    setCliEditorOpen(true);
+    void readCliConfigFor(target);
+  };
+
+  const formatCliJson = () => {
+    try {
+      const parsed = JSON.parse(cliJson);
+      setCliJson(JSON.stringify(parsed, null, 2));
+    } catch {
+      toast.error("JSON 格式错误，无法格式化");
+    }
+  };
+
+  const saveCliConfig = async () => {
+    clearError();
+    try {
+      await api.writeCliConfigContent(target, cliJson);
+      toast.success("CLI 配置已保存");
+      api.getCliTargets().then(setCliTargets).catch(handleError);
+    } catch (err) {
+      handleError(err);
+      toast.error("CLI 配置保存失败");
+    }
+  };
+
+  const reloadCliConfig = () => {
+    void readCliConfigFor(target);
   };
 
   const exportConfig = async () => {
@@ -419,7 +479,15 @@ export default function SettingsPage() {
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="cli-target">目标 CLI</Label>
-              <Select value={target} onValueChange={setTarget}>
+              <Select
+                value={target}
+                onValueChange={(v) => {
+                  setTarget(v);
+                  if (cliEditorOpen) {
+                    void readCliConfigFor(v);
+                  }
+                }}
+              >
                 <SelectTrigger id="cli-target" aria-label="目标 CLI">
                   <SelectValue placeholder="选择目标 CLI" />
                 </SelectTrigger>
@@ -522,6 +590,67 @@ export default function SettingsPage() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center gap-2">
+            <Button variant="outline" onClick={toggleCliEditor}>
+              <FileJson className="h-4 w-4" />
+              编辑配置
+            </Button>
+          </div>
+
+          {cliEditorOpen && (
+            <div className="mt-4 space-y-3 rounded-lg border border-border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  编辑 {CLI_TARGET_LABELS[target] ?? target} 配置
+                  {target === "codex" && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      config.toml（将转为 JSON 编辑）
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={formatCliJson}
+                    disabled={cliLoading}
+                  >
+                    格式化
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={reloadCliConfig}
+                    disabled={cliLoading}
+                  >
+                    重新加载
+                  </Button>
+                  <Button
+                    size="sm"
+                    aria-label="保存 CLI 配置"
+                    onClick={saveCliConfig}
+                    disabled={cliLoading}
+                  >
+                    保存
+                  </Button>
+                </div>
+              </div>
+              {cliLoading && (
+                <p className="text-xs text-muted-foreground">读取中...</p>
+              )}
+              <textarea
+                className="min-h-[240px] w-full rounded-md border bg-background p-2 font-mono text-xs"
+                value={cliJson}
+                onChange={(e) => setCliJson(e.target.value)}
+                aria-label="CLI 配置 JSON"
+                spellCheck={false}
+              />
+              {cliJsonInvalid && (
+                <p className="text-xs text-red-500">JSON 格式错误</p>
+              )}
             </div>
           )}
         </CardContent>

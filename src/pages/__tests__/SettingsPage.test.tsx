@@ -19,6 +19,13 @@ vi.mock("../../lib/api", () => ({
       { target: "codex", configured: false, path: "~/.codex/config.toml" },
     ]),
     writeCliConfig: vi.fn().mockResolvedValue([]),
+    readCliConfig: vi.fn().mockResolvedValue('{"env":{"A":"1"}}'),
+    writeCliConfigContent: vi.fn().mockResolvedValue({
+      path: "~/.claude/settings.json",
+      changed_keys: ["env.A"],
+      backup_path: null,
+      env_instructions: null,
+    }),
     listApiKeys: vi.fn().mockResolvedValue([{ id: "k1", name: "默认密钥" }]),
     defaultExportPath: vi.fn().mockResolvedValue("C:/export.json"),
     exportConfig: vi.fn().mockResolvedValue(100),
@@ -139,5 +146,75 @@ describe("SettingsPage", () => {
     await waitFor(() =>
       expect(mockedApi.setRectifierConfig).toHaveBeenCalledWith("enabled", false)
     );
+  });
+
+  it("点击编辑配置读取 readCliConfig 并填充 textarea", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑配置" }));
+    await waitFor(() =>
+      expect(mockedApi.readCliConfig).toHaveBeenCalledWith("claude_code")
+    );
+    const textarea = await screen.findByLabelText("CLI 配置 JSON");
+    expect(textarea).toBeInTheDocument();
+    expect(textarea).toHaveValue('{"env":{"A":"1"}}');
+  });
+
+  it("输入非法 JSON 显示 JSON 格式错误", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑配置" }));
+    const textarea = await screen.findByLabelText("CLI 配置 JSON");
+    fireEvent.change(textarea, { target: { value: "{bad" } });
+    expect(screen.getByText("JSON 格式错误")).toBeInTheDocument();
+  });
+
+  it("格式化按钮将压缩 JSON 美化", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑配置" }));
+    const textarea = await screen.findByLabelText("CLI 配置 JSON");
+    fireEvent.change(textarea, { target: { value: '{"env":{"A":"1"}}' } });
+    fireEvent.click(screen.getByRole("button", { name: "格式化" }));
+    expect(textarea).toHaveValue('{\n  "env": {\n    "A": "1"\n  }\n}');
+  });
+
+  it("保存调用 writeCliConfigContent(target, cliJson)", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑配置" }));
+    const textarea = await screen.findByLabelText("CLI 配置 JSON");
+    fireEvent.change(textarea, { target: { value: '{"env":{"A":"2"}}' } });
+    fireEvent.click(screen.getByRole("button", { name: "保存 CLI 配置" }));
+    await waitFor(() =>
+      expect(mockedApi.writeCliConfigContent).toHaveBeenCalledWith(
+        "claude_code",
+        '{"env":{"A":"2"}}'
+      )
+    );
+  });
+
+  it("Codex 目标编辑器显示 config.toml 提示", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "目标 CLI" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "目标 CLI" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Codex" }));
+    fireEvent.click(screen.getByRole("button", { name: "编辑配置" }));
+    await waitFor(() =>
+      expect(mockedApi.readCliConfig).toHaveBeenCalledWith("codex")
+    );
+    expect(
+      await screen.findByText("config.toml（将转为 JSON 编辑）")
+    ).toBeInTheDocument();
   });
 });
