@@ -29,15 +29,15 @@ fn upsert_prompt_with_state(
 
     let id = id.filter(|s| !s.is_empty());
     let now = chrono::Utc::now().timestamp();
-    let (id, created_at) = match &id {
+    let (id, created_at, enabled) = match &id {
         Some(existing_id) => {
             if let Ok(Some(existing)) = state.repo.get_prompt(existing_id) {
-                (existing_id.clone(), existing.created_at)
+                (existing_id.clone(), existing.created_at, existing.enabled)
             } else {
-                (existing_id.clone(), now)
+                (existing_id.clone(), now, false)
             }
         }
-        None => (uuid::Uuid::new_v4().to_string(), now),
+        None => (uuid::Uuid::new_v4().to_string(), now, false),
     };
 
     let prompt = Prompt {
@@ -45,7 +45,7 @@ fn upsert_prompt_with_state(
         name: name.to_string(),
         content: content.to_string(),
         description,
-        enabled: false,
+        enabled,
         created_at,
         updated_at: now,
     };
@@ -92,7 +92,7 @@ pub(crate) fn enable_prompt_with_home(
         .repo
         .get_prompt(id)
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "prompt not found".to_string())?;
+        .ok_or_else(|| "Prompt 不存在".to_string())?;
     state
         .repo
         .set_prompt_enabled(id, true)
@@ -160,6 +160,43 @@ mod tests {
         let listed = state.repo.list_prompts().unwrap();
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].name, "code-review");
+    }
+
+    #[test]
+    fn upsert_preserves_enabled_state() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        let tmp = tempfile::tempdir().unwrap();
+        let home = tmp.path();
+
+        let a = upsert_prompt_with_state(
+            &state,
+            Some("p-a".into()),
+            "Prompt A".into(),
+            "content A".into(),
+            None,
+        )
+        .unwrap();
+        assert!(!a.enabled);
+
+        enable_prompt_with_home(&state, home, &a.id).unwrap();
+        assert!(state.repo.get_prompt(&a.id).unwrap().unwrap().enabled);
+
+        let updated = upsert_prompt_with_state(
+            &state,
+            Some("p-a".into()),
+            "Prompt A Updated".into(),
+            "content A updated".into(),
+            Some("updated desc".into()),
+        )
+        .unwrap();
+        assert!(updated.enabled);
+        assert_eq!(updated.name, "Prompt A Updated");
+        assert_eq!(updated.content, "content A updated");
+
+        let stored = state.repo.get_prompt(&a.id).unwrap().unwrap();
+        assert!(stored.enabled);
+        assert_eq!(stored.content, "content A updated");
     }
 
     #[test]
