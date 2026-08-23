@@ -452,7 +452,7 @@ export default function RoleRoutesPage() {
                   {PATTERN_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
                       {r}
-                      {r === "auto" ? "（普通调度）" : ""}
+                      {r === "auto" ? "（未匹配占位）" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
