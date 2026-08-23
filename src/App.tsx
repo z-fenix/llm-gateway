@@ -9,6 +9,7 @@ import LogsPage from "./pages/LogsPage";
 import KnowledgePage from "./pages/KnowledgePage";
 import SettingsPage from "./pages/SettingsPage";
 import PromptsPage from "./pages/PromptsPage";
+import SessionsPage from "./pages/SessionsPage";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
+        <Route path="/sessions" element={<SessionsPage />} />
       </Route>
     </Routes>
   );

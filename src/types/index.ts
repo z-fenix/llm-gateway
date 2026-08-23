@@ -272,3 +272,21 @@ export interface Prompt {
   created_at: number;
   updated_at: number;
 }
+
+export interface SessionMeta {
+  trace_id: string;
+  title: string | null;
+  first_active: number;
+  last_active: number;
+  message_count: number;
+  roles: [string, number][];
+}
+
+export interface SessionMessage {
+  seq: number;
+  role: string | null;
+  content: string | null;
+  status_code: number | null;
+  created_at: number;
+  error: string | null;
+}

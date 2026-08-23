@@ -23,6 +23,8 @@ import type {
   RoleRoute,
   SecurityFinding,
   SecuritySettings,
+  SessionMeta,
+  SessionMessage,
   Stats,
   TestResult,
   TimeBucket,
@@ -183,5 +185,11 @@ export const api = {
   deletePrompt: (id: string) => invoke<void>("delete_prompt", { id }),
   enablePrompt: (id: string) => invoke<void>("enable_prompt", { id }),
   getEnabledPrompt: () => invoke<Prompt | null>("get_enabled_prompt"),
+
+  listSessions: () => invoke<SessionMeta[]>("list_sessions"),
+  getSessionMessages: (traceId: string) =>
+    invoke<SessionMessage[]>("get_session_messages", { traceId }),
+  deleteSession: (traceId: string) =>
+    invoke<number>("delete_session", { traceId }),
 };
 export type { RequestLog };
