@@ -8,4 +8,5 @@ pub mod prompt;
 pub mod rectifier;
 pub mod role_route;
 pub mod security;
+pub mod session;
 pub mod stats;

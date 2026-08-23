@@ -1563,6 +1563,51 @@ impl Repository {
         Ok(out)
     }
 
+    pub fn get_session_logs(&self, trace_id: &str) -> AppResult<Vec<RequestLog>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs WHERE trace_id=?1 ORDER BY seq ASC",
+        )?;
+        let rows = stmt.query_map(params![trace_id], |r| {
+            Ok(RequestLog {
+                id: r.get(0)?,
+                seq: r.get(1)?,
+                trace_id: r.get(2)?,
+                api_key_id: r.get(3)?,
+                key_name: r.get(4)?,
+                channel_id: r.get(5)?,
+                channel_name: r.get(6)?,
+                role: r.get(7)?,
+                request_model: r.get(8)?,
+                upstream_model: r.get(9)?,
+                protocol: r.get(10)?,
+                status_code: r.get(11)?,
+                input_tokens: r.get(12)?,
+                output_tokens: r.get(13)?,
+                latency_ms: r.get(14)?,
+                is_stream: r.get::<_, i64>(15)? != 0,
+                error: r.get(16)?,
+                fallback: r.get::<_, i64>(17)? != 0,
+                tool_calls: r.get(18)?,
+                request_body: r.get(19)?,
+                response_body: r.get(20)?,
+                risk_level: r.get(21)?,
+                risk_score: r.get(22)?,
+                risk_summary: r.get(23)?,
+                security_action: r.get(24)?,
+                sanitized: r.get::<_, i64>(25)? != 0,
+                blocked_reason: r.get(26)?,
+                created_at: r.get(27)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
     /// 删除会话：先删其 findings 再删 request_logs，返回删除的日志数。
     pub fn delete_session(&self, trace_id: &str) -> AppResult<usize> {
         let conn = self.db.conn();
