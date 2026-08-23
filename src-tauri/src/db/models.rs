@@ -193,6 +193,60 @@ pub struct KbChunk {
     pub embedding_id: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Prompt {
+    pub id: String,
+    pub name: String,
+    pub content: String,
+    pub description: Option<String>,
+    pub enabled: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Skill {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub directory: String,
+    pub content: String,
+    pub enabled: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpServer {
+    pub id: String,
+    pub name: String,
+    pub server_config: serde_json::Value,
+    pub description: Option<String>,
+    pub enabled: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionMeta {
+    pub trace_id: String,
+    pub title: Option<String>,
+    pub first_active: i64,
+    pub last_active: i64,
+    pub message_count: i64,
+    pub roles: Vec<(String, i64)>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionMessage {
+    pub seq: i64,
+    pub role: Option<String>,
+    pub content: Option<String>,
+    pub status_code: Option<i64>,
+    pub created_at: i64,
+    pub error: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::Channel;

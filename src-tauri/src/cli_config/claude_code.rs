@@ -112,6 +112,7 @@ pub fn write(home: &Path, base_url: &str, token: &str) -> Result<Vec<CliWriteRes
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cli_config::backup_and_write_ts;
 
     #[test]
     fn merge_settings_preserves_unrelated_and_sets_env() {
@@ -198,5 +199,25 @@ mod tests {
             v["env"]["ANTHROPIC_AUTH_TOKEN"],
             serde_json::json!("sk-lgw-b")
         );
+    }
+
+    #[test]
+    fn backup_and_write_ts_creates_timestamped_backup_and_overwrites() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("test.txt");
+        std::fs::write(&p, "original").unwrap();
+
+        let backup = backup_and_write_ts(&p, "updated").unwrap();
+        assert!(backup.is_some());
+        let backup_path = backup.unwrap();
+        assert!(backup_path.contains(".bak-"));
+        assert!(std::path::Path::new(&backup_path).exists());
+        assert_eq!(std::fs::read_to_string(&backup_path).unwrap(), "original");
+        assert_eq!(std::fs::read_to_string(&p).unwrap(), "updated");
+
+        // 当文件不存在时返回 None
+        let missing = dir.path().join("missing.txt");
+        assert!(backup_and_write_ts(&missing, "new").unwrap().is_none());
+        assert_eq!(std::fs::read_to_string(&missing).unwrap(), "new");
     }
 }

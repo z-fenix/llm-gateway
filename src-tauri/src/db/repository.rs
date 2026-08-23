@@ -1,6 +1,7 @@
 use super::models::{
-    ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, RequestLog,
-    RequestSecurityFinding, RolePattern, RoleRoute,
+    ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, McpServer,
+    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, SessionMessage, SessionMeta,
+    Skill,
 };
 use super::Db;
 use crate::error::AppResult;
@@ -1247,6 +1248,336 @@ impl Repository {
         )?;
         Ok(())
     }
+
+    // ---------- Prompts ----------
+
+    pub fn list_prompts(&self) -> AppResult<Vec<Prompt>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,content,description,enabled,created_at,updated_at FROM prompts ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(Prompt {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                content: r.get(2)?,
+                description: r.get(3)?,
+                enabled: r.get::<_, i64>(4)? != 0,
+                created_at: r.get(5)?,
+                updated_at: r.get(6)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
+    pub fn get_prompt(&self, id: &str) -> AppResult<Option<Prompt>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,content,description,enabled,created_at,updated_at FROM prompts WHERE id=?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(Prompt {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                content: r.get(2)?,
+                description: r.get(3)?,
+                enabled: r.get::<_, i64>(4)? != 0,
+                created_at: r.get(5)?,
+                updated_at: r.get(6)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn upsert_prompt(&self, p: &Prompt) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO prompts (id,name,content,description,enabled,created_at,updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7)
+             ON CONFLICT(id) DO UPDATE SET name=excluded.name, content=excluded.content, description=excluded.description, enabled=excluded.enabled, updated_at=excluded.updated_at",
+            params![
+                p.id, p.name, p.content, p.description, p.enabled as i64,
+                p.created_at, p.updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_prompt(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute("DELETE FROM prompts WHERE id=?1", [id])?;
+        Ok(())
+    }
+
+    /// 开启 prompt 时先全量关闭再开启目标，保证同时最多一个启用（互斥）。
+    pub fn set_prompt_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        if enabled {
+            tx.execute("UPDATE prompts SET enabled=0", [])?;
+            tx.execute("UPDATE prompts SET enabled=1 WHERE id=?1", params![id])?;
+        } else {
+            tx.execute("UPDATE prompts SET enabled=0 WHERE id=?1", params![id])?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    // ---------- Skills ----------
+
+    pub fn list_skills(&self) -> AppResult<Vec<Skill>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,description,directory,content,enabled,created_at,updated_at FROM skills ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(Skill {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                description: r.get(2)?,
+                directory: r.get(3)?,
+                content: r.get(4)?,
+                enabled: r.get::<_, i64>(5)? != 0,
+                created_at: r.get(6)?,
+                updated_at: r.get(7)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
+    pub fn get_skill(&self, id: &str) -> AppResult<Option<Skill>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,description,directory,content,enabled,created_at,updated_at FROM skills WHERE id=?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(Skill {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                description: r.get(2)?,
+                directory: r.get(3)?,
+                content: r.get(4)?,
+                enabled: r.get::<_, i64>(5)? != 0,
+                created_at: r.get(6)?,
+                updated_at: r.get(7)?,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn upsert_skill(&self, s: &Skill) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO skills (id,name,description,directory,content,enabled,created_at,updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)
+             ON CONFLICT(id) DO UPDATE SET name=excluded.name, description=excluded.description, directory=excluded.directory, content=excluded.content, enabled=excluded.enabled, updated_at=excluded.updated_at",
+            params![
+                s.id, s.name, s.description, s.directory, s.content, s.enabled as i64,
+                s.created_at, s.updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_skill(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute("DELETE FROM skills WHERE id=?1", [id])?;
+        Ok(())
+    }
+
+    pub fn set_skill_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE skills SET enabled=?2 WHERE id=?1",
+            params![id, enabled as i64],
+        )?;
+        Ok(())
+    }
+
+    // ---------- MCP Servers ----------
+
+    pub fn list_mcp_servers(&self) -> AppResult<Vec<McpServer>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,server_config,description,enabled,created_at,updated_at FROM mcp_servers ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map([], row_to_mcp_server)?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
+    pub fn get_mcp_server(&self, id: &str) -> AppResult<Option<McpServer>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,server_config,description,enabled,created_at,updated_at FROM mcp_servers WHERE id=?1",
+        )?;
+        let mut rows = stmt.query(params![id])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(row_to_mcp_server(r)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn upsert_mcp_server(&self, s: &McpServer) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO mcp_servers (id,name,server_config,description,enabled,created_at,updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7)
+             ON CONFLICT(id) DO UPDATE SET name=excluded.name, server_config=excluded.server_config, description=excluded.description, enabled=excluded.enabled, updated_at=excluded.updated_at",
+            params![
+                s.id,
+                s.name,
+                serde_json::to_string(&s.server_config).map_err(|e| crate::error::AppError::Msg(e.to_string()))?,
+                s.description,
+                s.enabled as i64,
+                s.created_at,
+                s.updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_mcp_server(&self, id: &str) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute("DELETE FROM mcp_servers WHERE id=?1", [id])?;
+        Ok(())
+    }
+
+    pub fn set_mcp_server_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE mcp_servers SET enabled=?2 WHERE id=?1",
+            params![id, enabled as i64],
+        )?;
+        Ok(())
+    }
+
+    // ---------- Sessions ----------
+
+    pub fn list_sessions(&self) -> AppResult<Vec<SessionMeta>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT trace_id, MIN(created_at), MAX(created_at), COUNT(*) FROM request_logs GROUP BY trace_id ORDER BY MAX(created_at) DESC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, i64>(2)?,
+                r.get::<_, i64>(3)?,
+            ))
+        })?;
+        let mut metas: Vec<(String, i64, i64, i64)> = Vec::new();
+        for r in rows {
+            metas.push(r?);
+        }
+        drop(stmt);
+
+        let mut out = Vec::new();
+        for (trace_id, first_active, last_active, message_count) in metas {
+            let mut roles = Vec::new();
+            let mut stmt = conn.prepare(
+                "SELECT role, COUNT(*) FROM request_logs WHERE trace_id=?1 AND role IS NOT NULL GROUP BY role",
+            )?;
+            let role_rows = stmt.query_map(params![trace_id], |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+            })?;
+            for r in role_rows {
+                roles.push(r?);
+            }
+            out.push(SessionMeta {
+                trace_id,
+                title: None,
+                first_active,
+                last_active,
+                message_count,
+                roles,
+            });
+        }
+        Ok(out)
+    }
+
+    pub fn get_session_messages(&self, trace_id: &str) -> AppResult<Vec<SessionMessage>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT seq, role, status_code, created_at, error FROM request_logs WHERE trace_id=?1 ORDER BY seq ASC",
+        )?;
+        let rows = stmt.query_map(params![trace_id], |r| {
+            Ok(SessionMessage {
+                seq: r.get(0)?,
+                role: r.get(1)?,
+                content: None,
+                status_code: r.get(2)?,
+                created_at: r.get(3)?,
+                error: r.get(4)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
+    /// 删除会话：先删其 findings 再删 request_logs，返回删除的日志数。
+    pub fn delete_session(&self, trace_id: &str) -> AppResult<usize> {
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        tx.execute(
+            "DELETE FROM request_security_findings WHERE log_id IN (SELECT id FROM request_logs WHERE trace_id=?1)",
+            params![trace_id],
+        )?;
+        let deleted = tx.execute(
+            "DELETE FROM request_logs WHERE trace_id=?1",
+            params![trace_id],
+        )?;
+        tx.commit()?;
+        Ok(deleted)
+    }
+}
+
+fn row_to_mcp_server(r: &rusqlite::Row) -> rusqlite::Result<McpServer> {
+    let config_json: String = r.get(2)?;
+    Ok(McpServer {
+        id: r.get(0)?,
+        name: r.get(1)?,
+        server_config: serde_json::from_str(&config_json).unwrap_or_default(),
+        description: r.get(3)?,
+        enabled: r.get::<_, i64>(4)? != 0,
+        created_at: r.get(5)?,
+        updated_at: r.get(6)?,
+    })
 }
 
 fn fts5_escape(query: &str) -> Option<String> {
@@ -2758,5 +3089,246 @@ mod tests {
             a < b && b < c,
             "embedding ids must be strictly monotonic: {a} {b} {c}"
         );
+    }
+
+    fn prompt(id: &str, name: &str) -> Prompt {
+        Prompt {
+            id: id.into(),
+            name: name.into(),
+            content: format!("content-{}", id),
+            description: None,
+            enabled: false,
+            created_at: 1,
+            updated_at: 1,
+        }
+    }
+
+    fn skill(id: &str, name: &str) -> Skill {
+        Skill {
+            id: id.into(),
+            name: name.into(),
+            description: Some("desc".into()),
+            directory: format!("skills/{}", id),
+            content: "skill content".into(),
+            enabled: false,
+            created_at: 1,
+            updated_at: 1,
+        }
+    }
+
+    fn mcp_server(id: &str, name: &str) -> McpServer {
+        McpServer {
+            id: id.into(),
+            name: name.into(),
+            server_config: serde_json::json!({
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-filesystem"]
+            }),
+            description: None,
+            enabled: false,
+            created_at: 1,
+            updated_at: 1,
+        }
+    }
+
+    #[test]
+    fn prompt_crud_and_enable_exclusive() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.upsert_prompt(&prompt("p1", "code-review")).unwrap();
+        repo.upsert_prompt(&prompt("p2", "commit-msg")).unwrap();
+        assert_eq!(repo.list_prompts().unwrap().len(), 2);
+
+        // 开启 p1
+        repo.set_prompt_enabled("p1", true).unwrap();
+        assert!(repo.get_prompt("p1").unwrap().unwrap().enabled);
+        assert!(!repo.get_prompt("p2").unwrap().unwrap().enabled);
+
+        // 开启 p2 后 p1 自动关闭（互斥）
+        repo.set_prompt_enabled("p2", true).unwrap();
+        assert!(!repo.get_prompt("p1").unwrap().unwrap().enabled);
+        assert!(repo.get_prompt("p2").unwrap().unwrap().enabled);
+
+        // 显式关闭
+        repo.set_prompt_enabled("p2", false).unwrap();
+        assert!(!repo.get_prompt("p2").unwrap().unwrap().enabled);
+
+        // upsert 更新
+        let mut p = prompt("p1", "code-review");
+        p.content = "updated".into();
+        p.updated_at = 2;
+        repo.upsert_prompt(&p).unwrap();
+        assert_eq!(repo.get_prompt("p1").unwrap().unwrap().content, "updated");
+
+        // delete
+        repo.delete_prompt("p1").unwrap();
+        assert!(repo.get_prompt("p1").unwrap().is_none());
+        assert_eq!(repo.list_prompts().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn skill_and_mcp_server_crud_roundtrip() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+
+        repo.upsert_skill(&skill("s1", "review")).unwrap();
+        let got = repo.get_skill("s1").unwrap().unwrap();
+        assert_eq!(got.name, "review");
+        assert_eq!(got.directory, "skills/s1");
+        assert_eq!(got.description, Some("desc".into()));
+
+        repo.upsert_skill(&skill("s2", "commit")).unwrap();
+        assert_eq!(repo.list_skills().unwrap().len(), 2);
+        repo.set_skill_enabled("s1", true).unwrap();
+        assert!(repo.get_skill("s1").unwrap().unwrap().enabled);
+        assert!(!repo.get_skill("s2").unwrap().unwrap().enabled);
+        repo.delete_skill("s2").unwrap();
+        assert!(repo.get_skill("s2").unwrap().is_none());
+        assert_eq!(repo.list_skills().unwrap().len(), 1);
+
+        repo.upsert_mcp_server(&mcp_server("m1", "fs")).unwrap();
+        let got = repo.get_mcp_server("m1").unwrap().unwrap();
+        assert_eq!(got.name, "fs");
+        assert_eq!(got.server_config["command"], serde_json::json!("npx"));
+
+        repo.upsert_mcp_server(&mcp_server("m2", "fetch")).unwrap();
+        assert_eq!(repo.list_mcp_servers().unwrap().len(), 2);
+        repo.set_mcp_server_enabled("m1", true).unwrap();
+        assert!(repo.get_mcp_server("m1").unwrap().unwrap().enabled);
+        assert!(!repo.get_mcp_server("m2").unwrap().unwrap().enabled);
+        repo.delete_mcp_server("m1").unwrap();
+        assert!(repo.get_mcp_server("m1").unwrap().is_none());
+        assert_eq!(repo.list_mcp_servers().unwrap().len(), 1);
+    }
+
+    fn log_in_trace(seq: i64, trace_id: &str, role: &str, created_at: i64) -> RequestLog {
+        let mut l = make_log(seq, "gpt-4o", 10, 100, created_at);
+        l.trace_id = trace_id.into();
+        l.role = Some(role.into());
+        l
+    }
+
+    #[test]
+    fn list_sessions_groups_by_trace() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        repo.insert_log(&log_in_trace(1, "tr1", "user", 100)).unwrap();
+        repo.insert_log(&log_in_trace(2, "tr1", "assistant", 200))
+            .unwrap();
+        repo.insert_log(&log_in_trace(3, "tr2", "user", 300)).unwrap();
+        repo.insert_log(&log_in_trace(4, "tr2", "assistant", 400))
+            .unwrap();
+
+        let sessions = repo.list_sessions().unwrap();
+        assert_eq!(sessions.len(), 2);
+        // 按 last_active 降序：tr2(400) 在前
+        assert_eq!(sessions[0].trace_id, "tr2");
+        assert_eq!(sessions[0].first_active, 300);
+        assert_eq!(sessions[0].last_active, 400);
+        assert_eq!(sessions[0].message_count, 2);
+        assert!(sessions[0].title.is_none());
+        assert_eq!(sessions[1].trace_id, "tr1");
+        assert_eq!(sessions[1].first_active, 100);
+        assert_eq!(sessions[1].last_active, 200);
+        assert_eq!(sessions[1].message_count, 2);
+
+        // roles 子查询汇总（按 role 分组）
+        let mut roles: Vec<(String, i64)> = sessions[1].roles.clone();
+        roles.sort();
+        assert_eq!(
+            roles,
+            vec![
+                ("assistant".to_string(), 1),
+                ("user".to_string(), 1)
+            ]
+        );
+    }
+
+    #[test]
+    fn get_session_messages_orders_by_seq() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        let mut m1 = log_in_trace(1, "tr1", "user", 100);
+        m1.status_code = Some(200);
+        repo.insert_log(&m1).unwrap();
+        let mut m2 = log_in_trace(2, "tr1", "assistant", 200);
+        m2.status_code = Some(200);
+        repo.insert_log(&m2).unwrap();
+        let mut m3 = log_in_trace(3, "tr1", "user", 300);
+        m3.status_code = Some(500);
+        m3.error = Some("boom".into());
+        repo.insert_log(&m3).unwrap();
+
+        let msgs = repo.get_session_messages("tr1").unwrap();
+        assert_eq!(msgs.len(), 3);
+        assert_eq!(msgs[0].seq, 1);
+        assert_eq!(msgs[0].role.as_deref(), Some("user"));
+        assert_eq!(msgs[0].status_code, Some(200));
+        assert!(msgs[0].content.is_none(), "content 由后续任务填充");
+        assert_eq!(msgs[2].seq, 3);
+        assert_eq!(msgs[2].status_code, Some(500));
+        assert_eq!(msgs[2].error.as_deref(), Some("boom"));
+    }
+
+    #[test]
+    fn delete_session_cascades_findings() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        repo.insert_log(&log_in_trace(1, "tr1", "user", 100)).unwrap();
+        repo.insert_log(&log_in_trace(2, "tr1", "assistant", 200))
+            .unwrap();
+        repo.insert_log(&log_in_trace(3, "tr2", "user", 300)).unwrap();
+        insert_raw_finding(&repo, "f1", "l1", 100);
+        insert_raw_finding(&repo, "f2", "l2", 200);
+        insert_raw_finding(&repo, "f3", "l3", 300);
+
+        let deleted = repo.delete_session("tr1").unwrap();
+        assert_eq!(deleted, 2);
+        assert_eq!(count_table(&repo, "request_logs"), 1);
+        assert_eq!(count_table(&repo, "request_security_findings"), 1);
+        assert!(repo.get_session_messages("tr1").unwrap().is_empty());
+        assert!(repo.get_findings("l1").unwrap().is_empty());
+        assert!(repo.get_findings("l2").unwrap().is_empty());
+        assert_eq!(repo.get_findings("l3").unwrap().len(), 1);
     }
 }
