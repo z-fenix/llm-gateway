@@ -1,7 +1,7 @@
 use super::models::{
     ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, McpServer,
-    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, SessionMessage, SessionMeta,
-    Skill,
+    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, SessionMessage,
+    SessionMeta, Skill,
 };
 use super::Db;
 use crate::error::AppResult;
@@ -1422,10 +1422,10 @@ impl Repository {
         let mut stmt = conn.prepare(
             "SELECT id,name,server_config,description,enabled,created_at,updated_at FROM mcp_servers ORDER BY created_at ASC",
         )?;
-        let rows = stmt.query_map([], row_to_mcp_server)?;
+        let mut rows = stmt.query([])?;
         let mut out = Vec::new();
-        for r in rows {
-            out.push(r?);
+        while let Some(r) = rows.next()? {
+            out.push(row_to_mcp_server(r)?);
         }
         Ok(out)
     }
@@ -1485,6 +1485,8 @@ impl Repository {
     pub fn list_sessions(&self) -> AppResult<Vec<SessionMeta>> {
         let conn = self.db.conn();
         let conn = conn.lock();
+
+        // 1) 聚合每个 trace 的 meta
         let mut stmt = conn.prepare(
             "SELECT trace_id, MIN(created_at), MAX(created_at), COUNT(*) FROM request_logs GROUP BY trace_id ORDER BY MAX(created_at) DESC",
         )?;
@@ -1496,24 +1498,36 @@ impl Repository {
                 r.get::<_, i64>(3)?,
             ))
         })?;
-        let mut metas: Vec<(String, i64, i64, i64)> = Vec::new();
+        let mut metas = Vec::new();
         for r in rows {
             metas.push(r?);
         }
         drop(stmt);
 
+        // 2) 一次性聚合所有 trace 的 roles（trace_id, role, count）
+        let mut roles_by_trace: std::collections::HashMap<String, Vec<(String, i64)>> =
+            std::collections::HashMap::new();
+        let mut stmt = conn.prepare(
+            "SELECT trace_id, role, COUNT(*) FROM request_logs WHERE role IS NOT NULL GROUP BY trace_id, role",
+        )?;
+        let role_rows = stmt.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, i64>(2)?,
+            ))
+        })?;
+        for r in role_rows {
+            let (trace_id, role, count) = r?;
+            roles_by_trace
+                .entry(trace_id)
+                .or_default()
+                .push((role, count));
+        }
+
         let mut out = Vec::new();
         for (trace_id, first_active, last_active, message_count) in metas {
-            let mut roles = Vec::new();
-            let mut stmt = conn.prepare(
-                "SELECT role, COUNT(*) FROM request_logs WHERE trace_id=?1 AND role IS NOT NULL GROUP BY role",
-            )?;
-            let role_rows = stmt.query_map(params![trace_id], |r| {
-                Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
-            })?;
-            for r in role_rows {
-                roles.push(r?);
-            }
+            let roles = roles_by_trace.remove(&trace_id).unwrap_or_default();
             out.push(SessionMeta {
                 trace_id,
                 title: None,
@@ -1567,12 +1581,14 @@ impl Repository {
     }
 }
 
-fn row_to_mcp_server(r: &rusqlite::Row) -> rusqlite::Result<McpServer> {
+fn row_to_mcp_server(r: &rusqlite::Row) -> AppResult<McpServer> {
     let config_json: String = r.get(2)?;
+    let server_config = serde_json::from_str(&config_json)
+        .map_err(|e| crate::error::AppError::Msg(format!("invalid server_config JSON: {e}")))?;
     Ok(McpServer {
         id: r.get(0)?,
         name: r.get(1)?,
-        server_config: serde_json::from_str(&config_json).unwrap_or_default(),
+        server_config,
         description: r.get(3)?,
         enabled: r.get::<_, i64>(4)? != 0,
         created_at: r.get(5)?,
@@ -3224,10 +3240,12 @@ mod tests {
         })
         .unwrap();
 
-        repo.insert_log(&log_in_trace(1, "tr1", "user", 100)).unwrap();
+        repo.insert_log(&log_in_trace(1, "tr1", "user", 100))
+            .unwrap();
         repo.insert_log(&log_in_trace(2, "tr1", "assistant", 200))
             .unwrap();
-        repo.insert_log(&log_in_trace(3, "tr2", "user", 300)).unwrap();
+        repo.insert_log(&log_in_trace(3, "tr2", "user", 300))
+            .unwrap();
         repo.insert_log(&log_in_trace(4, "tr2", "assistant", 400))
             .unwrap();
 
@@ -3249,10 +3267,7 @@ mod tests {
         roles.sort();
         assert_eq!(
             roles,
-            vec![
-                ("assistant".to_string(), 1),
-                ("user".to_string(), 1)
-            ]
+            vec![("assistant".to_string(), 1), ("user".to_string(), 1)]
         );
     }
 
@@ -3314,10 +3329,12 @@ mod tests {
         })
         .unwrap();
 
-        repo.insert_log(&log_in_trace(1, "tr1", "user", 100)).unwrap();
+        repo.insert_log(&log_in_trace(1, "tr1", "user", 100))
+            .unwrap();
         repo.insert_log(&log_in_trace(2, "tr1", "assistant", 200))
             .unwrap();
-        repo.insert_log(&log_in_trace(3, "tr2", "user", 300)).unwrap();
+        repo.insert_log(&log_in_trace(3, "tr2", "user", 300))
+            .unwrap();
         insert_raw_finding(&repo, "f1", "l1", 100);
         insert_raw_finding(&repo, "f2", "l2", 200);
         insert_raw_finding(&repo, "f3", "l3", 300);
@@ -3330,5 +3347,36 @@ mod tests {
         assert!(repo.get_findings("l1").unwrap().is_empty());
         assert!(repo.get_findings("l2").unwrap().is_empty());
         assert_eq!(repo.get_findings("l3").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn mcp_server_invalid_json_propagates_error() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.upsert_mcp_server(&mcp_server("m1", "fs")).unwrap();
+        // 手工破坏 JSON
+        let conn = repo.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "UPDATE mcp_servers SET server_config = ?2 WHERE id = ?1",
+            params!["m1", "not json"],
+        )
+        .unwrap();
+        drop(conn);
+
+        let err = repo.get_mcp_server("m1").unwrap_err();
+        let msg = format!("{}", err);
+        assert!(
+            msg.contains("invalid server_config JSON"),
+            "expected JSON error, got: {}",
+            msg
+        );
+
+        let err = repo.list_mcp_servers().unwrap_err();
+        let msg = format!("{}", err);
+        assert!(
+            msg.contains("invalid server_config JSON"),
+            "expected JSON error, got: {}",
+            msg
+        );
     }
 }
