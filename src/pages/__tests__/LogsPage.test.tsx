@@ -101,6 +101,16 @@ describe("LogsPage", () => {
     });
   });
 
+  it("角色筛选下拉包含 auto 选项", async () => {
+    render(<LogsPage />);
+    await waitFor(() =>
+      expect(screen.getByText("全部角色")).toBeInTheDocument()
+    );
+
+    const roleSelect = screen.getByText("全部角色").closest("select")!;
+    expect(within(roleSelect).getByRole("option", { name: "auto" })).toBeInTheDocument();
+  });
+
   it("统计卡片渲染聚合数据", async () => {
     mockedApi.getLogStats.mockResolvedValue({
       total_calls: 128,

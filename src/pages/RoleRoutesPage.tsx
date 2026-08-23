@@ -34,9 +34,9 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 
-const ROLES = ["sonnet", "opus", "fable", "haiku"];
+const ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
 const PATTERN_ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
-// "auto" 是未匹配任何角色时的兜底角色（走普通调度）。
+// "auto" 是未匹配任何角色模式时的占位角色：可绑定渠道/模型；未绑定则走普通调度。
 
 const NONE = "__none__";
 
@@ -207,7 +207,10 @@ export default function RoleRoutesPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">角色 → 渠道路由</CardTitle>
-          <CardDescription>按角色绑定上游渠道与模型，留空表示不路由</CardDescription>
+          <CardDescription>
+            按角色绑定上游渠道与模型，留空表示不路由；auto 是未匹配角色模式的
+            占位角色，可像命名角色一样绑定渠道/模型，未绑定则走普通调度
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-hidden rounded-lg border border-border">
@@ -229,6 +232,11 @@ export default function RoleRoutesPage() {
                     >
                       <td className="px-4 py-3 font-medium text-foreground">
                         {role}
+                        {role === "auto" && (
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            （未匹配角色）
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <Select
@@ -332,7 +340,7 @@ export default function RoleRoutesPage() {
           <div>
             <CardTitle className="text-lg">角色识别规则</CardTitle>
             <CardDescription>
-              通配符模式 → 角色映射；auto 表示未匹配时走普通调度
+              通配符模式 → 角色映射；auto 是未匹配占位角色，可绑定渠道/模型
             </CardDescription>
           </div>
           <Button size="sm" onClick={openCreatePattern}>

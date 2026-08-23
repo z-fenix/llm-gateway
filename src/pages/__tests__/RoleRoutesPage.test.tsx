@@ -101,6 +101,27 @@ describe("RoleRoutesPage", () => {
     );
   });
 
+  it("渲染 Auto 行并可绑定渠道", async () => {
+    render(<RoleRoutesPage />);
+    await waitFor(() => expect(screen.getByText("sonnet")).toBeInTheDocument());
+
+    // auto 行渲染，并带「未匹配角色」提示
+    expect(screen.getByText("auto")).toBeInTheDocument();
+    expect(screen.getByText("（未匹配角色）")).toBeInTheDocument();
+
+    // 在 auto 行选择渠道 DeepSeek(c1)，触发 setRoleRoute("auto", ...)
+    const autoSelect = screen.getByRole("combobox", { name: "auto 渠道" });
+    fireEvent.click(autoSelect);
+    fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
+    await waitFor(() =>
+      expect(api.setRoleRoute).toHaveBeenCalledWith(
+        "auto",
+        "c1",
+        expect.any(String)
+      )
+    );
+  });
+
   it("切换全局兜底渠道调用 setFallback，清除按钮调用 clearFallback", async () => {
     render(<RoleRoutesPage />);
     await waitFor(() => expect(screen.getByText("sonnet")).toBeInTheDocument());

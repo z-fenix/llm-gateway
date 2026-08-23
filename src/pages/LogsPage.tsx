@@ -100,7 +100,7 @@ function formatDateInput(ts: number): string {
   return `${year}-${month}-${day}`;
 }
 
-const ROLES = ["sonnet", "opus", "fable", "haiku"];
+const ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
 const RISK_LEVELS = ["clean", "info", "low", "medium", "high", "critical"];
 const STATUS_OPTIONS: { label: string; value: LogFilter["status"] }[] = [
   { label: "全部状态", value: undefined },
