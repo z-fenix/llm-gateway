@@ -1,5 +1,6 @@
+import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import LogTrendChart, {
   niceCeil,
   computeTicks,
@@ -7,6 +8,20 @@ import LogTrendChart, {
   formatBucketLabel,
 } from "../LogTrendChart";
 import type { TimeBucket } from "../../types";
+
+vi.mock("recharts", () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive">{children}</div>
+  ),
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="chart">{children}</div>
+  ),
+  Area: () => <div data-testid="area" />,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+}));
 
 const baseBucket: TimeBucket = {
   bucket: 1704067200,
@@ -65,36 +80,37 @@ describe("LogTrendChart pure functions", () => {
   });
 });
 
-describe("LogTrendChart component", () => {
-  beforeAll(() => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-  });
-  afterAll(() => {
-    vi.restoreAllMocks();
-  });
-
+describe("LogTrendChart component (Recharts)", () => {
   it("renders without crashing and shows empty state", () => {
     render(<LogTrendChart buckets={[]} dimension="calls" bucketSecs={3600} />);
     expect(screen.getByText("暂无数据")).toBeInTheDocument();
+    expect(screen.queryByTestId("chart")).not.toBeInTheDocument();
   });
 
-  it("renders canvas when buckets present", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="calls" bucketSecs={3600} />);
-    expect(container.querySelector("canvas")).toBeInTheDocument();
+  it("calls 维度渲染 1 个 Area", () => {
+    render(<LogTrendChart buckets={[baseBucket]} dimension="calls" bucketSecs={3600} />);
+    expect(screen.getByTestId("chart")).toBeInTheDocument();
+    expect(screen.getAllByTestId("area")).toHaveLength(1);
   });
 
-  it("renders canvas for tokens dimension", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="tokens" bucketSecs={3600} />);
-    expect(container.querySelector("canvas")).toBeInTheDocument();
+  it("tokens 维度渲染 2 个 Area(input/output)", () => {
+    render(<LogTrendChart buckets={[baseBucket]} dimension="tokens" bucketSecs={3600} />);
+    expect(screen.getAllByTestId("area")).toHaveLength(2);
   });
 
-  it("renders canvas for success dimension", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="success" bucketSecs={3600} />);
-    expect(container.querySelector("canvas")).toBeInTheDocument();
+  it("success 维度渲染 1 个 Area", () => {
+    render(<LogTrendChart buckets={[baseBucket]} dimension="success" bucketSecs={3600} />);
+    expect(screen.getAllByTestId("area")).toHaveLength(1);
   });
 
-  it("renders canvas for risk dimension", () => {
-    const { container } = render(<LogTrendChart buckets={[baseBucket]} dimension="risk" bucketSecs={3600} />);
-    expect(container.querySelector("canvas")).toBeInTheDocument();
+  it("risk 维度渲染 6 个 Area(stacked)", () => {
+    render(<LogTrendChart buckets={[baseBucket]} dimension="risk" bucketSecs={3600} />);
+    expect(screen.getAllByTestId("area")).toHaveLength(6);
+  });
+
+  it("chartData 映射: success 按 (calls-error_count)/calls 计算", () => {
+    // baseBucket: calls=10, error_count=1 => 90%
+    render(<LogTrendChart buckets={[baseBucket]} dimension="success" bucketSecs={3600} />);
+    expect(screen.getAllByTestId("area")).toHaveLength(1);
   });
 });
