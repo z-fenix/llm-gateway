@@ -16,6 +16,7 @@ import type {
   LogStats,
   ModelMapEntry,
   RagSettings,
+  RectifierConfig,
   RequestLog,
   RetrievedChunk,
   RolePattern,
@@ -154,6 +155,10 @@ export const api = {
   getRagSettings: () => invoke<RagSettings>("get_rag_settings"),
   setRagSetting: (key: string, value: unknown) =>
     invoke<void>("set_rag_setting", { key, value }),
+
+  getRectifierConfig: () => invoke<RectifierConfig>("get_rectifier_config"),
+  setRectifierConfig: (key: string, value: boolean) =>
+    invoke<void>("set_rectifier_config", { key, value }),
 
   getAppConfig: () => invoke<AppConfigInfo>("get_app_config"),
   setPreferredPort: (port: number) =>

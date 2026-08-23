@@ -35,6 +35,14 @@ vi.mock("../../lib/api", () => ({
       skipped: 0,
       overwritten: 0,
     }),
+    getRectifierConfig: vi.fn().mockResolvedValue({
+      enabled: true,
+      request_thinking_signature: true,
+      request_thinking_budget: true,
+      request_media_fallback: true,
+      request_media_heuristic: true,
+    }),
+    setRectifierConfig: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -108,5 +116,28 @@ describe("SettingsPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "立即重启" }));
     await waitFor(() => expect(mockedApi.restartGateway).toHaveBeenCalled());
+  });
+
+  it("整流器卡片渲染并显示子开关文案", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByText("整流器")).toBeInTheDocument()
+    );
+    expect(
+      screen.getByText("修复 thinking signature 错误")
+    ).toBeInTheDocument();
+    expect(screen.getByText("修复 thinking budget 错误")).toBeInTheDocument();
+    expect(screen.getByText("图片降级（总开关）")).toBeInTheDocument();
+  });
+
+  it("点击启用整流器开关调用 setRectifierConfig('enabled', false)", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("switch", { name: "启用整流器" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "启用整流器" }));
+    await waitFor(() =>
+      expect(mockedApi.setRectifierConfig).toHaveBeenCalledWith("enabled", false)
+    );
   });
 });

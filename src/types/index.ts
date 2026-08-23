@@ -222,6 +222,14 @@ export interface RagSettings {
   default_embedding_channel: string | null;
 }
 
+export interface RectifierConfig {
+  enabled: boolean;
+  request_thinking_signature: boolean;
+  request_thinking_budget: boolean;
+  request_media_fallback: boolean;
+  request_media_heuristic: boolean;
+}
+
 export interface AppConfigInfo {
   preferred_port: number;
   bound_addr: string | null;

@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Server,
   TerminalSquare,
+  Wrench,
 } from "lucide-react";
 import { api } from "../lib/api";
 import type {
@@ -16,6 +17,7 @@ import type {
   CliWriteResult,
   ImportPreview,
   ImportResult,
+  RectifierConfig,
 } from "../types";
 import PageHeader from "../components/PageHeader";
 import { Button } from "../components/ui/button";
@@ -28,6 +30,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Switch } from "../components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -66,6 +69,23 @@ export default function SettingsPage() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
+  const [rectifier, setRectifier] = useState<RectifierConfig>({
+    enabled: true,
+    request_thinking_signature: true,
+    request_thinking_budget: true,
+    request_media_fallback: true,
+    request_media_heuristic: true,
+  });
+
+  const updateRectifier = (key: keyof RectifierConfig, value: boolean) => {
+    const prev = rectifier[key];
+    setRectifier((r) => ({ ...r, [key]: value }));
+    api.setRectifierConfig(key, value).catch(() => {
+      setRectifier((r) => ({ ...r, [key]: prev }));
+      toast.error("整流器配置保存失败");
+    });
+  };
+
   const handleError = (err: unknown) => {
     console.error(err);
     setError(err instanceof Error ? err.message : String(err));
@@ -93,6 +113,10 @@ export default function SettingsPage() {
     api
       .defaultExportPath()
       .then(setExportPath)
+      .catch(handleError);
+    api
+      .getRectifierConfig()
+      .then(setRectifier)
       .catch(handleError);
   }, []);
 
@@ -280,6 +304,102 @@ export default function SettingsPage() {
             {restarted && (
               <p className="text-sm text-emerald-600">网关已重启。</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 整流器 */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Wrench className="h-4 w-4 text-muted-foreground" />
+            整流器
+          </CardTitle>
+          <CardDescription>
+            Anthropic 兼容性错误自动整流重试与图片降级
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>启用整流器</Label>
+              <p className="text-xs text-muted-foreground">
+                关闭后所有整流与图片降级均不生效
+              </p>
+            </div>
+            <Switch
+              checked={rectifier.enabled}
+              onCheckedChange={(v) => updateRectifier("enabled", v)}
+              aria-label="启用整流器"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>修复 thinking signature 错误</Label>
+              <p className="text-xs text-muted-foreground">
+                删除 thinking 块并重试
+              </p>
+            </div>
+            <Switch
+              checked={rectifier.request_thinking_signature}
+              disabled={!rectifier.enabled}
+              onCheckedChange={(v) =>
+                updateRectifier("request_thinking_signature", v)
+              }
+              aria-label="修复 thinking signature 错误"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>修复 thinking budget 错误</Label>
+              <p className="text-xs text-muted-foreground">
+                调整 budget_tokens 并重试
+              </p>
+            </div>
+            <Switch
+              checked={rectifier.request_thinking_budget}
+              disabled={!rectifier.enabled}
+              onCheckedChange={(v) =>
+                updateRectifier("request_thinking_budget", v)
+              }
+              aria-label="修复 thinking budget 错误"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>图片降级（总开关）</Label>
+              <p className="text-xs text-muted-foreground">
+                开启后对媒体兼容性问题启用图片降级处理
+              </p>
+            </div>
+            <Switch
+              checked={rectifier.request_media_fallback}
+              disabled={!rectifier.enabled}
+              onCheckedChange={(v) =>
+                updateRectifier("request_media_fallback", v)
+              }
+              aria-label="图片降级（总开关）"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>发送前剥离图片（纯文本模型）</Label>
+              <p className="text-xs text-muted-foreground">
+                发送前将 image block 替换为文本标记
+              </p>
+            </div>
+            <Switch
+              checked={rectifier.request_media_heuristic}
+              disabled={!rectifier.enabled || !rectifier.request_media_fallback}
+              onCheckedChange={(v) =>
+                updateRectifier("request_media_heuristic", v)
+              }
+              aria-label="发送前剥离图片（纯文本模型）"
+            />
           </div>
         </CardContent>
       </Card>

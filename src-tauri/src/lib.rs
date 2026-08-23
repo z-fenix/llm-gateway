@@ -154,6 +154,8 @@ pub fn run() {
             commands::security::toggle_custom_security_rule,
             commands::security::delete_custom_security_rule,
             commands::security::get_security_findings,
+            commands::rectifier::get_rectifier_config,
+            commands::rectifier::set_rectifier_config,
             commands::knowledge::create_kb,
             commands::knowledge::list_kbs,
             commands::knowledge::set_kb_status,
