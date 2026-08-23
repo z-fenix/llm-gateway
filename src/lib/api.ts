@@ -15,6 +15,8 @@ import type {
   LogPage,
   LogStats,
   ModelMapEntry,
+  McpServer,
+  McpServerView,
   RagSettings,
   RectifierConfig,
   RequestLog,
@@ -191,5 +193,18 @@ export const api = {
     invoke<SessionMessage[]>("get_session_messages", { traceId }),
   deleteSession: (traceId: string) =>
     invoke<number>("delete_session", { traceId }),
+
+  listMcpServers: () => invoke<McpServerView[]>("list_mcp_servers"),
+  upsertMcpServer: (server: McpServer) =>
+    invoke<McpServer>("upsert_mcp_server", { server }),
+  deleteMcpServer: (id: string) => invoke<void>("delete_mcp_server", { id }),
+  toggleMcpServerEnabled: (id: string, enabled: boolean) =>
+    invoke<void>("toggle_mcp_server_enabled", { id, enabled }),
+  connectMcpServer: (id: string) =>
+    invoke<void>("connect_mcp_server", { id }),
+  disconnectMcpServer: (id: string) =>
+    invoke<void>("disconnect_mcp_server", { id }),
+  testMcpConnection: (id: string) =>
+    invoke<string>("test_mcp_connection", { id }),
 };
 export type { RequestLog };

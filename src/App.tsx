@@ -10,6 +10,7 @@ import KnowledgePage from "./pages/KnowledgePage";
 import SettingsPage from "./pages/SettingsPage";
 import PromptsPage from "./pages/PromptsPage";
 import SessionsPage from "./pages/SessionsPage";
+import McpServersPage from "./pages/McpServersPage";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/prompts" element={<PromptsPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
+        <Route path="/mcp-servers" element={<McpServersPage />} />
       </Route>
     </Routes>
   );

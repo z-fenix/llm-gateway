@@ -292,3 +292,18 @@ export interface SessionMessage {
   request_body: string | null;
   response_body: string | null;
 }
+
+export interface McpServer {
+  id: string;
+  name: string;
+  server_config: any;
+  description: string | null;
+  enabled: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface McpServerView {
+  server: McpServer;
+  connected: boolean;
+}
