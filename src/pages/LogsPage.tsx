@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Layers, List, Search } from "lucide-react";
 import { api } from "../lib/api";
-import type { ApiKey, Channel, LogFilter, LogStats, RequestLog, SecurityFinding, TimeBucket } from "../types";
+import type { ApiKey, Channel, LogFilter, LogStats, RequestLog, SecurityFinding, TimeBucket, UsageRangeSelection } from "../types";
 import LogTrendChart, { type Dimension } from "../components/LogTrendChart";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -16,6 +16,8 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { cn } from "../lib/utils";
+import { getUsageRangePresetLabel, resolveUsageRange } from "../lib/usageRange";
+import { UsageDateRangePicker } from "../components/UsageDateRangePicker";
 
 function prettyJson(s?: string | null): string {
   if (!s) return "(无内容)";
@@ -81,23 +83,15 @@ function FindingsPanel({ logId }: { logId: string }) {
   );
 }
 
-function dateToSeconds(dateStr: string): number {
-  if (!dateStr) return 0;
-  return Math.floor(new Date(`${dateStr}T00:00:00`).getTime() / 1000);
-}
-
 function dateToEndOfDaySeconds(dateStr: string): number {
   if (!dateStr) return 0;
   return Math.floor(new Date(`${dateStr}T23:59:59`).getTime() / 1000);
 }
 
-function formatDateInput(ts: number): string {
-  if (!ts) return "";
-  const d = new Date(ts * 1000);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+// 初始 7d 窗口:默认聚焦近一周,选择器可随时扩大/自定义
+function initialFilter(): LogFilter {
+  const r = resolveUsageRange({ preset: "7d" });
+  return { after: r.startDate, before: r.endDate };
 }
 
 const ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
@@ -249,7 +243,7 @@ function worstRisk(logs: RequestLog[]): string {
 }
 
 export default function LogsPage() {
-  const [filter, setFilter] = useState<LogFilter>({});
+  const [filter, setFilter] = useState<LogFilter>(initialFilter);
   const [page, setPage] = useState(0);
   const [searchNonce, setSearchNonce] = useState(0);
   const [data, setData] = useState<{ items: RequestLog[]; total: number }>({ items: [], total: 0 });
@@ -260,6 +254,8 @@ export default function LogsPage() {
   const [stats, setStats] = useState<LogStats | null>(null);
   const [buckets, setBuckets] = useState<TimeBucket[]>([]);
   const [dimension, setDimension] = useState<Dimension>("calls");
+  const [rangeSel, setRangeSel] = useState<UsageRangeSelection>({ preset: "7d" });
+  const rangeLabel = getUsageRangePresetLabel(rangeSel.preset);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [retentionDays, setRetentionDays] = useState<number>(30);
@@ -321,6 +317,13 @@ export default function LogsPage() {
     setPage(0);
     setSearchNonce((n) => n + 1);
     loadStatsTrend();
+  };
+
+  const onRangeApply = (sel: UsageRangeSelection) => {
+    setRangeSel(sel);
+    const r = resolveUsageRange(sel);
+    updateFilter({ after: r.startDate, before: r.endDate });
+    onSearch();
   };
 
   const successRate = useMemo(() => {
@@ -455,19 +458,10 @@ export default function LogsPage() {
             >
               {STREAM_OPTIONS.map((s) => <option key={s.label} value={s.value === undefined ? "" : String(s.value)}>{s.label}</option>)}
             </select>
-            <Input
-              type="date"
-              className="w-40"
-              aria-label="起始日期"
-              value={formatDateInput(filter.after || 0)}
-              onChange={(e) => updateFilter({ after: e.target.value ? dateToSeconds(e.target.value) : undefined })}
-            />
-            <Input
-              type="date"
-              className="w-40"
-              aria-label="结束日期"
-              value={formatDateInput(filter.before || 0)}
-              onChange={(e) => updateFilter({ before: e.target.value ? dateToEndOfDaySeconds(e.target.value) : undefined })}
+            <UsageDateRangePicker
+              selection={rangeSel}
+              onApply={onRangeApply}
+              triggerLabel={rangeLabel}
             />
             <Button onClick={onSearch}>
               <Search className="h-4 w-4" />

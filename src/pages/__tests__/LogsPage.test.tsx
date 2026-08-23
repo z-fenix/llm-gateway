@@ -171,30 +171,34 @@ describe("LogsPage", () => {
   });
 
   it("时间跨度 ≤48h 时 bucketSecs 为 3600，否则为 86400", async () => {
-    const { container } = render(<LogsPage />);
+    render(<LogsPage />);
     await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
-    // 默认无时间范围，按天
+    // 默认 7d(>48h) → 按天
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
 
-    const dateInputs = container.querySelectorAll('input[type="date"]:not(#cleanup-date)');
-    expect(dateInputs.length).toBe(2);
-    const [afterInput, beforeInput] = Array.from(dateInputs);
-
-    fireEvent.change(afterInput, { target: { value: "2024-01-01" } });
-    fireEvent.change(beforeInput, { target: { value: "2024-01-01" } });
-    fireEvent.click(screen.getByText("查询"));
-
+    // 打开选择器,选 1d(≤48h) → 3600
+    fireEvent.click(screen.getByRole("button", { name: /7d/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "1d" }));
     await waitFor(() =>
       expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "3600")
     );
 
-    fireEvent.change(afterInput, { target: { value: "2024-01-01" } });
-    fireEvent.change(beforeInput, { target: { value: "2024-01-03" } });
-    fireEvent.click(screen.getByText("查询"));
-
+    // 打开选择器,选 7d(>48h) → 86400
+    fireEvent.click(screen.getByRole("button", { name: /1d/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "7d" }));
     await waitFor(() =>
       expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400")
     );
+  });
+
+  it("默认 7d 范围:listLogs 携带 after/before 且跨度约 7 天", async () => {
+    render(<LogsPage />);
+    await waitFor(() => expect(mockedApi.listLogs).toHaveBeenCalled());
+    const call = mockedApi.listLogs.mock.calls[0][0];
+    expect(call.after).toBeDefined();
+    expect(call.before).toBeDefined();
+    expect(call.before! - call.after!).toBeGreaterThan(6 * 86400);
+    expect(call.before! - call.after!).toBeLessThan(7 * 86400 + 3600);
   });
 
   it("删除该日之前需确认并调 deleteLogsBefore", async () => {
