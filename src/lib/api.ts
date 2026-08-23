@@ -26,6 +26,7 @@ import type {
   Stats,
   TestResult,
   TimeBucket,
+  Prompt,
 } from "../types";
 
 export const api = {
@@ -175,5 +176,12 @@ export const api = {
   previewImport: (path: string) => invoke<ImportPreview>("preview_import", { path }),
   importConfig: (path: string, strategy: string) =>
     invoke<ImportResult>("import_config", { path, strategy }),
+
+  listPrompts: () => invoke<Prompt[]>("list_prompts"),
+  upsertPrompt: (id: string | null, name: string, content: string, description: string | null) =>
+    invoke<Prompt>("upsert_prompt", { id, name, content, description }),
+  deletePrompt: (id: string) => invoke<void>("delete_prompt", { id }),
+  enablePrompt: (id: string) => invoke<void>("enable_prompt", { id }),
+  getEnabledPrompt: () => invoke<Prompt | null>("get_enabled_prompt"),
 };
 export type { RequestLog };

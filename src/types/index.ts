@@ -262,3 +262,13 @@ export interface ImportResult {
   skipped: number;
   overwritten: number;
 }
+
+export interface Prompt {
+  id: string;
+  name: string;
+  content: string;
+  description: string | null;
+  enabled: boolean;
+  created_at: number;
+  updated_at: number;
+}
