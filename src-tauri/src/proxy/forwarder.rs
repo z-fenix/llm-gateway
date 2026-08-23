@@ -241,30 +241,23 @@ pub async fn forward_stream(
     Err(last_err.unwrap_or(ForwardError::NoChannel))
 }
 
-async fn try_channel(
+/// 发送一次上游请求，返回 (status, body_text)。Http 级错误返回 ForwardError::Http。
+async fn send_once(
     state: &AppState,
     ch: &Channel,
-    model: &str,
-    chat: &ChatRequest,
-) -> Result<(u16, serde_json::Value, Usage), ForwardError> {
-    let url = upstream_url(
-        &ch.upstream_protocol,
-        &ch.base_url,
-        model,
-        &ch.api_key,
-        chat.stream,
-    );
-    let body = build_upstream_body(chat, &ch.upstream_protocol, model);
+    url: &str,
+    body: &serde_json::Value,
+) -> Result<(u16, String), ForwardError> {
     let mut req = state
         .http
-        .post(&url)
+        .post(url)
         .header("content-type", "application/json")
         .timeout(std::time::Duration::from_secs(ch.timeout_secs as u64));
     if let Some((hname, hval)) = auth_header(&ch.upstream_protocol, &ch.api_key) {
         req = req.header(hname, hval);
     }
     let resp = req
-        .json(&body)
+        .json(body)
         .send()
         .await
         .map_err(|e| ForwardError::Http(e.to_string()))?;
@@ -273,13 +266,18 @@ async fn try_channel(
         .text()
         .await
         .map_err(|e| ForwardError::Http(e.to_string()))?;
-    if status != 200 {
-        return Err(ForwardError::Upstream { status, body: text });
-    }
-    let v: serde_json::Value =
-        serde_json::from_str(&text).unwrap_or(serde_json::json!({"raw": text}));
-    // 非流式：按 upstream_protocol 从 body 提取 usage
-    let usage = match ch.upstream_protocol.as_str() {
+    Ok((status, text))
+}
+
+/// 把上游响应文本解析为 JSON；解析失败时退化为 {"raw": text}。
+fn parse_body(text: &str) -> serde_json::Value {
+    serde_json::from_str(text).unwrap_or(serde_json::json!({"raw": text}))
+}
+
+/// 非流式：按 upstream_protocol 从响应文本提取 usage。
+fn extract_usage(ch: &Channel, text: &str) -> Usage {
+    let v = parse_body(text);
+    match ch.upstream_protocol.as_str() {
         "anthropic-messages" => {
             let u = v.get("usage").cloned().unwrap_or(serde_json::json!({}));
             let mut us = Usage::default();
@@ -304,6 +302,56 @@ async fn try_channel(
             us
         }
         _ => crate::proxy::sse::extract_openai_usage(&v).unwrap_or_default(),
-    };
-    Ok((status, v, usage))
+    }
+}
+
+async fn try_channel(
+    state: &AppState,
+    ch: &Channel,
+    model: &str,
+    chat: &ChatRequest,
+) -> Result<(u16, serde_json::Value, Usage), ForwardError> {
+    let url = upstream_url(
+        &ch.upstream_protocol,
+        &ch.base_url,
+        model,
+        &ch.api_key,
+        chat.stream,
+    );
+    let mut body = build_upstream_body(chat, &ch.upstream_protocol, model);
+    let cfg = state.rectifier.read().clone();
+
+    // 发送前媒体降级（仅 Anthropic 上游）
+    if ch.upstream_protocol == "anthropic-messages" {
+        crate::proxy::rectifier::media::apply_media_prevention(&mut body, model, &cfg);
+    }
+
+    let (status, text) = send_once(state, ch, &url, &body).await?;
+    if status != 200 {
+        // 整流重试（仅 Anthropic 上游）：signature 优先，否则 budget；合计最多一次
+        if ch.upstream_protocol == "anthropic-messages" {
+            let before = body.clone();
+            if crate::proxy::rectifier::thinking_signature::should_rectify_thinking_signature(
+                &text,
+                &cfg,
+            ) {
+                crate::proxy::rectifier::thinking_signature::rectify_anthropic_request(&mut body);
+            } else if crate::proxy::rectifier::thinking_budget::should_rectify_thinking_budget(
+                &text,
+                &cfg,
+            ) {
+                crate::proxy::rectifier::thinking_budget::rectify_thinking_budget(&mut body);
+            }
+            if body != before {
+                let (status2, text2) = send_once(state, ch, &url, &body).await?;
+                if status2 == 200 {
+                    return Ok((status2, parse_body(&text2), extract_usage(ch, &text2)));
+                }
+                // 重试仍失败：返回原始错误，继续 failover
+                return Err(ForwardError::Upstream { status, body: text });
+            }
+        }
+        return Err(ForwardError::Upstream { status, body: text });
+    }
+    Ok((status, parse_body(&text), extract_usage(ch, &text)))
 }

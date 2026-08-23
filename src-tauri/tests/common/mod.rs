@@ -194,3 +194,62 @@ pub async fn spawn_mock_stream(chunks: Vec<String>) -> (String, MockUpstream) {
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     (format!("http://{}", addr), state)
 }
+
+/// 整流器专用 mock：第一次 POST 返回 (first_status, first_body)，第二次返回 (second_status, second_body)。
+/// 仅监听 /v1/messages（Anthropic 上游）。`hits` 记录每次收到的请求体，供断言整流结果。
+#[derive(Clone, Default)]
+pub struct RectifierMock {
+    pub hits: Arc<Mutex<Vec<Value>>>,
+    pub first_status: Arc<Mutex<u16>>,
+    pub first_body: Arc<Mutex<Value>>,
+    pub second_status: Arc<Mutex<u16>>,
+    pub second_body: Arc<Mutex<Value>>,
+}
+
+pub async fn spawn_rectifier_mock(
+    first_status: u16,
+    first_body: Value,
+    second_status: u16,
+    second_body: Value,
+) -> (String, RectifierMock) {
+    let state = RectifierMock {
+        hits: Arc::new(Mutex::new(vec![])),
+        first_status: Arc::new(Mutex::new(first_status)),
+        first_body: Arc::new(Mutex::new(first_body)),
+        second_status: Arc::new(Mutex::new(second_status)),
+        second_body: Arc::new(Mutex::new(second_body)),
+    };
+    let app = Router::new()
+        .route(
+            "/v1/messages",
+            post(move |st: State<RectifierMock>, Json(v): Json<Value>| {
+                let s = st.0.clone();
+                async move {
+                    let count = s.hits.lock().unwrap().len();
+                    s.hits.lock().unwrap().push(v);
+                    let (status, body) = if count == 0 {
+                        (
+                            *s.first_status.lock().unwrap(),
+                            s.first_body.lock().unwrap().clone(),
+                        )
+                    } else {
+                        (
+                            *s.second_status.lock().unwrap(),
+                            s.second_body.lock().unwrap().clone(),
+                        )
+                    };
+                    (
+                        axum::http::StatusCode::from_u16(status).unwrap(),
+                        Json(body),
+                    )
+                }
+            }),
+        )
+        .with_state(state.clone());
+    let listener = tokio::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    (format!("http://{}", addr), state)
+}
