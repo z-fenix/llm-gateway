@@ -4,6 +4,7 @@ pub mod cli;
 pub mod config;
 pub mod knowledge;
 pub mod log;
+pub mod prompt;
 pub mod rectifier;
 pub mod role_route;
 pub mod security;
