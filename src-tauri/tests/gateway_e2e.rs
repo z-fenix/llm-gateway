@@ -168,3 +168,101 @@ async fn failure_paths_persist_request_log() {
     assert!(!log.trace_id.is_empty());
     assert_ne!(log.trace_id, trace_401);
 }
+
+#[tokio::test]
+async fn unmatched_role_requests_logged_as_auto() {
+    let (base, _mock) = common::spawn_mock(200, serde_json::json!({
+        "id":"c1","object":"chat.completion","model":"m",
+        "choices":[{"index":0,"message":{"role":"assistant","content":"hi"},"finish_reason":"stop"}],
+        "usage":{"prompt_tokens":5,"completion_tokens":3,"total_tokens":8}
+    })).await;
+
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(),
+        key: "sk-lgw-auto".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
+
+    let state = AppState::new(db);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-auto")
+        .json(&serde_json::json!({
+            "model":"gpt-4o",   // 不匹配任何角色模式
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.role.as_deref(), Some("auto"));
+    assert_eq!(log.request_model.as_deref(), Some("gpt-4o"));
+    // 未配置 auto 路由 → 走普通调度渠道 c1（唯一启用渠道）
+    assert_eq!(log.channel_id.as_deref(), Some("c1"));
+}
+
+#[tokio::test]
+async fn configured_auto_route_used_for_unmatched() {
+    let (base, _mock) = common::spawn_mock(200, serde_json::json!({
+        "id":"c1","object":"chat.completion","model":"m",
+        "choices":[{"index":0,"message":{"role":"assistant","content":"hi"},"finish_reason":"stop"}],
+        "usage":{"prompt_tokens":5,"completion_tokens":3,"total_tokens":8}
+    })).await;
+
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(),
+        key: "sk-lgw-auto2".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
+    // 已配置 auto 路由 → 未匹配请求应走 auto 渠道
+    repo.upsert_role_route(&RoleRoute {
+        id: "r-auto".into(),
+        role: "auto".into(),
+        channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(),
+        enabled: true,
+        updated_at: 1,
+    })
+    .unwrap();
+
+    let state = AppState::new(db);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-auto2")
+        .json(&serde_json::json!({
+            "model":"gpt-4o",   // 不匹配任何角色模式 → 命中 auto 路由
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send().await.unwrap();
+    assert_eq!(resp.status(), 200);
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.role.as_deref(), Some("auto"));
+    assert_eq!(log.upstream_model.as_deref(), Some("deepseek-v4-flash"));
+}

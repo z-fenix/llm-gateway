@@ -307,11 +307,12 @@ async fn handle(
         }
     };
 
-    // 4. role detection
+    // 4. role detection —— 未匹配任何角色模式时视为 "auto"（占位角色）
     let role = {
         let conn = state.db.conn();
         let conn = conn.lock();
         crate::router::role::detect_role(&conn, &request_model)
+            .or_else(|| Some("auto".to_string()))
     };
 
     // 4. role route
