@@ -333,4 +333,24 @@ describe("LogsPage", () => {
     // 平铺视图下 trace 短名不再作为会话行展示
     expect(screen.queryByText("trace-abc")).not.toBeInTheDocument();
   });
+
+  it("选择预设后 stats/trend 立即用新范围请求(不残留旧 filter)", async () => {
+    render(<LogsPage />);
+    await waitFor(() => expect(mockedApi.getLogTimeseries).toHaveBeenCalled());
+    const firstAfter = mockedApi.getLogTimeseries.mock.calls[0][0].after;
+
+    fireEvent.click(screen.getByRole("button", { name: /7d/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "1d" }));
+
+    await waitFor(() => {
+      expect(mockedApi.getLogTimeseries).toHaveBeenCalledTimes(2);
+    });
+    const [f2, bs2] = mockedApi.getLogTimeseries.mock.calls[1];
+    expect(f2.before! - f2.after!).toBeGreaterThan(86000);
+    expect(f2.before! - f2.after!).toBeLessThan(87000);
+    expect(f2.after).not.toBe(firstAfter);
+    expect(bs2).toBe(3600);
+    expect(mockedApi.getLogStats).toHaveBeenCalledTimes(2);
+    expect(mockedApi.getLogStats.mock.calls[1][0].after).toBe(f2.after);
+  });
 });

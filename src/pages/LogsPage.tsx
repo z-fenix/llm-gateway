@@ -269,14 +269,10 @@ export default function LogsPage() {
     setError(err instanceof Error ? err.message : String(err));
   };
 
-  const bucketSize = useMemo(() => {
-    const after = filter.after;
-    const before = filter.before;
-    if (after && before) {
-      return before - after <= 48 * 3600 ? 3600 : 86400;
-    }
-    return 86400;
-  }, [filter.after, filter.before]);
+  const bucketFor = (f: LogFilter) =>
+    f.after && f.before && f.before - f.after <= 48 * 3600 ? 3600 : 86400;
+
+  const bucketSize = useMemo(() => bucketFor(filter), [filter.after, filter.before]);
 
   const loadList = () => {
     api.listLogs({ ...filter, limit, offset: page * limit })
@@ -284,10 +280,10 @@ export default function LogsPage() {
       .catch(handleError);
   };
 
-  const loadStatsTrend = () => {
+  const loadStatsTrend = (f: LogFilter = filter) => {
     Promise.all([
-      api.getLogStats(filter),
-      api.getLogTimeseries(filter, bucketSize),
+      api.getLogStats(f),
+      api.getLogTimeseries(f, bucketFor(f)),
     ]).then(([statsData, bucketsData]) => {
       setStats(statsData);
       setBuckets(bucketsData);
@@ -313,17 +309,18 @@ export default function LogsPage() {
     setFilter((prev) => ({ ...prev, ...patch }));
   };
 
-  const onSearch = () => {
+  const onSearch = (f?: LogFilter) => {
     setPage(0);
     setSearchNonce((n) => n + 1);
-    loadStatsTrend();
+    loadStatsTrend(f);
   };
 
   const onRangeApply = (sel: UsageRangeSelection) => {
     setRangeSel(sel);
     const r = resolveUsageRange(sel);
+    const next = { ...filter, after: r.startDate, before: r.endDate };
     updateFilter({ after: r.startDate, before: r.endDate });
-    onSearch();
+    onSearch(next);
   };
 
   const successRate = useMemo(() => {
@@ -463,7 +460,7 @@ export default function LogsPage() {
               onApply={onRangeApply}
               triggerLabel={rangeLabel}
             />
-            <Button onClick={onSearch}>
+            <Button onClick={() => onSearch()}>
               <Search className="h-4 w-4" />
               查询
             </Button>
