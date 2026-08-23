@@ -36,10 +36,10 @@ tree-sitter-python = "0.25.0"
 tree-sitter-go = "0.25.0"
 usearch = "2.26.0"
 base64 = "0.23.1"
-rmcp = { version = "3.1.2", features = ["transport-streamable-http-server"] }
+rmcp = { version = "3.1.2", features = ["client", "transport-child-process", "transport-streamable-http-client-reqwest", "transport-streamable-http-server"] }
+http = "1"
 toml = "1.1.4"
 dirs = "6"
 
 [dev-dependencies]
-rmcp = { version = "3.1.2", features = ["client", "transport-streamable-http-client-reqwest"] }
 tempfile = "3"

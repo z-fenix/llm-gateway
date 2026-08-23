@@ -6,6 +6,7 @@ pub mod db;
 pub mod error;
 pub mod knowledge;
 pub mod mcp;
+pub mod mcp_client;
 pub mod protocol;
 pub mod provider;
 pub mod proxy;
@@ -177,6 +178,13 @@ pub fn run() {
             commands::knowledge::search_kb,
             commands::knowledge::get_rag_settings,
             commands::knowledge::set_rag_setting,
+            commands::mcp_server::list_mcp_servers,
+            commands::mcp_server::upsert_mcp_server,
+            commands::mcp_server::delete_mcp_server,
+            commands::mcp_server::toggle_mcp_server_enabled,
+            commands::mcp_server::connect_mcp_server,
+            commands::mcp_server::disconnect_mcp_server,
+            commands::mcp_server::test_mcp_connection,
             commands::config::export_config,
             commands::config::default_export_path,
             commands::config::preview_import,

@@ -5,6 +5,7 @@ use crate::knowledge::settings::RagSettings;
 use crate::proxy::rectifier::RectifierConfig;
 use crate::security::SecuritySettings;
 use parking_lot::RwLock;
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -30,6 +31,8 @@ pub struct AppState {
     pub gateway_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
     /// 应用配置(首选端口等)
     pub app: Arc<RwLock<AppConfig>>,
+    /// 上游 MCP server 活跃连接句柄（id -> handle）
+    pub mcp_clients: Arc<RwLock<HashMap<String, tokio::task::JoinHandle<()>>>>,
 }
 
 impl AppState {
@@ -57,6 +60,7 @@ impl AppState {
             bound_addr: Arc::new(RwLock::new(None)),
             gateway_handle: Arc::new(RwLock::new(None)),
             app: Arc::new(RwLock::new(AppConfig::default())),
+            mcp_clients: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
