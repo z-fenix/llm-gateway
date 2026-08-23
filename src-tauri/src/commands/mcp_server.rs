@@ -54,6 +54,10 @@ pub(crate) fn upsert_mcp_server_with_state(
     }
     server.updated_at = now;
     state.repo.upsert_mcp_server(&server).map_err(|e| e.to_string())?;
+    // 编辑配置后旧连接可能已过期：断开该 id 的活跃连接，避免陈旧连接继续运行。
+    if let Some(handle) = state.mcp_clients.write().remove(&server.id) {
+        handle.abort();
+    }
     Ok(server)
 }
 
@@ -145,10 +149,18 @@ pub(crate) async fn connect_mcp_server_with_state(
         .get_mcp_server(id)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "MCP server 不存在".to_string())?;
-    let handle = mcp_client::spawn_connection(&server.server_config, &server.name,
-    )?;
-    state.mcp_clients.write().insert(id.to_string(), handle);
-    Ok(())
+    let (handle, rx) = mcp_client::spawn_connection(&server.server_config, &server.name)?;
+    match mcp_client::await_handshake(&handle, rx, &server.name).await {
+        Ok(()) => {
+            state.mcp_clients.write().insert(id.to_string(), handle);
+            Ok(())
+        }
+        Err(msg) => {
+            // await_handshake 失败路径已 abort；此处兜底确保 task 不再运行。
+            handle.abort();
+            Err(msg)
+        }
+    }
 }
 
 #[tauri::command]
@@ -201,18 +213,6 @@ mod tests {
         }
     }
 
-    fn _http_server(id: &str, url: &str) -> McpServer {
-        McpServer {
-            id: id.into(),
-            name: "test".into(),
-            server_config: serde_json::json!({ "type": "http", "url": url }),
-            description: None,
-            enabled: false,
-            created_at: 0,
-            updated_at: 0,
-        }
-    }
-
     #[test]
     fn upsert_rejects_stdio_without_command() {
         let db = Db::new_in_memory().unwrap();
@@ -251,14 +251,21 @@ mod tests {
     async fn toggle_enabled_state_sync() {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
-        let server = stdio_server("s1", "echo");
+        // 该命令在任何 OS 上都无法启动 → connect 握手必然失败
+        let server = stdio_server("s1", "this-command-does-not-exist-xyz");
         upsert_mcp_server_with_state(&state, server).unwrap();
 
-        assert!(!state.repo.get_mcp_server("s1").unwrap().unwrap().enabled);
-        toggle_mcp_server_enabled_with_state(&state, "s1".to_string(), true)
+        // 启用时 connect 失败 → toggle 返回 Err，DB enabled 保持 false
+        let err = toggle_mcp_server_enabled_with_state(&state, "s1".to_string(), true)
             .await
-            .unwrap();
-        assert!(state.repo.get_mcp_server("s1").unwrap().unwrap().enabled);
+            .unwrap_err();
+        assert!(
+            err.contains("启动进程失败") || err.contains("连接失败"),
+            "unexpected error: {err}"
+        );
+        assert!(!state.repo.get_mcp_server("s1").unwrap().unwrap().enabled);
+
+        // 禁用路径：DB enabled 翻转为 false
         toggle_mcp_server_enabled_with_state(&state, "s1".to_string(), false)
             .await
             .unwrap();
@@ -283,5 +290,14 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err, "stdio 类型需要 command");
+    }
+
+    #[tokio::test]
+    async fn test_connection_http_without_url_errors() {
+        // 走 spawn_connection 的 http 校验层：无 url 直接返回错误（此前未覆盖）
+        let err = mcp_client::test_connection(&serde_json::json!({ "type": "http" }))
+            .await
+            .unwrap_err();
+        assert_eq!(err, "http 类型需要 url");
     }
 }
