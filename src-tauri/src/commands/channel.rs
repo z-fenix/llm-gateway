@@ -27,7 +27,7 @@ pub fn list_channels(state: State<AppState>) -> Result<Vec<Channel>, String> {
 }
 
 /// 渠道表单校验（前端与后端同一套规则，后端为准）。
-/// 校验 name 非空、base_url 为 http/https、api_key 非空、models 至少 1 个、timeout_secs ≥ 1。
+/// 校验 name 非空、base_url 为 http/https、api_key 非空、models 至少 1 个且每一项 trim 后非空、timeout_secs ≥ 1。
 fn validate_channel(c: &Channel) -> Result<(), String> {
     if c.name.trim().is_empty() {
         return Err("渠道名称不能为空".into());
@@ -43,7 +43,7 @@ fn validate_channel(c: &Channel) -> Result<(), String> {
     if c.api_key.trim().is_empty() {
         return Err("API Key 不能为空".into());
     }
-    if c.models.is_empty() || c.models.iter().all(|m| m.trim().is_empty()) {
+    if c.models.is_empty() || c.models.iter().any(|m| m.trim().is_empty()) {
         return Err("至少需要一个模型".into());
     }
     if c.timeout_secs < 1 {
@@ -373,6 +373,19 @@ mod tests {
         assert!(validate_channel(&c).is_err());
         c.models = vec!["   ".into()];
         assert!(validate_channel(&c).is_err());
+    }
+
+    #[test]
+    fn validate_whitespace_model_entry_rejected() {
+        // 只要有一项 trim 后为空就拒绝，避免空白模型泄漏进 /v1/models 响应
+        let mut c = test_channel("ch1");
+        c.models = vec!["gpt-4o".into(), "   ".into()];
+        assert_eq!(validate_channel(&c), Err("至少需要一个模型".into()));
+        c.models = vec![" gpt-4o ".into(), "\t".into()];
+        assert_eq!(validate_channel(&c), Err("至少需要一个模型".into()));
+        // 正常多模型通过
+        c.models = vec!["gpt-4o".into(), "claude-sonnet".into()];
+        assert!(validate_channel(&c).is_ok());
     }
 
     #[test]

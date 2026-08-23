@@ -172,6 +172,50 @@ async fn unrectifiable_error_returns_original() {
     assert_eq!(log.status_code, Some(400));
 }
 
+/// 整流重试后仍失败：返回原始错误(第一次的 400)，而不是第二次的 500。
+#[tokio::test]
+async fn retry_failure_returns_original_error() {
+    let (mock_base, mock) = common::spawn_rectifier_mock(
+        400,
+        serde_json::json!({
+            "error": {"message": "Invalid 'signature' in 'thinking' block"}
+        }),
+        500,
+        serde_json::json!({"error": {"message": "internal server error"}}),
+    )
+    .await;
+    let (state, addr) = setup(&mock_base, "k4").await;
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/messages", addr))
+        .header("x-api-key", "sk-lgw-k4")
+        .json(&serde_json::json!({
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 1024,
+            "messages": [
+                {"role": "user", "content": [{"type": "text", "text": "hello"}]},
+                {"role": "assistant", "content": [
+                    {"type": "thinking", "thinking": "let me think", "signature": "sig-1"},
+                    {"type": "text", "text": "answer"}
+                ]}
+            ]
+        }))
+        .send()
+        .await
+        .unwrap();
+
+    // 整流后重试了第二次，但重试仍失败 → 返回原始 400 而非第二次的 500
+    assert_eq!(resp.status(), 400, "should return the ORIGINAL 400, not the 500");
+
+    let hits = mock.hits.lock().unwrap();
+    assert_eq!(hits.len(), 2, "should rectify and retry exactly once");
+    drop(hits);
+
+    // 只记录一条日志，状态为原始 400
+    let log = state.repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(400));
+}
+
 /// 纯文本模型(heuristic)的 image block 在发送前被降级为 [Unsupported Image]。
 #[tokio::test]
 async fn media_fallback_strips_images() {

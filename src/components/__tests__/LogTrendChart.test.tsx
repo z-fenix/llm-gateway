@@ -108,8 +108,7 @@ describe("LogTrendChart component (Recharts)", () => {
     expect(screen.getAllByTestId("area")).toHaveLength(6);
   });
 
-  it("chartData 映射: success 按 (calls-error_count)/calls 计算", () => {
-    // baseBucket: calls=10, error_count=1 => 90%
+  it("success 维度渲染绿色面积图", () => {
     render(<LogTrendChart buckets={[baseBucket]} dimension="success" bucketSecs={3600} />);
     expect(screen.getAllByTestId("area")).toHaveLength(1);
   });

@@ -31,7 +31,8 @@ pub fn set_rectifier_config(
         "request_thinking_signature" => cfg.request_thinking_signature = value,
         "request_thinking_budget" => cfg.request_thinking_budget = value,
         "request_media_fallback" => cfg.request_media_fallback = value,
-        _ => cfg.request_media_heuristic = value,
+        "request_media_heuristic" => cfg.request_media_heuristic = value,
+        _ => return Err(format!("invalid rectifier key: {key}")),
     }
     *state.rectifier.write() = cfg;
     if let Ok(store) = app.store("store.bin") {

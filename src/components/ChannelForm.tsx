@@ -158,7 +158,9 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   const submit = () => {
     setAttempted(true);
     if (Object.keys(validateForm(f)).length > 0) return;
-    onSubmit(f as Channel);
+    // 提交前 trim + 过滤空白模型，避免 "   " 之类的条目泄漏进 /v1/models 响应
+    const models = (f.models ?? []).map((m) => m.trim()).filter(Boolean);
+    onSubmit({ ...f, models } as Channel);
   };
 
   return (

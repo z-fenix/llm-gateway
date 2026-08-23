@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { cn } from "../lib/utils";
 import type { TimeBucket } from "../types";
 
 export type Dimension = "calls" | "tokens" | "success" | "risk";
