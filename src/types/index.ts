@@ -289,4 +289,6 @@ export interface SessionMessage {
   status_code: number | null;
   created_at: number;
   error: string | null;
+  request_body: string | null;
+  response_body: string | null;
 }

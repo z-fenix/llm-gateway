@@ -63,6 +63,8 @@ pub(crate) fn get_session_messages_with_state(
             status_code: log.status_code,
             created_at: log.created_at,
             error: log.error,
+            request_body: log.request_body,
+            response_body: log.response_body,
         });
     }
     Ok(out)
@@ -322,9 +324,13 @@ mod tests {
         assert_eq!(messages[0].seq, 1);
         assert_eq!(messages[0].role.as_deref(), Some("user"));
         assert_eq!(messages[0].content, Some("User message text".into()));
+        assert_eq!(messages[0].request_body.as_deref(), Some(req_body));
+        assert_eq!(messages[0].response_body, None);
         assert_eq!(messages[1].seq, 2);
         assert_eq!(messages[1].role.as_deref(), Some("assistant"));
         assert_eq!(messages[1].content, Some("Assistant reply text".into()));
+        assert_eq!(messages[1].request_body, None);
+        assert_eq!(messages[1].response_body.as_deref(), Some(resp_body));
     }
 
     #[test]

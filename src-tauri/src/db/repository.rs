@@ -1544,7 +1544,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT seq, role, status_code, created_at, error FROM request_logs WHERE trace_id=?1 ORDER BY seq ASC",
+            "SELECT seq, role, status_code, created_at, error, request_body, response_body FROM request_logs WHERE trace_id=?1 ORDER BY seq ASC",
         )?;
         let rows = stmt.query_map(params![trace_id], |r| {
             Ok(SessionMessage {
@@ -1554,6 +1554,8 @@ impl Repository {
                 status_code: r.get(2)?,
                 created_at: r.get(3)?,
                 error: r.get(4)?,
+                request_body: r.get(5)?,
+                response_body: r.get(6)?,
             })
         })?;
         let mut out = Vec::new();

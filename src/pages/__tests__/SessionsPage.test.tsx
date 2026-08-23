@@ -40,6 +40,8 @@ const makeMessage = (
   status_code: 200,
   created_at: 1700000000 + seq,
   error: null,
+  request_body: JSON.stringify({ role: "user", content: `request ${seq}` }),
+  response_body: JSON.stringify({ content: `response ${seq}` }),
   ...overrides,
 });
 
@@ -119,6 +121,35 @@ describe("SessionsPage", () => {
 
     expect(screen.getByText("你好")).toBeInTheDocument();
     expect(screen.getByText("你好，有什么可以帮忙？")).toBeInTheDocument();
+  });
+
+  it("展开消息显示请求体与响应体", async () => {
+    mockedApi.listSessions.mockResolvedValue([
+      makeSession("trace-abc", { title: "测试会话" }),
+    ]);
+    mockedApi.getSessionMessages.mockResolvedValue([
+      makeMessage(1, {
+        role: "user",
+        content: "你好",
+        request_body: JSON.stringify({ messages: [{ role: "user", content: "你好" }] }),
+        response_body: JSON.stringify({ choices: [{ message: { content: "你好，有什么可以帮忙？" } }] }),
+      }),
+    ]);
+
+    render(<SessionsPage />);
+    await waitFor(() => expect(screen.getByText("测试会话")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("测试会话"));
+    await waitFor(() => expect(screen.getByText("你好")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("你好"));
+    await waitFor(() => {
+      expect(screen.getByText("请求体")).toBeInTheDocument();
+      expect(screen.getByText("响应体")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/"role": "user"/)).toBeInTheDocument();
+    expect(screen.getByText(/"content": "你好，有什么可以帮忙？"/)).toBeInTheDocument();
   });
 
   it("消息错误显示红色错误指示", async () => {

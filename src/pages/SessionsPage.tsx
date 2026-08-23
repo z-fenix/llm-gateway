@@ -28,6 +28,17 @@ function formatTime(ts: number): string {
   return new Date(ts * 1000).toLocaleString();
 }
 
+function relativeTime(ts: number): string {
+  const seconds = Math.floor((Date.now() - ts * 1000) / 1000);
+  if (seconds < 60) return "刚刚";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} 分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  const days = Math.floor(hours / 24);
+  return `${days} 天前`;
+}
+
 function roleBadgeVariant(role: string | null): "default" | "secondary" | "destructive" | "outline" {
   switch (role?.toLowerCase()) {
     case "user":
@@ -163,8 +174,11 @@ export default function SessionsPage() {
                         <div className="truncate text-sm font-medium text-foreground">
                           {s.title ?? shortTrace(s.trace_id)}
                         </div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          {formatTime(s.last_active)}
+                        <div
+                          className="mt-0.5 text-xs text-muted-foreground"
+                          title={formatTime(s.last_active)}
+                        >
+                          {relativeTime(s.last_active)}
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0">
@@ -256,9 +270,24 @@ export default function SessionsPage() {
                                 status: {m.status_code ?? "-"}
                               </span>
                             </div>
-                            <pre className="max-h-64 overflow-auto rounded-md border border-border bg-card p-3 text-xs">
-                              {prettyJson(m.content)}
-                            </pre>
+                            <div className="space-y-2">
+                              <div>
+                                <div className="mb-1 text-xs font-medium text-muted-foreground">
+                                  请求体
+                                </div>
+                                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-3 text-xs">
+                                  {prettyJson(m.request_body)}
+                                </pre>
+                              </div>
+                              <div>
+                                <div className="mb-1 text-xs font-medium text-muted-foreground">
+                                  响应体
+                                </div>
+                                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-3 text-xs">
+                                  {prettyJson(m.response_body)}
+                                </pre>
+                              </div>
+                            </div>
                             {m.error && (
                               <div className="mt-2 text-xs text-destructive">
                                 {m.error}

@@ -245,6 +245,8 @@ pub struct SessionMessage {
     pub status_code: Option<i64>,
     pub created_at: i64,
     pub error: Option<String>,
+    pub request_body: Option<String>,
+    pub response_body: Option<String>,
 }
 
 #[cfg(test)]
