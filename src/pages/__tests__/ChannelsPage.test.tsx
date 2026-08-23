@@ -70,7 +70,9 @@ describe("ChannelsPage", () => {
     fireEvent.change(screen.getByPlaceholderText("名称"), { target: { value: "新渠道" } });
     fireEvent.change(screen.getByPlaceholderText(/Base URL/), { target: { value: "https://api.deepseek.com" } });
     fireEvent.change(screen.getByPlaceholderText("真实上游 API Key"), { target: { value: "sk-test" } });
-    fireEvent.change(screen.getByPlaceholderText(/支持模型/), { target: { value: "deepseek-chat" } });
+    fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
+    const modelInputs = screen.getAllByPlaceholderText(/模型 ID/);
+    fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
     fireEvent.change(screen.getByPlaceholderText(/超时秒数/), { target: { value: "60" } });
 
     fireEvent.click(screen.getByText("保存"));
