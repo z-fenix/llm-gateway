@@ -323,3 +323,12 @@ export interface SkillView {
   skill: Skill;
   synced: boolean;
 }
+
+export type UsageRangePreset = "today" | "1d" | "7d" | "14d" | "30d" | "custom";
+
+export interface UsageRangeSelection {
+  preset: UsageRangePreset;
+  customStartDate?: number;
+  customEndDate?: number;
+  liveEndTime?: boolean;
+}
