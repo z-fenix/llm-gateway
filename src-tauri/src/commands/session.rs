@@ -13,14 +13,16 @@ pub(crate) fn list_sessions_with_state(state: &AppState) -> Result<Vec<SessionMe
         if session.title.is_some() {
             continue;
         }
-        let messages = get_session_messages_with_state(state, &session.trace_id)?;
-        if let Some(user_msg) = messages.iter().find(|m| {
-            m.role.as_deref() == Some("user")
-                || m.role.as_deref().is_none()
-                || m.role.as_deref() == Some("")
-        }) {
-            if let Some(content) = &user_msg.content {
-                session.title = Some(truncate(content, 80));
+        // Do not abort the whole listing if one trace's enrichment fails.
+        if let Ok(messages) = get_session_messages_with_state(state, &session.trace_id) {
+            if let Some(user_msg) = messages.iter().find(|m| {
+                m.role.as_deref() == Some("user")
+                    || m.role.as_deref().is_none()
+                    || m.role.as_deref() == Some("")
+            }) {
+                if let Some(content) = &user_msg.content {
+                    session.title = Some(truncate(content, 80));
+                }
             }
         }
     }
@@ -83,7 +85,11 @@ fn extract_content(body: Option<&str>, max_len: usize) -> Option<String> {
     if body.is_empty() {
         return None;
     }
-    let json: serde_json::Value = serde_json::from_str(body).ok()?;
+    let json: serde_json::Value = match serde_json::from_str(body) {
+        Ok(v) => v,
+        // Spec/brief: on JSON parse failure fall back to the first 100 chars of the raw body.
+        Err(_) => return Some(truncate(body, 100)),
+    };
 
     // Try messages[0].content (OpenAI/Anthropic request)
     if let Some(content) = json
@@ -117,8 +123,8 @@ fn extract_content(body: Option<&str>, max_len: usize) -> Option<String> {
         }
     }
 
-    // Fallback to raw body truncated
-    Some(truncate(body, max_len))
+    // Fallback to raw body truncated to 100 chars per spec/brief.
+    Some(truncate(body, 100))
 }
 
 fn extract_text_value(value: &serde_json::Value, max_len: usize) -> Option<String> {
@@ -354,6 +360,74 @@ mod tests {
         assert_eq!(messages.len(), 2);
         assert_eq!(messages[0].content, Some("Vision prompt".into()));
         assert_eq!(messages[1].content, Some("Anthropic reply".into()));
+    }
+
+    #[test]
+    fn get_session_messages_falls_back_to_raw_body_on_invalid_json() {
+        let state = setup_state();
+        let raw_body = "this is not json and it is intentionally long enough to test truncation because we want more than one hundred characters in the raw body string";
+        state
+            .repo
+            .insert_log(&make_log(
+                1,
+                "trace-invalid",
+                Some("user"),
+                Some(raw_body),
+                None,
+                1000,
+            ))
+            .unwrap();
+
+        let messages = get_session_messages_with_state(&state, "trace-invalid").unwrap();
+        assert_eq!(messages.len(), 1);
+        let expected = raw_body.chars().take(100).collect::<String>() + "...";
+        assert_eq!(messages[0].content, Some(expected));
+    }
+
+    #[test]
+    fn list_sessions_skips_enrichment_errors() {
+        let state = setup_state();
+        // trace-good has a valid JSON user message.
+        state
+            .repo
+            .insert_log(&make_log(
+                1,
+                "trace-good",
+                Some("user"),
+                Some(r#"{"messages":[{"role":"user","content":"Good title"}]}"#),
+                None,
+                1000,
+            ))
+            .unwrap();
+        // trace-bad has invalid JSON; enrichment should fall back to raw body.
+        state
+            .repo
+            .insert_log(&make_log(
+                2,
+                "trace-bad",
+                Some("user"),
+                Some("not valid json but still a title candidate"),
+                None,
+                2000,
+            ))
+            .unwrap();
+
+        let sessions = list_sessions_with_state(&state).unwrap();
+        assert_eq!(sessions.len(), 2);
+        let good = sessions
+            .iter()
+            .find(|s| s.trace_id == "trace-good")
+            .unwrap();
+        let bad = sessions
+            .iter()
+            .find(|s| s.trace_id == "trace-bad")
+            .unwrap();
+        assert_eq!(good.title, Some("Good title".into()));
+        // The bad trace still gets a title from the raw-body fallback.
+        assert_eq!(
+            bad.title,
+            Some("not valid json but still a title candidate".into())
+        );
     }
 
     #[test]
