@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import LogsPage from "../LogsPage";
 import { api } from "../../lib/api";
@@ -79,7 +80,7 @@ describe("LogsPage", () => {
       { id: "k1", name: "Key A" } as any,
     ]);
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(mockedApi.listChannels).toHaveBeenCalled());
 
     const keywordInput = screen.getByPlaceholderText("搜索 模型/渠道/TraceID/密钥");
@@ -103,7 +104,7 @@ describe("LogsPage", () => {
   });
 
   it("角色筛选下拉包含 auto 选项", async () => {
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText("全部角色")).toBeInTheDocument()
     );
@@ -123,7 +124,7 @@ describe("LogsPage", () => {
       top_api_keys: [["Key A", 40]],
     });
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("128")).toBeInTheDocument());
     expect(screen.getByText(/1,?500/)).toBeInTheDocument();
     expect(screen.getByText(/78\.1%/)).toBeInTheDocument();
@@ -142,7 +143,7 @@ describe("LogsPage", () => {
       },
     ]);
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "calls");
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
@@ -164,7 +165,7 @@ describe("LogsPage", () => {
   });
 
   it("挂载时仅请求一次 listLogs，不重复请求", async () => {
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(mockedApi.listChannels).toHaveBeenCalled());
     expect(mockedApi.listLogs).toHaveBeenCalledTimes(1);
     expect(mockedApi.getLogStats).toHaveBeenCalledTimes(1);
@@ -172,7 +173,7 @@ describe("LogsPage", () => {
   });
 
   it("时间跨度 ≤48h 时 bucketSecs 为 3600，否则为 86400", async () => {
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
     // 默认 7d(>48h) → 按天
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
@@ -193,7 +194,7 @@ describe("LogsPage", () => {
   });
 
   it("默认 7d 范围:listLogs 携带 after/before 且跨度约 7 天", async () => {
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(mockedApi.listLogs).toHaveBeenCalled());
     const call = mockedApi.listLogs.mock.calls[0][0];
     expect(call.after).toBeDefined();
@@ -204,7 +205,7 @@ describe("LogsPage", () => {
 
   it("删除该日之前需确认并调 deleteLogsBefore", async () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("删除该日之前")).toBeInTheDocument());
 
     const dateInput = screen.getByLabelText("清理日期");
@@ -225,7 +226,7 @@ describe("LogsPage", () => {
   });
 
   it("保留天数输入非负校验", async () => {
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("日志保留天数")).toBeInTheDocument());
 
     const retentionInput = screen.getByLabelText("日志保留天数");
@@ -251,7 +252,7 @@ describe("LogsPage", () => {
       items: [makeLog({ id: "l1", trace_id: "trace-abc", created_at: ts })],
     });
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText(new Date(ts * 1000).toLocaleString())).toBeInTheDocument()
     );
@@ -267,7 +268,7 @@ describe("LogsPage", () => {
       ],
     });
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
 
     fireEvent.click(screen.getByText("按会话分组"));
@@ -291,7 +292,7 @@ describe("LogsPage", () => {
       ],
     });
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
     fireEvent.click(screen.getByText("按会话分组"));
 
@@ -307,7 +308,7 @@ describe("LogsPage", () => {
       items: [makeLog({ id: "l1", trace_id: "trace-abc", created_at: 1700000000 })],
     });
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
     fireEvent.click(screen.getByText("按会话分组"));
     fireEvent.click(await screen.findByText("trace-abc"));
@@ -325,7 +326,7 @@ describe("LogsPage", () => {
       items: [makeLog({ id: "l1", trace_id: "trace-abc", created_at: 1700000000 })],
     });
 
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("按会话分组")).toBeInTheDocument());
     fireEvent.click(screen.getByText("按会话分组"));
     await waitFor(() => expect(screen.getByText("trace-abc")).toBeInTheDocument());
@@ -336,7 +337,7 @@ describe("LogsPage", () => {
   });
 
   it("选择预设后 stats/trend 立即用新范围请求(不残留旧 filter)", async () => {
-    render(<LogsPage />);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(mockedApi.getLogTimeseries).toHaveBeenCalled());
     const firstAfter = mockedApi.getLogTimeseries.mock.calls[0][0].after;
 

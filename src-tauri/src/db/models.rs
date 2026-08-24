@@ -122,6 +122,8 @@ pub struct RequestLog {
     pub security_action: String,
     pub sanitized: bool,
     pub blocked_reason: Option<String>,
+    pub session_id: Option<String>,
+    pub session_provider: Option<String>,
     pub created_at: i64,
 }
 

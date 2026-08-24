@@ -42,6 +42,7 @@ export const api = {
   createChannel: (c: Channel) => invoke<Channel>("create_channel", { c }),
   updateChannel: (c: Channel) => invoke<void>("update_channel", { c }),
   deleteChannel: (id: string) => invoke<void>("delete_channel", { id }),
+  duplicateChannel: (id: string) => invoke<Channel>("duplicate_channel", { id }),
   testChannel: (id: string) => invoke<TestResult>("test_channel", { id }),
 
   setModelMap: (channelId: string, sourceModel: string, targetModel: string) =>

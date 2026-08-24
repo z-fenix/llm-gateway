@@ -86,6 +86,8 @@ export interface RequestLog {
   security_action: string;
   sanitized: boolean;
   blocked_reason: string | null;
+  session_id: string | null;
+  session_provider: string | null;
   created_at: number;
 }
 export interface Stats {
@@ -106,6 +108,8 @@ export interface LogFilter {
   api_key_id?: string;
   channel_id?: string;
   role?: string;
+  session_id?: string;
+  session_provider?: string;
   risk_level?: string;
   status?: StatusClass;
   is_stream?: boolean;

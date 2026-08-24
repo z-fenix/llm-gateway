@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SessionsPage from "../SessionsPage";
 import { api } from "../../lib/api";
@@ -42,7 +43,7 @@ describe("SessionsPage", () => {
   });
 
   it("空列表展示空状态", async () => {
-    render(<SessionsPage />);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(mockedApi.listSessions).toHaveBeenCalled());
     expect(screen.getByText("暂无会话")).toBeInTheDocument();
   });
@@ -53,7 +54,7 @@ describe("SessionsPage", () => {
       makeSession({ providerId: "codex", sessionId: "sess-def", title: "会话乙", projectDir: "/repo/b" }),
     ]);
 
-    render(<SessionsPage />);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("会话甲")).toBeInTheDocument());
     expect(screen.getByText("会话乙")).toBeInTheDocument();
     expect(screen.getAllByText("Claude").length).toBeGreaterThan(0);
@@ -67,7 +68,7 @@ describe("SessionsPage", () => {
       makeSession({ providerId: "gemini", title: "Gemini 会话" }),
     ]);
 
-    render(<SessionsPage />);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("Claude 会话")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Gemini" }));
 
@@ -83,7 +84,7 @@ describe("SessionsPage", () => {
       makeSession({ title: "另一个会话" }),
     ]);
 
-    render(<SessionsPage />);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("登录问题排查")).toBeInTheDocument());
 
     const input = screen.getByPlaceholderText("搜索标题 / 项目目录 / 会话 ID");
@@ -102,7 +103,7 @@ describe("SessionsPage", () => {
       makeMessage("assistant", "你好，有什么可以帮忙？"),
     ]);
 
-    render(<SessionsPage />);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("测试会话")).toBeInTheDocument());
 
     fireEvent.click(screen.getByText("测试会话"));
@@ -122,7 +123,7 @@ describe("SessionsPage", () => {
   it("删除走确认对话框并调用 deleteSession", async () => {
     mockedApi.listSessions.mockResolvedValue([makeSession({ title: "待删除" })]);
 
-    render(<SessionsPage />);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("待删除")).toBeInTheDocument());
 
     // 触发会话行的删除按钮

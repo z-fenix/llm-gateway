@@ -35,6 +35,9 @@ pub struct AppState {
     pub mcp_clients: Arc<RwLock<HashMap<String, tokio::task::JoinHandle<()>>>>,
     /// 角色路由熔断器（key = role_route id）
     pub circuit_breakers: Arc<RwLock<HashMap<String, crate::router::breaker::Breaker>>>,
+    /// 本地 CLI session 缓存（用于日志绑定）
+    pub sessions_cache: Arc<RwLock<Vec<crate::session_manager::SessionMeta>>>,
+    pub sessions_cache_at: Arc<RwLock<i64>>,
 }
 
 impl AppState {
@@ -64,6 +67,22 @@ impl AppState {
             app: Arc::new(RwLock::new(AppConfig::default())),
             mcp_clients: Arc::new(RwLock::new(HashMap::new())),
             circuit_breakers: Arc::new(RwLock::new(HashMap::new())),
+            sessions_cache: Arc::new(RwLock::new(Vec::new())),
+            sessions_cache_at: Arc::new(RwLock::new(0)),
         }
+    }
+
+    /// 获取带 TTL 缓存的本地 CLI session 列表（默认 10 秒）。
+    pub fn cached_sessions(&self, home: &std::path::Path) -> Vec<crate::session_manager::SessionMeta> {
+        const TTL_SECS: i64 = 10;
+        let now = chrono::Utc::now().timestamp();
+        let cache_at = *self.sessions_cache_at.read();
+        if now - cache_at < TTL_SECS && !self.sessions_cache.read().is_empty() {
+            return self.sessions_cache.read().clone();
+        }
+        let sessions = crate::session_manager::scan_sessions(home);
+        *self.sessions_cache.write() = sessions.clone();
+        *self.sessions_cache_at.write() = now;
+        sessions
     }
 }

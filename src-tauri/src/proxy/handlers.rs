@@ -30,6 +30,31 @@ pub(crate) fn extract_key(headers: &HeaderMap) -> Option<String> {
     None
 }
 
+fn protocol_str(proto: Protocol) -> &'static str {
+    match proto {
+        Protocol::OpenAI => "openai",
+        Protocol::Anthropic => "anthropic",
+        Protocol::Responses => "responses",
+    }
+}
+
+/// 解析请求应绑定的本地 CLI session。优先从请求体消息取 sessionId 精确匹配，
+/// 否则按协议→provider + 最近活跃时间（±5 分钟）回退匹配。
+fn resolve_log_session(
+    state: &AppState,
+    proto: Protocol,
+    req_body: &serde_json::Value,
+) -> (Option<String>, Option<String>) {
+    let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let sessions = state.cached_sessions(&home);
+    crate::session_manager::resolve_log_session(
+        &sessions,
+        protocol_str(proto),
+        req_body,
+        chrono::Utc::now().timestamp(),
+    )
+}
+
 fn err_response(status: StatusCode, code: &str, trace: &str) -> Response {
     (
         status,
@@ -511,6 +536,7 @@ async fn handle_stream(
             let req_model = request_model.to_string();
             let req_body_masked =
                 crate::security::redact::redact_json_for_logging(req_body).to_string();
+            let req_body_log = req_body.clone();
 
             let acc = Arc::new(Mutex::new(crate::proxy::sse::SseAccumulator::new(
                 usage_protocol,
@@ -593,6 +619,7 @@ async fn handle_stream(
                 );
 
                 let log_id = uuid::Uuid::new_v4().to_string();
+                let (session_id, session_provider) = resolve_log_session(&state2, proto, &req_body_log);
                 if let Err(e) = state2.repo.insert_log(&RequestLog {
                     id: log_id.clone(),
                     seq: 0,
@@ -625,6 +652,8 @@ async fn handle_stream(
                     security_action,
                     sanitized,
                     blocked_reason,
+                    session_id,
+                    session_provider,
                     created_at: chrono::Utc::now().timestamp(),
                 }) {
                     log::error!("failed to insert stream request log: {}", e);
@@ -678,6 +707,7 @@ async fn handle_stream(
                 scan.sanitized,
                 scan.blocked_reason.clone(),
             );
+            let (session_id, session_provider) = resolve_log_session(&state, proto, req_body);
             if let Err(e) = state.repo.insert_log(&RequestLog {
                 id: uuid::Uuid::new_v4().to_string(),
                 seq: 0,
@@ -712,6 +742,8 @@ async fn handle_stream(
                 security_action,
                 sanitized,
                 blocked_reason,
+                session_id,
+                session_provider,
                 created_at: chrono::Utc::now().timestamp(),
             }) {
                 log::error!("failed to insert stream request log: {}", e);
@@ -835,6 +867,7 @@ fn write_log(
             ),
         };
     let log_id = uuid::Uuid::new_v4().to_string();
+    let (session_id, session_provider) = resolve_log_session(state, proto, req_body);
     let log = RequestLog {
         id: log_id.clone(),
         seq: 0,
@@ -868,6 +901,8 @@ fn write_log(
         security_action,
         sanitized,
         blocked_reason,
+        session_id,
+        session_provider,
         created_at: chrono::Utc::now().timestamp(),
     };
     state.repo.insert_log(&log)?;

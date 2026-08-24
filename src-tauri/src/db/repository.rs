@@ -41,6 +41,8 @@ pub struct LogFilter {
     pub risk_level: Option<String>,
     pub status: Option<StatusClass>,
     pub is_stream: Option<bool>,
+    pub session_id: Option<String>,
+    pub session_provider: Option<String>,
     pub after: Option<i64>,
     pub before: Option<i64>,
 }
@@ -104,6 +106,14 @@ fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
     if let Some(v) = filter.is_stream {
         sql.push_str(" AND is_stream = ?");
         values.push((if v { 1i64 } else { 0i64 }).into());
+    }
+    if let Some(v) = &filter.session_id {
+        sql.push_str(" AND session_id = ?");
+        values.push(v.clone().into());
+    }
+    if let Some(v) = &filter.session_provider {
+        sql.push_str(" AND session_provider = ?");
+        values.push(v.clone().into());
     }
     if let Some(v) = filter.after {
         sql.push_str(" AND created_at >= ?");
@@ -380,15 +390,15 @@ impl Repository {
                 r.get(0)
             })?;
         conn.execute(
-            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28)",
+            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30)",
             params![
                 l.id, seq, l.trace_id, l.api_key_id, l.key_name, l.channel_id, l.channel_name,
                 l.role, l.request_model, l.upstream_model, l.protocol, l.status_code,
                 l.input_tokens, l.output_tokens, l.latency_ms, l.is_stream as i64, l.error,
                 l.fallback as i64, l.tool_calls, l.request_body, l.response_body,
                 l.risk_level, l.risk_score, l.risk_summary, l.security_action, l.sanitized as i64,
-                l.blocked_reason, l.created_at
+                l.blocked_reason, l.session_id, l.session_provider, l.created_at
             ],
         )?;
         Ok(())
@@ -483,7 +493,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
         )?;
         let mut rows = stmt.query([])?;
         if let Some(r) = rows.next()? {
@@ -515,7 +525,9 @@ impl Repository {
                 security_action: r.get(24)?,
                 sanitized: r.get::<_, i64>(25)? != 0,
                 blocked_reason: r.get(26)?,
-                created_at: r.get(27)?,
+                session_id: r.get(27)?,
+                session_provider: r.get(28)?,
+                created_at: r.get(29)?,
             }))
         } else {
             Ok(None)
@@ -776,7 +788,7 @@ impl Repository {
         let conn = conn.lock();
         let (where_sql, values) = build_where(filter);
         let sql = format!(
-            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs {} ORDER BY seq DESC LIMIT ? OFFSET ?",
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at FROM request_logs {} ORDER BY seq DESC LIMIT ? OFFSET ?",
             where_sql
         );
         let mut stmt = conn.prepare(&sql)?;
@@ -811,7 +823,9 @@ impl Repository {
                     security_action: r.get(24)?,
                     sanitized: r.get::<_, i64>(25)? != 0,
                     blocked_reason: r.get(26)?,
-                    created_at: r.get(27)?,
+                    session_id: r.get(27)?,
+                    session_provider: r.get(28)?,
+                    created_at: r.get(29)?,
                 })
             },
         )?;
@@ -2175,6 +2189,8 @@ mod tests {
             security_action: "allow".into(),
             sanitized: false,
             blocked_reason: None,
+            session_id: None,
+            session_provider: None,
             created_at,
         }
     }
@@ -2214,6 +2230,8 @@ mod tests {
             security_action: "allow".into(),
             sanitized: false,
             blocked_reason: None,
+            session_id: None,
+            session_provider: None,
             created_at,
         }
     }
@@ -2445,6 +2463,8 @@ mod tests {
             security_action: "block".into(),
             sanitized: true,
             blocked_reason: Some("reason".into()),
+            session_id: None,
+            session_provider: None,
             created_at: 1,
         }
     }
@@ -2718,6 +2738,8 @@ mod tests {
             security_action: "allow".into(),
             sanitized: false,
             blocked_reason: None,
+            session_id: None,
+            session_provider: None,
             created_at,
         }
     }

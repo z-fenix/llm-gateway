@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Layers, List, Search } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
@@ -54,6 +55,29 @@ function actionMarker(action: string, sanitized: boolean): React.ReactNode {
   return null;
 }
 
+function shortSessionId(id?: string | null): string {
+  if (!id) return "";
+  return id.length > 16 ? `${id.slice(0, 16)}…` : id;
+}
+
+function sessionProviderLabel(p?: string | null): string {
+  switch (p) {
+    case "claude": return "Claude";
+    case "codex": return "Codex";
+    case "gemini": return "Gemini";
+    default: return p ?? "";
+  }
+}
+
+function sessionBadgeClass(p?: string | null): string {
+  switch (p) {
+    case "claude": return "bg-purple-100 text-purple-700";
+    case "codex": return "bg-blue-100 text-blue-700";
+    case "gemini": return "bg-teal-100 text-teal-700";
+    default: return "bg-muted text-muted-foreground";
+  }
+}
+
 function FindingsPanel({ logId }: { logId: string }) {
   const [findings, setFindings] = useState<SecurityFinding[] | null>(null);
   useEffect(() => {
@@ -99,6 +123,12 @@ function initialFilter(): LogFilter {
 
 const ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
 const RISK_LEVELS = ["clean", "info", "low", "medium", "high", "critical"];
+const SESSION_PROVIDERS = [
+  { label: "全部", value: "" },
+  { label: "Claude", value: "claude" },
+  { label: "Codex", value: "codex" },
+  { label: "Gemini", value: "gemini" },
+];
 const STATUS_OPTIONS: { label: string; value: LogFilter["status"] }[] = [
   { label: "全部状态", value: undefined },
   { label: "2xx", value: "2xx" },
@@ -118,7 +148,7 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
 ];
 
 const LOG_COLUMNS = [
-  "#", "时间", "密钥", "角色", "请求模型", "上游模型", "渠道", "状态", "风险", "Token", "延迟", "兜底",
+  "#", "时间", "密钥", "角色", "本地会话", "请求模型", "上游模型", "渠道", "状态", "风险", "Token", "延迟", "兜底",
 ];
 
 const selectCls =
@@ -167,6 +197,22 @@ function LogRow({
             "-"
           )}
         </td>
+        <td className="px-4 py-3">
+          {log.session_id ? (
+            <div className="flex flex-col gap-0.5">
+              {log.session_provider && (
+                <span className={cn("w-fit rounded px-1 text-xs", sessionBadgeClass(log.session_provider))}>
+                  {sessionProviderLabel(log.session_provider)}
+                </span>
+              )}
+              <span className="font-mono text-xs text-muted-foreground" title={log.session_id}>
+                {shortSessionId(log.session_id)}
+              </span>
+            </div>
+          ) : (
+            "-"
+          )}
+        </td>
         <td className="px-4 py-3 font-mono text-xs text-foreground">
           {log.request_model ?? "-"}
         </td>
@@ -198,7 +244,7 @@ function LogRow({
       </tr>
       {open && (
         <tr className="border-b border-border bg-muted/50">
-          <td colSpan={12} className="px-4 py-3">
+          <td colSpan={13} className="px-4 py-3">
             <div className="space-y-2">
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="font-mono">TraceID: {log.trace_id}</span>
@@ -268,6 +314,8 @@ export default function LogsPage() {
   const [retentionError, setRetentionError] = useState<string | null>(null);
   const [cleanupDate, setCleanupDate] = useState<string>("");
   const limit = 20;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const handleError = (err: unknown) => {
     console.error(err);
@@ -309,6 +357,23 @@ export default function LogsPage() {
       setRetentionDays(days);
       setRetentionInput(String(days));
     }).catch(handleError);
+  }, []);
+
+  // 从 URL 参数解析 session 筛选（支持从会话页跳转）
+  useEffect(() => {
+    const sid = searchParams.get("session_id");
+    const sp = searchParams.get("session_provider");
+    if (sid || sp) {
+      setFilter((prev) => ({
+        ...prev,
+        session_id: sid || undefined,
+        session_provider: sp || undefined,
+      }));
+      setPage(0);
+      setSearchNonce((n) => n + 1);
+      setSearchParams(new URLSearchParams(), { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 统计与趋势随刷新非ce变化重新加载
@@ -481,6 +546,19 @@ export default function LogsPage() {
             >
               {STREAM_OPTIONS.map((s) => <option key={s.label} value={s.value === undefined ? "" : String(s.value)}>{s.label}</option>)}
             </select>
+            <select
+              className={selectCls}
+              value={filter.session_provider || ""}
+              onChange={(e) => updateFilter({ session_provider: e.target.value || undefined })}
+            >
+              {SESSION_PROVIDERS.map((p) => <option key={p.value || "all"} value={p.value}>{p.label}</option>)}
+            </select>
+            <Input
+              className="w-48"
+              placeholder="Session ID"
+              value={filter.session_id || ""}
+              onChange={(e) => updateFilter({ session_id: e.target.value || undefined })}
+            />
             <UsageDateRangePicker
               selection={rangeSel}
               onApply={onRangeApply}

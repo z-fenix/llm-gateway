@@ -159,6 +159,27 @@ pub async fn test_channel(state: State<'_, AppState>, id: String) -> Result<Test
 }
 
 #[tauri::command]
+pub fn duplicate_channel(state: State<AppState>, id: String) -> Result<Channel, String> {
+    let mut c = state
+        .repo
+        .get_channel(&id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "channel not found".to_string())?;
+    c.id = uuid::Uuid::new_v4().to_string();
+    c.name = format!("{} (副本)", c.name);
+    let now = chrono::Utc::now().timestamp();
+    c.created_at = now;
+    c.updated_at = now;
+    c.total_calls = 0;
+    c.total_tokens = 0;
+    c.success_rate = 1.0;
+    c.avg_latency_ms = 0;
+    state.repo.insert_channel(&c).map_err(|e| e.to_string())?;
+    c.api_key = mask(&c.api_key);
+    Ok(c)
+}
+
+#[tauri::command]
 pub fn set_model_map(
     state: State<AppState>,
     channel_id: String,

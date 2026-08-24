@@ -160,6 +160,72 @@ fn delete_session_with_roots(
     ))
 }
 
+/// 将网关请求协议映射到本地 session provider id。
+pub fn session_provider_from_protocol(protocol: &str) -> Option<&'static str> {
+    match protocol {
+        "anthropic" => Some("claude"),
+        "openai" | "responses" => Some("codex"),
+        _ => None,
+    }
+}
+
+/// 按 sessionId 精确匹配本地 session。
+pub fn find_session_by_id<'a>(
+    sessions: &'a [SessionMeta],
+    provider_id: &str,
+    session_id: &str,
+) -> Option<&'a SessionMeta> {
+    sessions
+        .iter()
+        .find(|s| s.provider_id == provider_id && s.session_id == session_id)
+}
+
+/// 按时间邻近回退匹配：取同 provider 中 last_active/created 与 ts 最接近的 session。
+pub fn match_session_by_time<'a>(
+    sessions: &'a [SessionMeta],
+    provider_id: &str,
+    ts: i64,
+    window_secs: i64,
+) -> Option<&'a SessionMeta> {
+    let mut best: Option<&SessionMeta> = None;
+    let mut best_diff = i64::MAX;
+    for s in sessions {
+        if s.provider_id != provider_id {
+            continue;
+        }
+        let s_ts = s.last_active_at.or(s.created_at).unwrap_or(0);
+        let diff = (s_ts - ts).abs();
+        if diff <= window_secs && diff < best_diff {
+            best = Some(s);
+            best_diff = diff;
+        }
+    }
+    best
+}
+
+/// 为请求日志解析应绑定的 session：优先从请求体消息里取 sessionId 精确匹配，
+/// 未命中时按协议→provider + 最近活跃时间回退匹配。
+pub fn resolve_log_session(
+    sessions: &[SessionMeta],
+    protocol: &str,
+    raw_body: &serde_json::Value,
+    ts: i64,
+) -> (Option<String>, Option<String>) {
+    let provider = match session_provider_from_protocol(protocol) {
+        Some(p) => p,
+        None => return (None, None),
+    };
+    if let Some(sid) = crate::protocol::types::extract_session_id(raw_body) {
+        if let Some(s) = find_session_by_id(sessions, provider, &sid) {
+            return (Some(s.session_id.clone()), Some(s.provider_id.clone()));
+        }
+    }
+    match match_session_by_time(sessions, provider, ts, 300) {
+        Some(s) => (Some(s.session_id.clone()), Some(s.provider_id.clone())),
+        None => (None, None),
+    }
+}
+
 fn provider_roots(provider_id: &str) -> Result<Vec<PathBuf>, String> {
     let home = dirs::home_dir().ok_or_else(|| "无法确定用户主目录".to_string())?;
     let roots = match provider_id {
@@ -317,5 +383,73 @@ mod tests {
             outcomes[2].error.as_deref(),
             Some("Session was not deleted")
         );
+    }
+
+    fn sess(provider_id: &str, session_id: &str, ts: i64) -> SessionMeta {
+        SessionMeta {
+            provider_id: provider_id.to_string(),
+            session_id: session_id.to_string(),
+            title: None,
+            summary: None,
+            project_dir: None,
+            created_at: Some(ts),
+            last_active_at: Some(ts),
+            source_path: None,
+            resume_command: None,
+        }
+    }
+
+    #[test]
+    fn resolve_log_session_prefers_session_id_exact_match() {
+        let ts = 1_000_000;
+        let sessions = vec![
+            sess("claude", "session-abc", ts),
+            sess("claude", "other", ts + 10),
+        ];
+        let body = serde_json::json!({
+            "model": "claude-sonnet-4",
+            "messages": [
+                {"role": "user", "content": "hi", "sessionId": "session-abc"}
+            ]
+        });
+        let (sid, provider) = resolve_log_session(&sessions, "anthropic", &body, ts + 3600);
+        assert_eq!(sid.as_deref(), Some("session-abc"));
+        assert_eq!(provider.as_deref(), Some("claude"));
+    }
+
+    #[test]
+    fn resolve_log_session_falls_back_to_time_proximity() {
+        let ts = 1_000_000;
+        let sessions = vec![
+            sess("codex", "codex-recent", ts + 30),
+            sess("codex", "codex-old", ts - 400),
+        ];
+        let body = serde_json::json!({"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]});
+        let (sid, provider) = resolve_log_session(&sessions, "openai", &body, ts);
+        assert_eq!(sid.as_deref(), Some("codex-recent"));
+        assert_eq!(provider.as_deref(), Some("codex"));
+    }
+
+    #[test]
+    fn resolve_log_session_ignores_outside_time_window() {
+        let ts = 1_000_000;
+        let sessions = vec![sess("claude", "far", ts - 400)];
+        let body = serde_json::json!({"model": "claude-opus", "messages": []});
+        let (sid, provider) = resolve_log_session(&sessions, "anthropic", &body, ts);
+        assert_eq!(sid, None);
+        assert_eq!(provider, None);
+    }
+
+    #[test]
+    fn resolve_log_session_extracts_from_input_array() {
+        let ts = 1_000_000;
+        let sessions = vec![sess("codex", "resp-session", ts)];
+        let body = serde_json::json!({
+            "model": "gpt-4o",
+            "input": [{"type": "message", "role": "user", "content": "hi", "sessionId": "resp-session"}]
+        });
+        let (sid, provider) = resolve_log_session(&sessions, "responses", &body, ts + 10);
+        assert_eq!(sid.as_deref(), Some("resp-session"));
+        assert_eq!(provider.as_deref(), Some("codex"));
     }
 }

@@ -10,6 +10,7 @@ vi.mock("../../lib/api", () => ({
     createChannel: vi.fn().mockResolvedValue({ id: "c-new" }),
     updateChannel: vi.fn().mockResolvedValue(undefined),
     deleteChannel: vi.fn().mockResolvedValue(undefined),
+    duplicateChannel: vi.fn().mockResolvedValue(undefined),
     testChannel: vi.fn().mockResolvedValue({ ok: true, latency_ms: 120, error: null }),
     getModelMap: vi.fn().mockResolvedValue([]),
     setModelMap: vi.fn().mockResolvedValue(undefined),
@@ -47,6 +48,7 @@ describe("ChannelsPage", () => {
     mockedApi.createChannel.mockResolvedValue(channel("c-new"));
     mockedApi.updateChannel.mockResolvedValue(undefined);
     mockedApi.deleteChannel.mockResolvedValue(undefined);
+    mockedApi.duplicateChannel.mockResolvedValue(undefined);
     mockedApi.testChannel.mockResolvedValue({ ok: true, latency_ms: 120, error: null });
     mockedApi.getModelMap.mockResolvedValue([]);
     mockedApi.setModelMap.mockResolvedValue(undefined);
@@ -68,12 +70,12 @@ describe("ChannelsPage", () => {
     expect(await screen.findByRole("heading", { name: "新建渠道" })).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("名称"), { target: { value: "新渠道" } });
-    fireEvent.change(screen.getByPlaceholderText(/Base URL/), { target: { value: "https://api.deepseek.com" } });
+    fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: "https://api.deepseek.com" } });
     fireEvent.change(screen.getByPlaceholderText("真实上游 API Key"), { target: { value: "sk-test" } });
     fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
     const modelInputs = screen.getAllByPlaceholderText(/模型 ID/);
     fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
-    fireEvent.change(screen.getByPlaceholderText(/超时秒数/), { target: { value: "60" } });
+    fireEvent.change(screen.getByLabelText("超时秒数"), { target: { value: "60" } });
 
     fireEvent.click(screen.getByText("保存"));
 
@@ -104,8 +106,8 @@ describe("ChannelsPage", () => {
     ]);
     render(<ChannelsPage />);
     await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
-    expect(screen.getByText("启用")).toBeInTheDocument();
-    expect(screen.getByText("禁用")).toBeInTheDocument();
+    expect(screen.getAllByText("启用").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("禁用").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getAllByRole("button", { name: "测试" })[0]);
     await waitFor(() => expect(mockedApi.testChannel).toHaveBeenCalledWith("c1"));

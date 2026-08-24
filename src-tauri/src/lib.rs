@@ -131,6 +131,7 @@ pub fn run() {
             commands::channel::create_channel,
             commands::channel::update_channel,
             commands::channel::delete_channel,
+            commands::channel::duplicate_channel,
             commands::channel::test_channel,
             commands::channel::set_model_map,
             commands::channel::delete_model_map,

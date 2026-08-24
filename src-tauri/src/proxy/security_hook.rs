@@ -87,6 +87,11 @@ pub async fn inspect_request(
 
     match scan.action {
         SecurityAction::Block => {
+            let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+            let sessions = state.cached_sessions(&home);
+            let ts = chrono::Utc::now().timestamp();
+            let (session_id, session_provider) =
+                crate::session_manager::resolve_log_session(&sessions, proto_str, chat_body, ts);
             let log = RequestLog {
                 id: uuid::Uuid::new_v4().to_string(),
                 seq: 0,
@@ -115,7 +120,9 @@ pub async fn inspect_request(
                 security_action: scan.action.as_str().to_string(),
                 sanitized: false,
                 blocked_reason: scan.blocked_reason.clone(),
-                created_at: chrono::Utc::now().timestamp(),
+                session_id,
+                session_provider,
+                created_at: ts,
             };
             if let Err(e) = state.repo.insert_log(&log) {
                 log::error!("failed to insert block request log: {}", e);
@@ -305,6 +312,8 @@ mod tests {
             security_action: "block".to_string(),
             sanitized: false,
             blocked_reason: Some("blocked".to_string()),
+            session_id: None,
+            session_provider: None,
             created_at: chrono::Utc::now().timestamp(),
         };
         state.repo.insert_log(&log).unwrap();

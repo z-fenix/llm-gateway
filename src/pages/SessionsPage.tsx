@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { MessagesSquare, Search, Trash2 } from "lucide-react";
+import { MessagesSquare, Search, Trash2, ScrollText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import type { SessionMeta, SessionMessage } from "../types";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
@@ -98,6 +99,7 @@ export default function SessionsPage() {
   const [pendingDelete, setPendingDelete] = useState<SessionMeta | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [secs, setSecs] = useRefreshInterval("sessions-refresh");
+  const navigate = useNavigate();
 
   const handleError = (err: unknown) => {
     console.error(err);
@@ -287,6 +289,19 @@ export default function SessionsPage() {
                         ) : null}
                       </div>
                     </button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="查看日志"
+                      className="mr-2 shrink-0 text-muted-foreground hover:text-primary"
+                      onClick={() =>
+                        navigate(
+                          `/logs?session_id=${encodeURIComponent(s.sessionId)}&session_provider=${encodeURIComponent(s.providerId)}`
+                        )
+                      }
+                    >
+                      <ScrollText className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

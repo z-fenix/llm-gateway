@@ -6,6 +6,25 @@ pub struct ChatMessage {
     pub content: serde_json::Value,
 }
 
+/// 从原始请求体中提取第一个消息级 sessionId（扫描 messages / input 数组）。
+/// 用于 Claude Code 等客户端在消息对象里携带 `sessionId` 的场景。
+pub fn extract_session_id(body: &serde_json::Value) -> Option<String> {
+    let arrays = [
+        body.get("messages").and_then(|m| m.as_array()),
+        body.get("input").and_then(|i| i.as_array()),
+    ];
+    for arr in arrays.into_iter().flatten() {
+        for item in arr {
+            if let Some(sid) = item.get("sessionId").and_then(|v| v.as_str()) {
+                if !sid.is_empty() {
+                    return Some(sid.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatRequest {
     pub model: String,

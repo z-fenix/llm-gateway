@@ -11,6 +11,8 @@ pub struct CommandLogFilter {
     pub api_key_id: Option<String>,
     pub channel_id: Option<String>,
     pub role: Option<String>,
+    pub session_id: Option<String>,
+    pub session_provider: Option<String>,
     pub risk_level: Option<String>,
     pub status: Option<String>,
     pub is_stream: Option<bool>,
@@ -27,6 +29,8 @@ impl CommandLogFilter {
             api_key_id: self.api_key_id.clone(),
             channel_id: self.channel_id.clone(),
             role: self.role.clone(),
+            session_id: self.session_id.clone(),
+            session_provider: self.session_provider.clone(),
             risk_level: self.risk_level.clone(),
             status: self.status.as_ref().and_then(|s| match s.as_str() {
                 "2xx" => Some(StatusClass::Success),
