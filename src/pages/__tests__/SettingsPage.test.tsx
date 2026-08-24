@@ -26,6 +26,9 @@ vi.mock("../../lib/api", () => ({
       backup_path: null,
       env_instructions: null,
     }),
+    mergeGatewayEnv: vi.fn().mockResolvedValue(
+      '{"env":{"A":"1","ANTHROPIC_BASE_URL":"http://127.0.0.1:8777","ANTHROPIC_AUTH_TOKEN":"k1"}}'
+    ),
     listApiKeys: vi.fn().mockResolvedValue([{ id: "k1", name: "默认密钥" }]),
     defaultExportPath: vi.fn().mockResolvedValue("C:/export.json"),
     exportConfig: vi.fn().mockResolvedValue(100),
@@ -199,6 +202,30 @@ describe("SettingsPage", () => {
         "claude_code",
         '{"env":{"A":"2"}}'
       )
+    );
+  });
+
+  it("设置当前网关仅改写 env 变量并回填编辑框", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑配置" }));
+    const textarea = await screen.findByLabelText("CLI 配置 JSON");
+
+    // 选择 API 密钥并点击“设置当前网关”
+    fireEvent.click(screen.getByRole("combobox", { name: "编辑器 API 密钥" }));
+    fireEvent.click(await screen.findByRole("option", { name: "默认密钥" }));
+    fireEvent.click(screen.getByRole("button", { name: "设置当前网关" }));
+
+    await waitFor(() =>
+      expect(mockedApi.mergeGatewayEnv).toHaveBeenCalledWith(
+        '{"env":{"A":"1"}}',
+        "k1"
+      )
+    );
+    expect(textarea).toHaveValue(
+      '{"env":{"A":"1","ANTHROPIC_BASE_URL":"http://127.0.0.1:8777","ANTHROPIC_AUTH_TOKEN":"k1"}}'
     );
   });
 

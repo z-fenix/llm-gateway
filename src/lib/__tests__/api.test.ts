@@ -22,13 +22,21 @@ describe("api invoke 参数键（camelCase 契约）", () => {
     expect(invoke).toHaveBeenCalledWith("update_quota", { id: "id1", quotaTotal: 100 });
   });
 
-  it("setRoleRoute → channelId/targetModel", async () => {
-    await api.setRoleRoute("r", "cid", "m");
-    expect(invoke).toHaveBeenCalledWith("set_role_route", {
-      role: "r",
-      channelId: "cid",
-      targetModel: "m",
-    });
+  it("upsertRoleRoute → route", async () => {
+    const route = {
+      id: "",
+      role: "sonnet",
+      channel_id: "c1",
+      target_model: "m",
+      priority: 0,
+      weight: 1,
+      breaker_max_failures: 5,
+      breaker_cooldown_secs: 60,
+      enabled: true,
+      updated_at: 0,
+    };
+    await api.upsertRoleRoute(route);
+    expect(invoke).toHaveBeenCalledWith("upsert_role_route", { route });
   });
 
   it("setFallback → channelId", async () => {

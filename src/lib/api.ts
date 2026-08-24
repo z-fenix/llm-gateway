@@ -23,6 +23,7 @@ import type {
   RetrievedChunk,
   RolePattern,
   RoleRoute,
+  BreakerStatus,
   SecurityFinding,
   SecuritySettings,
   SessionMeta,
@@ -33,6 +34,7 @@ import type {
   Prompt,
   Skill,
   SkillView,
+  InstalledSkill,
 } from "../types";
 
 export const api = {
@@ -61,9 +63,10 @@ export const api = {
     invoke<void>("update_api_key", { id, name, quotaTotal }),
 
   listRoleRoutes: () => invoke<RoleRoute[]>("list_role_routes"),
-  setRoleRoute: (role: string, channelId: string, targetModel: string) =>
-    invoke<void>("set_role_route", { role, channelId, targetModel }),
-  deleteRoleRoute: (role: string) => invoke<void>("delete_role_route", { role }),
+  upsertRoleRoute: (route: RoleRoute) =>
+    invoke<void>("upsert_role_route", { route }),
+  deleteRoleRoute: (id: string) => invoke<void>("delete_role_route", { id }),
+  getBreakerStatus: () => invoke<BreakerStatus[]>("get_breaker_status"),
   listRolePatterns: () => invoke<RolePattern[]>("list_role_patterns"),
   upsertRolePattern: (p: RolePattern) =>
     invoke<void>("upsert_role_pattern", { p }),
@@ -76,8 +79,8 @@ export const api = {
   listLogs: (filter: LogFilter) => invoke<LogPage>("list_logs", { filter }),
   getLogStats: (filter: LogFilter) =>
     invoke<LogStats>("get_log_stats", { filter }),
-  getLogTimeseries: (filter: LogFilter, bucket: number) =>
-    invoke<TimeBucket[]>("get_log_timeseries", { filter, bucket }),
+  getLogTimeseries: (filter: LogFilter, bucket: number, tzOffsetSecs?: number) =>
+    invoke<TimeBucket[]>("get_log_timeseries", { filter, bucket, tzOffsetSecs }),
   deleteLogsBefore: (before: number) =>
     invoke<number>("delete_logs_before", { before }),
   clearLogs: () => invoke<number>("clear_logs"),
@@ -177,6 +180,8 @@ export const api = {
   readCliConfig: (target: string) => invoke<string>("read_cli_config", { target }),
   writeCliConfigContent: (target: string, jsonContent: string) =>
     invoke<CliWriteResult>("write_cli_config_content", { target, jsonContent }),
+  mergeGatewayEnv: (jsonContent: string, apiKeyId: string) =>
+    invoke<string>("merge_gateway_env", { jsonContent, apiKeyId }),
   exportConfig: (path: string) => invoke<number>("export_config", { path }),
   defaultExportPath: () => invoke<string>("default_export_path"),
   previewImport: (path: string) => invoke<ImportPreview>("preview_import", { path }),
@@ -191,10 +196,10 @@ export const api = {
   getEnabledPrompt: () => invoke<Prompt | null>("get_enabled_prompt"),
 
   listSessions: () => invoke<SessionMeta[]>("list_sessions"),
-  getSessionMessages: (traceId: string) =>
-    invoke<SessionMessage[]>("get_session_messages", { traceId }),
-  deleteSession: (traceId: string) =>
-    invoke<number>("delete_session", { traceId }),
+  getSessionMessages: (providerId: string, sourcePath: string) =>
+    invoke<SessionMessage[]>("get_session_messages", { providerId, sourcePath }),
+  deleteSession: (providerId: string, sessionId: string, sourcePath: string) =>
+    invoke<boolean>("delete_session", { providerId, sessionId, sourcePath }),
 
   listMcpServers: () => invoke<McpServerView[]>("list_mcp_servers"),
   upsertMcpServer: (server: McpServer) =>
@@ -214,5 +219,10 @@ export const api = {
   deleteSkill: (id: string) => invoke<void>("delete_skill", { id }),
   toggleSkillEnabled: (id: string, enabled: boolean) =>
     invoke<void>("toggle_skill_enabled", { id, enabled }),
+  listInstalledSkills: () => invoke<InstalledSkill[]>("list_installed_skills"),
+  importInstalledSkill: (directory: string) =>
+    invoke<Skill>("import_installed_skill", { directory }),
+  syncSkillMcp: (directory: string) =>
+    invoke<number>("sync_skill_mcp", { directory }),
 };
 export type { RequestLog };

@@ -55,8 +55,26 @@ pub struct RoleRoute {
     pub role: String,
     pub channel_id: String,
     pub target_model: String,
+    #[serde(default)]
+    pub priority: i64,
+    #[serde(default = "default_weight")]
+    pub weight: i64,
+    #[serde(default = "default_breaker_max_failures")]
+    pub breaker_max_failures: i64,
+    #[serde(default = "default_breaker_cooldown_secs")]
+    pub breaker_cooldown_secs: i64,
     pub enabled: bool,
     pub updated_at: i64,
+}
+
+fn default_weight() -> i64 {
+    1
+}
+fn default_breaker_max_failures() -> i64 {
+    5
+}
+fn default_breaker_cooldown_secs() -> i64 {
+    60
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -225,28 +243,6 @@ pub struct McpServer {
     pub enabled: bool,
     pub created_at: i64,
     pub updated_at: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SessionMeta {
-    pub trace_id: String,
-    pub title: Option<String>,
-    pub first_active: i64,
-    pub last_active: i64,
-    pub message_count: i64,
-    pub roles: Vec<(String, i64)>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SessionMessage {
-    pub seq: i64,
-    pub role: Option<String>,
-    pub content: Option<String>,
-    pub status_code: Option<i64>,
-    pub created_at: i64,
-    pub error: Option<String>,
-    pub request_body: Option<String>,
-    pub response_body: Option<String>,
 }
 
 #[cfg(test)]

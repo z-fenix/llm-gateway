@@ -86,6 +86,8 @@ A request enters through `proxy::handlers` and flows through these stages:
 - `provider::adapter`: protocol-specific upstream URL, auth header, and request-body construction.
 - `proxy::sse`: SSE streaming parser/accumulator; extracts usage and generated text for logging.
 - `security`: risk levels (`Clean` to `Critical`), actions (`Allow`/`Warn`/`Redact`/`Block`), builtin/custom rules, scanner, and redaction.
+- `security::crypto`: AES-256-GCM 静态加密（`lgwe:v1:` 前缀 blob），主密钥存系统凭据库（Windows 凭据管理器），`Repository` 落库时自动加密渠道 `api_key` 与 API 密钥 `key`（认证改用 `key_hash`）。
+- `session_manager`: 扫描本地 CLI 会话文件（Claude `~/.claude/projects/*/*.jsonl`、Codex `~/.codex/sessions`、Gemini `~/.gemini/tmp/*/chats`），提供列表/加载/删除。命令在 `commands::session`。
 - `knowledge`: chunking with tree-sitter, embedding via an upstream channel, usearch vector index on disk, retrieval, and RAG injection.
 - `mcp`: Streamable HTTP MCP server exposing knowledge-base tools, protected by API-key auth.
 - `mcp_client`: upstream MCP server *client* connections (stdio child-process + streamable-http), kept alive as background tasks in `AppState.mcp_clients`; a handle implies a completed handshake (connect awaits the handshake outcome).
@@ -94,7 +96,7 @@ A request enters through `proxy::handlers` and flows through these stages:
 
 ### Persistence
 
-- Runtime data lives in SQLite (`app_data_dir/llm-gateway.db`). Schema migrations are in `src-tauri/migrations/` and applied on startup.
+- Runtime data lives in SQLite (`app_data_dir/llm-gateway.db`). Schema migrations are in `src-tauri/migrations/` and applied on startup. Channel `api_key` 与 `api_keys.key` 经 AES-256-GCM 加密落库（主密钥见 `security::crypto`）。
 - Settings (security, RAG, fallback, preferred port) are persisted through `tauri-plugin-store` in `app_data_dir/store.bin`.
 - Knowledge-base vector indexes are stored in `app_data_dir/kb/`.
 
@@ -110,6 +112,8 @@ A request enters through `proxy::handlers` and flows through these stages:
 - Pages: Dashboard, Channels, API Keys, Role Routes, Security, Logs, Knowledge, Settings, Prompts, Sessions, MCP Servers, Skills.
 - `src/lib/api.ts` is the typed wrapper around Tauri invoke commands; `src/types/index.ts` mirrors the Rust models.
 - `src/lib/usageRange.ts` + `src/components/UsageDateRangePicker.tsx`: cc-switch-style trend date-range selection (presets 当天/1d/7d/14d/30d + custom calendar with live end) used by the Logs page (default 7d) and Dashboard trend (default today).
+- `src/lib/useRefreshInterval.ts` + `src/components/RefreshControls.tsx`: configurable auto-refresh (关闭/5s/10s/30s/60s) + manual refresh on Dashboard/Logs/Sessions pages.
+- `src/pages/SessionsPage.tsx`: cc-switch-style session manager (provider tabs, message timeline, delete).
 - UI text is mostly in Chinese to match the original `cc-switch` style.
 
 ## Conventions worth knowing

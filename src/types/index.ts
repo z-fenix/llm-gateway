@@ -34,8 +34,17 @@ export interface RoleRoute {
   role: string;
   channel_id: string;
   target_model: string;
+  priority: number;
+  weight: number;
+  breaker_max_failures: number;
+  breaker_cooldown_secs: number;
   enabled: boolean;
   updated_at: number;
+}
+export interface BreakerStatus {
+  route_id: string;
+  state: "closed" | "open" | "half_open";
+  failures: number;
 }
 export interface ModelMapEntry {
   channel_id: string;
@@ -274,23 +283,21 @@ export interface Prompt {
 }
 
 export interface SessionMeta {
-  trace_id: string;
-  title: string | null;
-  first_active: number;
-  last_active: number;
-  message_count: number;
-  roles: [string, number][];
+  providerId: string;
+  sessionId: string;
+  title?: string | null;
+  summary?: string | null;
+  projectDir?: string | null;
+  createdAt?: number | null;
+  lastActiveAt?: number | null;
+  sourcePath?: string | null;
+  resumeCommand?: string | null;
 }
 
 export interface SessionMessage {
-  seq: number;
-  role: string | null;
-  content: string | null;
-  status_code: number | null;
-  created_at: number;
-  error: string | null;
-  request_body: string | null;
-  response_body: string | null;
+  role: string;
+  content: string;
+  ts?: number | null;
 }
 
 export interface McpServer {
@@ -321,6 +328,22 @@ export interface Skill {
 
 export interface SkillView {
   skill: Skill;
+  synced: boolean;
+}
+
+export interface McpDecl {
+  name: string;
+  config: any;
+}
+
+export interface InstalledSkill {
+  directory: string;
+  name: string | null;
+  description: string | null;
+  version: string | null;
+  mcp_servers: McpDecl[];
+  in_db: boolean;
+  enabled: boolean;
   synced: boolean;
 }
 

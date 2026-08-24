@@ -1,6 +1,6 @@
 mod common;
 
-use llm_gateway_lib::db::models::{ApiKey, Channel};
+use llm_gateway_lib::db::models::{ApiKey, Channel, RoleRoute};
 use llm_gateway_lib::db::repository::Repository;
 use llm_gateway_lib::db::Db;
 use llm_gateway_lib::protocol::openai;
@@ -57,6 +57,29 @@ fn ok_openai_body() -> serde_json::Value {
     })
 }
 
+fn role_route(
+    id: &str,
+    role: &str,
+    channel_id: &str,
+    model: &str,
+    priority: i64,
+    weight: i64,
+    max_failures: i64,
+) -> RoleRoute {
+    RoleRoute {
+        id: id.into(),
+        role: role.into(),
+        channel_id: channel_id.into(),
+        target_model: model.into(),
+        priority,
+        weight,
+        breaker_max_failures: max_failures,
+        breaker_cooldown_secs: 60,
+        enabled: true,
+        updated_at: 1,
+    }
+}
+
 fn chat() -> llm_gateway_lib::protocol::types::ChatRequest {
     openai::request_to_chat(&serde_json::json!({
         "model":"gpt-4o","messages":[{"role":"user","content":"hi"}]
@@ -72,19 +95,16 @@ async fn role_route_hits_bound_channel() {
     repo.insert_channel(&channel("c1", &base, "openai"))
         .unwrap();
     repo.insert_api_key(&key("k1")).unwrap();
+    repo.upsert_role_route(&role_route("rr1", "sonnet", "c1", "deepseek-v4-flash", 0, 1, 5))
+        .unwrap();
     let state = AppState::new(db);
     let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
-    let res = forward(
-        &state,
-        &chat(),
-        Some(("c1".into(), "deepseek-v4-flash".into())),
-        &ak,
-    )
-    .await
-    .unwrap();
+    let res = forward(&state, &chat(), Some("sonnet".into()), &ak)
+        .await
+        .unwrap();
     assert_eq!(res.outcome.channel.id, "c1");
     assert!(!res.outcome.via_fallback);
-    // 上游收到的 model 是映射后的
+    // 上游收到的 model 是路由配置的目标模型
     let hit = mock.hits.lock().unwrap()[0].clone();
     assert_eq!(hit["model"], "deepseek-v4-flash");
 }
@@ -100,10 +120,12 @@ async fn role_channel_5xx_falls_back() {
     repo.insert_channel(&channel("fb-ch", &good, "openai"))
         .unwrap();
     repo.insert_api_key(&key("k1")).unwrap();
+    repo.upsert_role_route(&role_route("rr1", "sonnet", "role-ch", "m1", 0, 1, 5))
+        .unwrap();
     let state = AppState::new(db);
     *state.fallback.write() = Some(("fb-ch".into(), "kimi-k3".into()));
     let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
-    let res = forward(&state, &chat(), Some(("role-ch".into(), "m1".into())), &ak)
+    let res = forward(&state, &chat(), Some("sonnet".into()), &ak)
         .await
         .unwrap();
     assert_eq!(res.outcome.channel.id, "fb-ch");
@@ -122,14 +144,77 @@ async fn role_4xx_does_not_fallback() {
     repo.insert_channel(&channel("fb-ch", &good, "openai"))
         .unwrap();
     repo.insert_api_key(&key("k1")).unwrap();
+    repo.upsert_role_route(&role_route("rr1", "sonnet", "role-ch", "m1", 0, 1, 5))
+        .unwrap();
     let state = AppState::new(db);
     *state.fallback.write() = Some(("fb-ch".into(), "kimi-k3".into()));
     let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
-    let err = forward(&state, &chat(), Some(("role-ch".into(), "m1".into())), &ak)
+    let err = forward(&state, &chat(), Some("sonnet".into()), &ak)
         .await
         .unwrap_err();
     match err {
         ForwardError::Upstream { status, .. } => assert_eq!(status, 400),
         other => panic!("expected Upstream 400, got {:?}", other),
     }
+}
+
+#[tokio::test]
+async fn role_multi_provider_fails_over_within_role() {
+    let (bad, _) = common::spawn_mock(500, serde_json::json!({"error":"boom"})).await;
+    let (good, good_mock) = common::spawn_mock(200, ok_openai_body()).await;
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("bad-ch", &bad, "openai"))
+        .unwrap();
+    repo.insert_channel(&channel("good-ch", &good, "openai"))
+        .unwrap();
+    repo.insert_api_key(&key("k1")).unwrap();
+    // 同一角色两条路由：高优先级 bad-ch 失败后切到 good-ch
+    repo.upsert_role_route(&role_route("ra", "sonnet", "bad-ch", "m-a", 10, 1, 5))
+        .unwrap();
+    repo.upsert_role_route(&role_route("rb", "sonnet", "good-ch", "m-b", 0, 1, 5))
+        .unwrap();
+    let state = AppState::new(db);
+    let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
+    let res = forward(&state, &chat(), Some("sonnet".into()), &ak)
+        .await
+        .unwrap();
+    assert_eq!(res.outcome.channel.id, "good-ch");
+    assert!(!res.outcome.via_fallback);
+    let hit = good_mock.hits.lock().unwrap()[0].clone();
+    assert_eq!(hit["model"], "m-b");
+}
+
+#[tokio::test]
+async fn role_breaker_trips_and_skips_route() {
+    let (bad, _) = common::spawn_mock(500, serde_json::json!({"error":"boom"})).await;
+    let (good, good_mock) = common::spawn_mock(200, ok_openai_body()).await;
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("bad-ch", &bad, "openai"))
+        .unwrap();
+    repo.insert_channel(&channel("good-ch", &good, "openai"))
+        .unwrap();
+    repo.insert_api_key(&key("k1")).unwrap();
+    // ra 熔断阈值 1：第一次失败即 open，之后请求直接跳过 ra 走 rb
+    repo.upsert_role_route(&role_route("ra", "sonnet", "bad-ch", "m-a", 10, 1, 1))
+        .unwrap();
+    repo.upsert_role_route(&role_route("rb", "sonnet", "good-ch", "m-b", 0, 1, 5))
+        .unwrap();
+    let state = AppState::new(db);
+    let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
+
+    // 第 1 次：ra 失败(→open) 后切 rb 成功
+    let r1 = forward(&state, &chat(), Some("sonnet".into()), &ak)
+        .await
+        .unwrap();
+    assert_eq!(r1.outcome.channel.id, "good-ch");
+    assert_eq!(state.circuit_breakers.read().get("ra").unwrap().state(), llm_gateway_lib::router::breaker::BreakerState::Open);
+
+    // 第 2 次：ra 已 open 被跳过，直接命中 rb
+    let r2 = forward(&state, &chat(), Some("sonnet".into()), &ak)
+        .await
+        .unwrap();
+    assert_eq!(r2.outcome.channel.id, "good-ch");
+    assert_eq!(good_mock.hits.lock().unwrap().len(), 2);
 }

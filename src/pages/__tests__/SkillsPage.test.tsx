@@ -10,6 +10,9 @@ vi.mock("../../lib/api", () => ({
     upsertSkill: vi.fn(),
     deleteSkill: vi.fn(),
     toggleSkillEnabled: vi.fn(),
+    listInstalledSkills: vi.fn().mockResolvedValue([]),
+    importInstalledSkill: vi.fn().mockResolvedValue({}),
+    syncSkillMcp: vi.fn().mockResolvedValue(0),
   },
 }));
 
@@ -189,5 +192,54 @@ describe("SkillsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "确认" }));
     await waitFor(() => expect(api.deleteSkill).toHaveBeenCalledWith("s1"));
+  });
+
+  it("已安装区展示未导入 skill 并可导入", async () => {
+    mockedApi.listInstalledSkills.mockResolvedValue([
+      {
+        directory: "my-skill",
+        name: "我的技能",
+        description: "desc",
+        version: "1.0.0",
+        mcp_servers: [],
+        in_db: false,
+        enabled: false,
+        synced: false,
+      },
+    ]);
+    render(<SkillsPage />);
+    await waitFor(() => expect(screen.getByText("我的技能")).toBeInTheDocument());
+    expect(screen.getByText("未导入")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "导入" }));
+    await waitFor(() =>
+      expect(api.importInstalledSkill).toHaveBeenCalledWith("my-skill")
+    );
+  });
+
+  it("已安装区展示 MCP server 并可同步", async () => {
+    mockedApi.listInstalledSkills.mockResolvedValue([
+      {
+        directory: "mcp-skill",
+        name: "带 MCP 的技能",
+        description: null,
+        version: null,
+        mcp_servers: [{ name: "fs", config: { command: "npx" } }],
+        in_db: true,
+        enabled: true,
+        synced: true,
+      },
+    ]);
+    mockedApi.syncSkillMcp.mockResolvedValue(1);
+    render(<SkillsPage />);
+    await waitFor(() =>
+      expect(screen.getByText("带 MCP 的技能")).toBeInTheDocument()
+    );
+    expect(screen.getByText("1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "同步 MCP" }));
+    await waitFor(() =>
+      expect(api.syncSkillMcp).toHaveBeenCalledWith("mcp-skill")
+    );
   });
 });

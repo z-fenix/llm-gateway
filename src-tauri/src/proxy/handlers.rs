@@ -315,24 +315,13 @@ async fn handle(
             .or_else(|| Some("auto".to_string()))
     };
 
-    // 4. role route
-    let role_route = match &role {
-        Some(r) => state
-            .repo
-            .get_role_route(r)
-            .ok()
-            .flatten()
-            .map(|rr| (rr.channel_id, rr.target_model)),
-        None => None,
-    };
-
+    // 4. role route —— 多供应商路由在 forwarder 内按角色解析（含熔断）
     if chat.stream {
         return handle_stream(
             state,
             &trace_id,
             &api_key,
             chat,
-            role_route,
             role.clone(),
             proto,
             &request_model,
@@ -344,7 +333,7 @@ async fn handle(
     }
 
     // 5. forward
-    let result = forwarder::forward(&state, &chat, role_route, &api_key).await;
+    let result = forwarder::forward(&state, &chat, role.clone(), &api_key).await;
 
     // 6. log + quota + response
     let latency = started.elapsed().as_millis() as i64;
@@ -503,7 +492,6 @@ async fn handle_stream(
     trace_id: &str,
     api_key: &crate::db::models::ApiKey,
     chat: ChatRequest,
-    role_route: Option<(String, String)>,
     role: Option<String>,
     proto: Protocol,
     request_model: &str,
@@ -511,7 +499,7 @@ async fn handle_stream(
     scan: &SecurityScanResult,
     started: std::time::Instant,
 ) -> Response {
-    match forwarder::forward_stream(&state, &chat, role_route).await {
+    match forwarder::forward_stream(&state, &chat, role.clone()).await {
         Ok(handle) => {
             let channel = handle.channel.clone();
             let model = handle.model.clone();

@@ -12,6 +12,7 @@ pub mod provider;
 pub mod proxy;
 pub mod router;
 pub mod security;
+pub mod session_manager;
 
 use db::Db;
 use proxy::state::AppState;
@@ -27,7 +28,13 @@ pub fn run() {
             let dir = app.path().app_data_dir().expect("app_data_dir");
             std::fs::create_dir_all(&dir).ok();
             let db = Db::open(&dir.join("llm-gateway.db")).expect("open db");
-            let state = AppState::new(db);
+            let mut state = AppState::new(db);
+            // 密钥加密：优先系统凭据库主密钥（Windows 凭据管理器），不可用时降级进程内随机。
+            let cipher = std::sync::Arc::new(security::crypto::Cipher::keyring_load_or_create());
+            state.repo.set_cipher(cipher);
+            if let Err(e) = state.repo.migrate_plaintext_keys() {
+                log::error!("plaintext key migration failed: {e}");
+            }
             // 知识库向量索引固定放在 app_data_dir/kb/ 下
             let kb_dir = dir.join("kb");
             std::fs::create_dir_all(&kb_dir).ok();
@@ -135,8 +142,9 @@ pub fn run() {
             commands::api_key::update_quota,
             commands::api_key::update_api_key,
             commands::role_route::list_role_routes,
-            commands::role_route::set_role_route,
+            commands::role_route::upsert_role_route,
             commands::role_route::delete_role_route,
+            commands::role_route::get_breaker_status,
             commands::role_route::list_role_patterns,
             commands::role_route::upsert_role_pattern,
             commands::role_route::delete_role_pattern,
@@ -159,6 +167,9 @@ pub fn run() {
             commands::skill::upsert_skill,
             commands::skill::delete_skill,
             commands::skill::toggle_skill_enabled,
+            commands::skill::list_installed_skills,
+            commands::skill::import_installed_skill,
+            commands::skill::sync_skill_mcp,
             commands::stats::get_stats,
             commands::security::get_security_settings,
             commands::security::set_security_setting,
@@ -204,6 +215,7 @@ pub fn run() {
             commands::config::restart_gateway,
             commands::config::get_cli_targets,
             commands::config::write_cli_config,
+            commands::config::merge_gateway_env,
             commands::cli::read_cli_config,
             commands::cli::write_cli_config_content,
         ])

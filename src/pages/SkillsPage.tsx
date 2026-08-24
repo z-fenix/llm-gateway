@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Sparkles } from "lucide-react";
+import { Download, Plus, RefreshCw, Server, Sparkles } from "lucide-react";
 import { api } from "../lib/api";
-import type { Skill, SkillView } from "../types";
+import type { InstalledSkill, Skill, SkillView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { Card } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
@@ -24,6 +30,7 @@ import { cn } from "../lib/utils";
 
 export default function SkillsPage() {
   const [list, setList] = useState<SkillView[]>([]);
+  const [installed, setInstalled] = useState<InstalledSkill[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,11 +53,34 @@ export default function SkillsPage() {
   const load = () => {
     setError(null);
     api.listSkills().then(setList).catch(handleError);
+    api.listInstalledSkills().then(setInstalled).catch(handleError);
   };
 
   useEffect(() => {
     load();
   }, []);
+
+  const handleImport = async (directory: string) => {
+    setError(null);
+    try {
+      await api.importInstalledSkill(directory);
+      toast.success("已导入到管理列表");
+      load();
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const handleSyncMcp = async (directory: string) => {
+    setError(null);
+    try {
+      const n = await api.syncSkillMcp(directory);
+      toast.success(`已同步 ${n} 个 MCP server`);
+      load();
+    } catch (err) {
+      handleError(err);
+    }
+  };
 
   const resetForm = () => {
     setName("");
@@ -161,6 +191,105 @@ export default function SkillsPage() {
           {error}
         </div>
       )}
+
+      <Card className="mb-6">
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-lg">已安装 Skills</CardTitle>
+            <CardDescription>
+              ~/.claude/skills 下实际存在的 skill，可导入管理列表或同步其声明的 MCP server
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={load}>
+            <RefreshCw className="h-4 w-4" />
+            刷新
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {installed.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              未在 ~/.claude/skills 下发现已安装 skill
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">名称</th>
+                    <th className="px-4 py-3 font-medium">描述</th>
+                    <th className="px-4 py-3 font-medium">版本</th>
+                    <th className="px-4 py-3 font-medium">MCP</th>
+                    <th className="px-4 py-3 font-medium">状态</th>
+                    <th className="px-4 py-3 font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {installed.map((s) => (
+                    <tr
+                      key={s.directory}
+                      className="border-b border-border last:border-0 hover:bg-accent/50"
+                    >
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {s.name ?? s.directory}
+                      </td>
+                      <td className="max-w-[280px] truncate px-4 py-3 text-muted-foreground">
+                        {s.description ?? "-"}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {s.version ?? "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {s.mcp_servers.length > 0 ? (
+                          <Badge variant="secondary" className="gap-1">
+                            <Server className="h-3 w-3" />
+                            {s.mcp_servers.length}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          className={cn(
+                            s.in_db
+                              ? s.enabled
+                                ? "border-transparent bg-emerald-500/10 text-emerald-600"
+                                : "bg-secondary text-muted-foreground"
+                              : "border-dashed bg-transparent text-muted-foreground"
+                          )}
+                        >
+                          {s.in_db ? (s.enabled ? "已启用" : "已导入") : "未导入"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {!s.in_db && (
+                            <button
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              onClick={() => handleImport(s.directory)}
+                            >
+                              <Download className="h-3 w-3" />
+                              导入
+                            </button>
+                          )}
+                          {s.mcp_servers.length > 0 && (
+                            <button
+                              className="text-primary hover:underline"
+                              onClick={() => handleSyncMcp(s.directory)}
+                            >
+                              同步 MCP
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">

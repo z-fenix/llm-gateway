@@ -134,6 +134,10 @@ fn make_state(base_url: String) -> AppState {
         role: "sonnet".into(),
         channel_id: "c1".into(),
         target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
         enabled: true,
         updated_at: 1,
     })

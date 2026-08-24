@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tauri_plugin_store::StoreExt;
 
+pub mod crypto;
 pub mod redact;
 pub mod rules;
 pub mod scanner;

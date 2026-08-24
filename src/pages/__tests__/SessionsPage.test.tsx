@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SessionsPage from "../SessionsPage";
 import { api } from "../../lib/api";
@@ -15,34 +15,22 @@ vi.mock("../../lib/api", () => ({
 const mockedApi = vi.mocked(api);
 
 const makeSession = (
-  traceId: string,
   overrides: Partial<SessionMeta> = {}
 ): SessionMeta => ({
-  trace_id: traceId,
-  title: null,
-  first_active: 1700000000,
-  last_active: 1700000010,
-  message_count: 2,
-  roles: [
-    ["user", 1],
-    ["assistant", 1],
-  ],
+  providerId: "claude",
+  sessionId: "sess-abc",
+  title: "测试会话",
+  projectDir: "/repo/app",
+  createdAt: 1700000000000,
+  lastActiveAt: 1700000010000,
+  sourcePath: "/home/u/.claude/projects/app/sess-abc.jsonl",
   ...overrides,
 });
 
-const makeMessage = (
-  seq: number,
-  overrides: Partial<SessionMessage> = {}
-): SessionMessage => ({
-  seq,
-  role: seq % 2 === 1 ? "user" : "assistant",
-  content: `message ${seq}`,
-  status_code: 200,
-  created_at: 1700000000 + seq,
-  error: null,
-  request_body: JSON.stringify({ role: "user", content: `request ${seq}` }),
-  response_body: JSON.stringify({ content: `response ${seq}` }),
-  ...overrides,
+const makeMessage = (role: string, content: string): SessionMessage => ({
+  role,
+  content,
+  ts: 1700000000000,
 });
 
 describe("SessionsPage", () => {
@@ -50,7 +38,7 @@ describe("SessionsPage", () => {
     vi.clearAllMocks();
     mockedApi.listSessions.mockResolvedValue([]);
     mockedApi.getSessionMessages.mockResolvedValue([]);
-    mockedApi.deleteSession.mockResolvedValue(2);
+    mockedApi.deleteSession.mockResolvedValue(true);
   });
 
   it("空列表展示空状态", async () => {
@@ -59,56 +47,59 @@ describe("SessionsPage", () => {
     expect(screen.getByText("暂无会话")).toBeInTheDocument();
   });
 
-  it("列表渲染会话标题、消息数与角色", async () => {
+  it("列表渲染会话标题、provider 徽标与项目目录", async () => {
     mockedApi.listSessions.mockResolvedValue([
-      makeSession("trace-abc", { title: "测试会话", message_count: 3 }),
-      makeSession("trace-def", { title: null, message_count: 5 }),
+      makeSession({ title: "会话甲" }),
+      makeSession({ providerId: "codex", sessionId: "sess-def", title: "会话乙", projectDir: "/repo/b" }),
     ]);
 
     render(<SessionsPage />);
-    await waitFor(() => expect(screen.getByText("测试会话")).toBeInTheDocument());
-    expect(screen.getByText("trace-def")).toBeInTheDocument();
-
-    const abcButton = screen.getByText("测试会话").closest("button")!;
-    expect(within(abcButton).getByText("3")).toBeInTheDocument();
-    expect(within(abcButton).getByText("user: 1")).toBeInTheDocument();
-    expect(within(abcButton).getByText("assistant: 1")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("会话甲")).toBeInTheDocument());
+    expect(screen.getByText("会话乙")).toBeInTheDocument();
+    expect(screen.getAllByText("Claude").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Codex").length).toBeGreaterThan(0);
+    expect(screen.getByText("/repo/app")).toBeInTheDocument();
   });
 
-  it("搜索输入按标题或 trace_id 过滤", async () => {
+  it("provider 筛选只显示对应会话", async () => {
     mockedApi.listSessions.mockResolvedValue([
-      makeSession("trace-abc", { title: "测试会话" }),
-      makeSession("trace-def", { title: "另一个会话" }),
+      makeSession({ title: "Claude 会话" }),
+      makeSession({ providerId: "gemini", title: "Gemini 会话" }),
     ]);
 
     render(<SessionsPage />);
-    await waitFor(() =>
-      expect(screen.getByText("测试会话")).toBeInTheDocument()
-    );
-    expect(screen.getByText("另一个会话")).toBeInTheDocument();
-
-    const input = screen.getByPlaceholderText("搜索 trace_id / 标题");
-    fireEvent.change(input, { target: { value: "trace-def" } });
+    await waitFor(() => expect(screen.getByText("Claude 会话")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Gemini" }));
 
     await waitFor(() => {
-      expect(screen.queryByText("测试会话")).not.toBeInTheDocument();
+      expect(screen.queryByText("Claude 会话")).not.toBeInTheDocument();
     });
-    expect(screen.getByText("另一个会话")).toBeInTheDocument();
+    expect(screen.getByText("Gemini 会话")).toBeInTheDocument();
+  });
 
-    fireEvent.change(input, { target: { value: "测试" } });
+  it("搜索输入按标题过滤", async () => {
+    mockedApi.listSessions.mockResolvedValue([
+      makeSession({ title: "登录问题排查" }),
+      makeSession({ title: "另一个会话" }),
+    ]);
+
+    render(<SessionsPage />);
+    await waitFor(() => expect(screen.getByText("登录问题排查")).toBeInTheDocument());
+
+    const input = screen.getByPlaceholderText("搜索标题 / 项目目录 / 会话 ID");
+    fireEvent.change(input, { target: { value: "登录" } });
+
     await waitFor(() => {
-      expect(screen.getByText("测试会话")).toBeInTheDocument();
+      expect(screen.getByText("登录问题排查")).toBeInTheDocument();
       expect(screen.queryByText("另一个会话")).not.toBeInTheDocument();
     });
   });
 
   it("点击会话请求消息并渲染", async () => {
-    mockedApi.listSessions.mockResolvedValue([
-      makeSession("trace-abc", { title: "测试会话" }),
-    ]);
+    mockedApi.listSessions.mockResolvedValue([makeSession()]);
     mockedApi.getSessionMessages.mockResolvedValue([
-      makeMessage(1, { role: "user", content: "你好" }),
-      makeMessage(2, { role: "assistant", content: "你好，有什么可以帮忙？" }),
+      makeMessage("user", "你好"),
+      makeMessage("assistant", "你好，有什么可以帮忙？"),
     ]);
 
     render(<SessionsPage />);
@@ -116,79 +107,38 @@ describe("SessionsPage", () => {
 
     fireEvent.click(screen.getByText("测试会话"));
     await waitFor(() =>
-      expect(mockedApi.getSessionMessages).toHaveBeenCalledWith("trace-abc")
+      expect(mockedApi.getSessionMessages).toHaveBeenCalledWith(
+        "claude",
+        "/home/u/.claude/projects/app/sess-abc.jsonl",
+      )
     );
 
     expect(screen.getByText("你好")).toBeInTheDocument();
     expect(screen.getByText("你好，有什么可以帮忙？")).toBeInTheDocument();
-  });
-
-  it("展开消息显示请求体与响应体", async () => {
-    mockedApi.listSessions.mockResolvedValue([
-      makeSession("trace-abc", { title: "测试会话" }),
-    ]);
-    mockedApi.getSessionMessages.mockResolvedValue([
-      makeMessage(1, {
-        role: "user",
-        content: "你好",
-        request_body: JSON.stringify({ messages: [{ role: "user", content: "你好" }] }),
-        response_body: JSON.stringify({ choices: [{ message: { content: "你好，有什么可以帮忙？" } }] }),
-      }),
-    ]);
-
-    render(<SessionsPage />);
-    await waitFor(() => expect(screen.getByText("测试会话")).toBeInTheDocument());
-
-    fireEvent.click(screen.getByText("测试会话"));
-    await waitFor(() => expect(screen.getByText("你好")).toBeInTheDocument());
-
-    fireEvent.click(screen.getByText("你好"));
-    await waitFor(() => {
-      expect(screen.getByText("请求体")).toBeInTheDocument();
-      expect(screen.getByText("响应体")).toBeInTheDocument();
-    });
-
-    expect(screen.getByText(/"role": "user"/)).toBeInTheDocument();
-    expect(screen.getByText(/"content": "你好，有什么可以帮忙？"/)).toBeInTheDocument();
-  });
-
-  it("消息错误显示红色错误指示", async () => {
-    mockedApi.listSessions.mockResolvedValue([
-      makeSession("trace-err", { title: "错误会话" }),
-    ]);
-    mockedApi.getSessionMessages.mockResolvedValue([
-      makeMessage(1, { error: "upstream timeout" }),
-    ]);
-
-    render(<SessionsPage />);
-    await waitFor(() => expect(screen.getByText("错误会话")).toBeInTheDocument());
-    fireEvent.click(screen.getByText("错误会话"));
-
-    await waitFor(() =>
-      expect(screen.getByText(/upstream timeout/)).toBeInTheDocument()
-    );
+    expect(screen.getByText("用户")).toBeInTheDocument();
+    expect(screen.getByText("助手")).toBeInTheDocument();
   });
 
   it("删除走确认对话框并调用 deleteSession", async () => {
-    mockedApi.listSessions.mockResolvedValue([
-      makeSession("trace-del", { title: "待删除" }),
-    ]);
+    mockedApi.listSessions.mockResolvedValue([makeSession({ title: "待删除" })]);
 
     render(<SessionsPage />);
     await waitFor(() => expect(screen.getByText("待删除")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText("待删除"));
-    await waitFor(() => expect(mockedApi.getSessionMessages).toHaveBeenCalledWith("trace-del")
-    );
+    // 触发会话行的删除按钮
+    fireEvent.click(screen.getByRole("button", { name: "删除会话" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "删除" }));
     expect(
       await screen.findByRole("heading", { name: "删除会话" })
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "确认" }));
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
     await waitFor(() =>
-      expect(mockedApi.deleteSession).toHaveBeenCalledWith("trace-del")
+      expect(mockedApi.deleteSession).toHaveBeenCalledWith(
+        "claude",
+        "sess-abc",
+        "/home/u/.claude/projects/app/sess-abc.jsonl",
+      )
     );
   });
 });

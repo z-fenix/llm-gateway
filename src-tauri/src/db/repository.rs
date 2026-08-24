@@ -1,6 +1,6 @@
 use super::models::{
     ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, McpServer,
-    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, SessionMeta, Skill,
+    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, Skill,
 };
 use super::Db;
 use crate::error::AppResult;
@@ -11,6 +11,8 @@ use std::collections::BTreeMap;
 #[derive(Clone)]
 pub struct Repository {
     pub db: Db,
+    /// 静态密钥加密器；None = 明文直通（测试/未启用加密环境）。
+    pub cipher: Option<std::sync::Arc<crate::security::crypto::Cipher>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -117,7 +119,37 @@ fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
 
 impl Repository {
     pub fn new(db: Db) -> Self {
-        Self { db }
+        Self { db, cipher: None }
+    }
+
+    /// 设置静态密钥加密器；用于生产（keyring 主密钥）与 AppState 场景。
+    pub fn set_cipher(&mut self, cipher: std::sync::Arc<crate::security::crypto::Cipher>) {
+        self.cipher = Some(cipher);
+    }
+
+    /// 写入前加密（未配置加密器时明文直通）。
+    fn enc(&self, s: &str) -> String {
+        match &self.cipher {
+            Some(c) => c.encrypt(s),
+            None => s.to_string(),
+        }
+    }
+
+    /// 读取后解密：密文解出明文，明文（旧数据）原样返回。
+    fn dec(&self, s: &str) -> String {
+        match &self.cipher {
+            Some(c) => {
+                if crate::security::crypto::Cipher::is_encrypted(s) {
+                    c.decrypt(s).unwrap_or_else(|e| {
+                        log::error!("decrypt failed for stored secret: {e}");
+                        s.to_string()
+                    })
+                } else {
+                    s.to_string()
+                }
+            }
+            None => s.to_string(),
+        }
     }
 
     pub fn insert_channel(&self, c: &Channel) -> AppResult<()> {
@@ -127,7 +159,7 @@ impl Repository {
             "INSERT INTO channels (id,name,supplier,upstream_protocol,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)",
             params![
-                c.id, c.name, c.supplier, c.upstream_protocol, c.base_url, c.api_key,
+                c.id, c.name, c.supplier, c.upstream_protocol, c.base_url, self.enc(&c.api_key),
                 serde_json::to_string(&c.models).unwrap(),
                 c.priority, c.weight, c.enabled as i64, c.timeout_secs,
                 c.total_calls, c.total_tokens, c.success_rate, c.avg_latency_ms,
@@ -145,7 +177,9 @@ impl Repository {
         )?;
         let mut rows = stmt.query(params![id])?;
         if let Some(r) = rows.next()? {
-            Ok(Some(row_to_channel(r)?))
+            let mut ch = row_to_channel(r)?;
+            ch.api_key = self.dec(&ch.api_key);
+            Ok(Some(ch))
         } else {
             Ok(None)
         }
@@ -157,10 +191,12 @@ impl Repository {
         let mut stmt = conn.prepare(
             "SELECT id,name,supplier,upstream_protocol,base_url,api_key,models,priority,weight,enabled,timeout_secs,total_calls,total_tokens,success_rate,avg_latency_ms,created_at,updated_at FROM channels ORDER BY priority DESC, created_at ASC",
         )?;
-        let rows = stmt.query_map([], row_to_channel)?;
+        let mut rows = stmt.query([])?;
         let mut out = Vec::new();
-        for c in rows {
-            out.push(c?);
+        while let Some(r) = rows.next()? {
+            let mut ch = row_to_channel(r)?;
+            ch.api_key = self.dec(&ch.api_key);
+            out.push(ch);
         }
         Ok(out)
     }
@@ -169,11 +205,12 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
-            "INSERT INTO api_keys (id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+            "INSERT INTO api_keys (id,key,key_hash,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
             params![
-                k.id, k.key, k.name, k.enabled as i64, k.quota_total, k.quota_used,
-                k.total_calls, k.total_tokens, k.created_at, k.last_used_at
+                k.id, self.enc(&k.key), crate::security::crypto::sha256_b64(&k.key), k.name,
+                k.enabled as i64, k.quota_total, k.quota_used, k.total_calls, k.total_tokens,
+                k.created_at, k.last_used_at
             ],
         )?;
         Ok(())
@@ -183,10 +220,11 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
-            "UPDATE api_keys SET key=?2,name=?3,enabled=?4,quota_total=?5,quota_used=?6,total_calls=?7,total_tokens=?8,created_at=?9,last_used_at=?10 WHERE id=?1",
+            "UPDATE api_keys SET key=?2,key_hash=?3,name=?4,enabled=?5,quota_total=?6,quota_used=?7,total_calls=?8,total_tokens=?9,created_at=?10,last_used_at=?11 WHERE id=?1",
             params![
-                k.id, k.key, k.name, k.enabled as i64, k.quota_total, k.quota_used,
-                k.total_calls, k.total_tokens, k.created_at, k.last_used_at
+                k.id, self.enc(&k.key), crate::security::crypto::sha256_b64(&k.key), k.name,
+                k.enabled as i64, k.quota_total, k.quota_used, k.total_calls, k.total_tokens,
+                k.created_at, k.last_used_at
             ],
         )?;
         Ok(())
@@ -196,13 +234,13 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at FROM api_keys WHERE key=?1",
+            "SELECT id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at FROM api_keys WHERE key_hash=?1",
         )?;
-        let mut rows = stmt.query(params![key])?;
+        let mut rows = stmt.query(params![crate::security::crypto::sha256_b64(key)])?;
         if let Some(r) = rows.next()? {
             Ok(Some(ApiKey {
                 id: r.get(0)?,
-                key: r.get(1)?,
+                key: self.dec(&r.get::<_, String>(1)?),
                 name: r.get(2)?,
                 enabled: r.get::<_, i64>(3)? != 0,
                 quota_total: r.get(4)?,
@@ -215,6 +253,54 @@ impl Repository {
         } else {
             Ok(None)
         }
+    }
+
+    /// 加密历史明文密钥（幂等）：为旧 api_keys 行补 key_hash 并加密 key，
+    /// 将 channels.api_key 从未加密状态加密。未配置加密器时直接返回 0。
+    pub fn migrate_plaintext_keys(&self) -> AppResult<usize> {
+        if self.cipher.is_none() {
+            return Ok(0);
+        }
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut migrated = 0usize;
+
+        let mut stmt =
+            conn.prepare("SELECT id, key FROM api_keys WHERE key_hash IS NULL OR key_hash = ''")?;
+        let mut rows = stmt.query([])?;
+        let mut pending = Vec::new();
+        while let Some(r) = rows.next()? {
+            pending.push((r.get::<_, String>(0)?, r.get::<_, String>(1)?));
+        }
+        drop(rows);
+        drop(stmt);
+        for (id, plain) in pending {
+            conn.execute(
+                "UPDATE api_keys SET key=?2, key_hash=?3 WHERE id=?1",
+                params![id, self.enc(&plain), crate::security::crypto::sha256_b64(&plain)],
+            )?;
+            migrated += 1;
+        }
+
+        let mut stmt = conn.prepare("SELECT id, api_key FROM channels")?;
+        let mut rows = stmt.query([])?;
+        let mut pending = Vec::new();
+        while let Some(r) = rows.next()? {
+            pending.push((r.get::<_, String>(0)?, r.get::<_, String>(1)?));
+        }
+        drop(rows);
+        drop(stmt);
+        for (id, key) in pending {
+            if key.is_empty() || crate::security::crypto::Cipher::is_encrypted(&key) {
+                continue;
+            }
+            conn.execute(
+                "UPDATE channels SET api_key=?2 WHERE id=?1",
+                params![id, self.enc(&key)],
+            )?;
+            migrated += 1;
+        }
+        Ok(migrated)
     }
 
     pub fn consume_quota(&self, key_id: &str, tokens: i64) -> AppResult<bool> {
@@ -334,25 +420,19 @@ impl Repository {
         Ok(deleted)
     }
 
-    pub fn get_role_route(&self, role: &str) -> AppResult<Option<RoleRoute>> {
+    /// 返回某角色的全部启用路由，按 priority 降序（同优先级按插入顺序）。
+    pub fn get_role_routes(&self, role: &str) -> AppResult<Vec<RoleRoute>> {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes WHERE role=?1 AND enabled=1",
+            "SELECT id,role,channel_id,target_model,priority,weight,breaker_max_failures,breaker_cooldown_secs,enabled,updated_at FROM role_routes WHERE role=?1 AND enabled=1 ORDER BY priority DESC, updated_at ASC",
         )?;
         let mut rows = stmt.query(params![role])?;
-        if let Some(r) = rows.next()? {
-            Ok(Some(RoleRoute {
-                id: r.get(0)?,
-                role: r.get(1)?,
-                channel_id: r.get(2)?,
-                target_model: r.get(3)?,
-                enabled: r.get::<_, i64>(4)? != 0,
-                updated_at: r.get(5)?,
-            }))
-        } else {
-            Ok(None)
+        let mut out = Vec::new();
+        while let Some(r) = rows.next()? {
+            out.push(row_to_role_route(r)?);
         }
+        Ok(out)
     }
 
     pub fn list_role_patterns(&self) -> AppResult<Vec<RolePattern>> {
@@ -381,9 +461,20 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         conn.execute(
-            "INSERT INTO role_routes (id,role,channel_id,target_model,enabled,updated_at) VALUES (?1,?2,?3,?4,?5,?6)
-             ON CONFLICT(role) DO UPDATE SET channel_id=excluded.channel_id, target_model=excluded.target_model, enabled=excluded.enabled, updated_at=excluded.updated_at",
-            params![r.id, r.role, r.channel_id, r.target_model, r.enabled as i64, r.updated_at],
+            "INSERT INTO role_routes (id,role,channel_id,target_model,priority,weight,breaker_max_failures,breaker_cooldown_secs,enabled,updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)
+             ON CONFLICT(id) DO UPDATE SET role=excluded.role, channel_id=excluded.channel_id, target_model=excluded.target_model, priority=excluded.priority, weight=excluded.weight, breaker_max_failures=excluded.breaker_max_failures, breaker_cooldown_secs=excluded.breaker_cooldown_secs, enabled=excluded.enabled, updated_at=excluded.updated_at",
+            params![
+                r.id,
+                r.role,
+                r.channel_id,
+                r.target_model,
+                r.priority,
+                r.weight,
+                r.breaker_max_failures,
+                r.breaker_cooldown_secs,
+                r.enabled as i64,
+                r.updated_at
+            ],
         )?;
         Ok(())
     }
@@ -436,7 +527,7 @@ impl Repository {
         let conn = conn.lock();
         conn.execute(
             "UPDATE channels SET name=?2,supplier=?3,upstream_protocol=?4,base_url=?5,api_key=?6,models=?7,priority=?8,weight=?9,enabled=?10,timeout_secs=?11,updated_at=?12 WHERE id=?1",
-            rusqlite::params![c.id,c.name,c.supplier,c.upstream_protocol,c.base_url,c.api_key,serde_json::to_string(&c.models).unwrap(),c.priority,c.weight,c.enabled as i64,c.timeout_secs,c.updated_at],
+            rusqlite::params![c.id,c.name,c.supplier,c.upstream_protocol,c.base_url,self.enc(&c.api_key),serde_json::to_string(&c.models).unwrap(),c.priority,c.weight,c.enabled as i64,c.timeout_secs,c.updated_at],
         )?;
         Ok(())
     }
@@ -477,7 +568,7 @@ impl Repository {
         let rows = stmt.query_map([], |r| {
             Ok(ApiKey {
                 id: r.get(0)?,
-                key: r.get(1)?,
+                key: r.get::<_, String>(1)?,
                 name: r.get(2)?,
                 enabled: r.get::<_, i64>(3)? != 0,
                 quota_total: r.get(4)?,
@@ -490,35 +581,28 @@ impl Repository {
         })?;
         let mut out = Vec::new();
         for r in rows {
-            out.push(r?);
+            let mut k = r?;
+            k.key = self.dec(&k.key);
+            out.push(k);
         }
         Ok(out)
     }
-    pub fn delete_role_route(&self, role: &str) -> AppResult<()> {
+    pub fn delete_role_route(&self, id: &str) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
-        conn.execute("DELETE FROM role_routes WHERE role=?1", [role])?;
+        conn.execute("DELETE FROM role_routes WHERE id=?1", [id])?;
         Ok(())
     }
     pub fn list_role_routes(&self) -> AppResult<Vec<crate::db::models::RoleRoute>> {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,role,channel_id,target_model,enabled,updated_at FROM role_routes",
+            "SELECT id,role,channel_id,target_model,priority,weight,breaker_max_failures,breaker_cooldown_secs,enabled,updated_at FROM role_routes ORDER BY role ASC, priority DESC, updated_at ASC",
         )?;
-        let rows = stmt.query_map([], |r| {
-            Ok(crate::db::models::RoleRoute {
-                id: r.get(0)?,
-                role: r.get(1)?,
-                channel_id: r.get(2)?,
-                target_model: r.get(3)?,
-                enabled: r.get::<_, i64>(4)? != 0,
-                updated_at: r.get(5)?,
-            })
-        })?;
+        let mut rows = stmt.query([])?;
         let mut out = Vec::new();
-        for r in rows {
-            out.push(r?);
+        while let Some(r) = rows.next()? {
+            out.push(row_to_role_route(r)?);
         }
         Ok(out)
     }
@@ -618,6 +702,7 @@ impl Repository {
         &self,
         filter: &LogFilter,
         bucket_secs: i64,
+        tz_offset_secs: i64,
     ) -> AppResult<Vec<TimeBucket>> {
         if bucket_secs <= 0 {
             return Ok(Vec::new());
@@ -627,8 +712,9 @@ impl Repository {
         let conn = conn.lock();
         let (where_sql, where_values) = build_where(filter);
 
+        // 桶边界按本地时区对齐：先加偏移取整再减回，使小时/日桶落在本地边界。
         let sql = format!(
-            "SELECT (created_at / ?) * ? AS bucket, \
+            "SELECT ((created_at + ?) / ?) * ? - ? AS bucket, \
              COUNT(*), \
              COALESCE(SUM(input_tokens), 0), \
              COALESCE(SUM(output_tokens), 0), \
@@ -646,9 +732,11 @@ impl Repository {
         );
 
         let risk_levels = ["clean", "info", "low", "medium", "high", "critical"];
-        let mut params: Vec<rusqlite::types::Value> = Vec::with_capacity(2 + where_values.len());
+        let mut params: Vec<rusqlite::types::Value> = Vec::with_capacity(4 + where_values.len());
+        params.push(tz_offset_secs.into());
         params.push(bucket_secs.into());
         params.push(bucket_secs.into());
+        params.push(tz_offset_secs.into());
         params.extend(where_values);
 
         let mut stmt = conn.prepare(&sql)?;
@@ -1467,6 +1555,20 @@ impl Repository {
         }
     }
 
+    pub fn get_mcp_server_by_name(&self, name: &str) -> AppResult<Option<McpServer>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id,name,server_config,description,enabled,created_at,updated_at FROM mcp_servers WHERE name=?1",
+        )?;
+        let mut rows = stmt.query(params![name])?;
+        if let Some(r) = rows.next()? {
+            Ok(Some(row_to_mcp_server(r)?))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn upsert_mcp_server(&self, s: &McpServer) -> AppResult<()> {
         let conn = self.db.conn();
         let conn = conn.lock();
@@ -1503,154 +1605,21 @@ impl Repository {
         Ok(())
     }
 
-    // ---------- Sessions ----------
+}
 
-    pub fn list_sessions(&self) -> AppResult<Vec<SessionMeta>> {
-        let conn = self.db.conn();
-        let conn = conn.lock();
-
-        // 1) 聚合每个 trace 的 meta
-        let mut stmt = conn.prepare(
-            "SELECT trace_id, MIN(created_at), MAX(created_at), COUNT(*) FROM request_logs GROUP BY trace_id ORDER BY MAX(created_at) DESC",
-        )?;
-        let rows = stmt.query_map([], |r| {
-            Ok((
-                r.get::<_, String>(0)?,
-                r.get::<_, i64>(1)?,
-                r.get::<_, i64>(2)?,
-                r.get::<_, i64>(3)?,
-            ))
-        })?;
-        let mut metas = Vec::new();
-        for r in rows {
-            metas.push(r?);
-        }
-        drop(stmt);
-
-        // 2) 一次性聚合所有 trace 的 roles（trace_id, role, count）
-        let mut roles_by_trace: std::collections::HashMap<String, Vec<(String, i64)>> =
-            std::collections::HashMap::new();
-        let mut stmt = conn.prepare(
-            "SELECT trace_id, role, COUNT(*) FROM request_logs WHERE role IS NOT NULL GROUP BY trace_id, role",
-        )?;
-        let role_rows = stmt.query_map([], |r| {
-            Ok((
-                r.get::<_, String>(0)?,
-                r.get::<_, String>(1)?,
-                r.get::<_, i64>(2)?,
-            ))
-        })?;
-        for r in role_rows {
-            let (trace_id, role, count) = r?;
-            roles_by_trace
-                .entry(trace_id)
-                .or_default()
-                .push((role, count));
-        }
-
-        let mut out = Vec::new();
-        for (trace_id, first_active, last_active, message_count) in metas {
-            let roles = roles_by_trace.remove(&trace_id).unwrap_or_default();
-            out.push(SessionMeta {
-                trace_id,
-                title: None,
-                first_active,
-                last_active,
-                message_count,
-                roles,
-            });
-        }
-        Ok(out)
-    }
-
-    /// 一次性返回每个 trace 的首条 user 消息 request_body（用于会话标题），无则缺失。
-    ///
-    /// 取代原先“逐 trace 全量加载会话消息再提取标题”的 N+1 路径：这里单条 SQL
-    /// 每个 trace 只取 seq 最小的 user（含空 role/NULL role）且带 request_body 的行。
-    pub fn list_session_titles(&self) -> AppResult<Vec<(String, Option<String>)>> {
-        let conn = self.db.conn();
-        let conn = conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT trace_id, request_body FROM (
-                SELECT trace_id, request_body,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY trace_id
-                           ORDER BY seq ASC, created_at ASC, id ASC
-                       ) AS rn
-                FROM request_logs
-                WHERE request_body IS NOT NULL
-                  AND (role = 'user' OR role IS NULL OR role = '')
-            ) WHERE rn = 1",
-        )?;
-        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        let mut out = Vec::new();
-        for r in rows {
-            out.push(r?);
-        }
-        Ok(out)
-    }
-
-    pub fn get_session_logs(&self, trace_id: &str) -> AppResult<Vec<RequestLog>> {
-        let conn = self.db.conn();
-        let conn = conn.lock();
-        let mut stmt = conn.prepare(
-            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,created_at FROM request_logs WHERE trace_id=?1 ORDER BY seq ASC",
-        )?;
-        let rows = stmt.query_map(params![trace_id], |r| {
-            Ok(RequestLog {
-                id: r.get(0)?,
-                seq: r.get(1)?,
-                trace_id: r.get(2)?,
-                api_key_id: r.get(3)?,
-                key_name: r.get(4)?,
-                channel_id: r.get(5)?,
-                channel_name: r.get(6)?,
-                role: r.get(7)?,
-                request_model: r.get(8)?,
-                upstream_model: r.get(9)?,
-                protocol: r.get(10)?,
-                status_code: r.get(11)?,
-                input_tokens: r.get(12)?,
-                output_tokens: r.get(13)?,
-                latency_ms: r.get(14)?,
-                is_stream: r.get::<_, i64>(15)? != 0,
-                error: r.get(16)?,
-                fallback: r.get::<_, i64>(17)? != 0,
-                tool_calls: r.get(18)?,
-                request_body: r.get(19)?,
-                response_body: r.get(20)?,
-                risk_level: r.get(21)?,
-                risk_score: r.get(22)?,
-                risk_summary: r.get(23)?,
-                security_action: r.get(24)?,
-                sanitized: r.get::<_, i64>(25)? != 0,
-                blocked_reason: r.get(26)?,
-                created_at: r.get(27)?,
-            })
-        })?;
-        let mut out = Vec::new();
-        for r in rows {
-            out.push(r?);
-        }
-        Ok(out)
-    }
-
-    /// 删除会话：先删其 findings 再删 request_logs，返回删除的日志数。
-    pub fn delete_session(&self, trace_id: &str) -> AppResult<usize> {
-        let conn = self.db.conn();
-        let mut conn = conn.lock();
-        let tx = conn.transaction()?;
-        tx.execute(
-            "DELETE FROM request_security_findings WHERE log_id IN (SELECT id FROM request_logs WHERE trace_id=?1)",
-            params![trace_id],
-        )?;
-        let deleted = tx.execute(
-            "DELETE FROM request_logs WHERE trace_id=?1",
-            params![trace_id],
-        )?;
-        tx.commit()?;
-        Ok(deleted)
-    }
+fn row_to_role_route(r: &rusqlite::Row) -> AppResult<RoleRoute> {
+    Ok(RoleRoute {
+        id: r.get(0)?,
+        role: r.get(1)?,
+        channel_id: r.get(2)?,
+        target_model: r.get(3)?,
+        priority: r.get(4)?,
+        weight: r.get(5)?,
+        breaker_max_failures: r.get(6)?,
+        breaker_cooldown_secs: r.get(7)?,
+        enabled: r.get::<_, i64>(8)? != 0,
+        updated_at: r.get(9)?,
+    })
 }
 
 fn row_to_mcp_server(r: &rusqlite::Row) -> AppResult<McpServer> {
@@ -1884,6 +1853,98 @@ mod tests {
     }
 
     #[test]
+    fn cipher_encrypts_api_key_and_migrates_plaintext() {
+        let db = Db::new_in_memory().unwrap();
+        let mut repo = Repository::new(db);
+        repo.set_cipher(std::sync::Arc::new(
+            crate::security::crypto::Cipher::random(),
+        ));
+
+        let k = ApiKey {
+            id: "k1".into(),
+            key: "sk-secret-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        };
+        repo.insert_api_key(&k).unwrap();
+        // 落库应为密文 + key_hash，不落明文
+        {
+            let conn = repo.db.conn();
+            let conn = conn.lock();
+            let raw: String = conn
+                .query_row("SELECT key FROM api_keys WHERE id='k1'", [], |r| r.get(0))
+                .unwrap();
+            assert!(
+                crate::security::crypto::Cipher::is_encrypted(&raw),
+                "stored key must be ciphertext"
+            );
+            assert_ne!(raw, "sk-secret-a");
+            let hash: String = conn
+                .query_row("SELECT key_hash FROM api_keys WHERE id='k1'", [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(hash, crate::security::crypto::sha256_b64("sk-secret-a"));
+        }
+        // 读出解密、按 hash 认证
+        assert_eq!(
+            repo.get_api_key_by_key("sk-secret-a").unwrap().unwrap().key,
+            "sk-secret-a"
+        );
+        assert_eq!(repo.list_api_keys().unwrap()[0].key, "sk-secret-a");
+
+        // 模拟迁移前明文行：加密 + 补 hash
+        repo.delete_api_key("k1").unwrap();
+        {
+            let conn = repo.db.conn();
+            let conn = conn.lock();
+            conn.execute(
+                "INSERT INTO api_keys (id,key,name,enabled,quota_total,quota_used,total_calls,total_tokens,created_at,last_used_at)
+                 VALUES ('legacy','sk-plain-b','bob',1,NULL,0,0,0,1,NULL)",
+                [],
+            )
+            .unwrap();
+        }
+        assert_eq!(repo.migrate_plaintext_keys().unwrap(), 1);
+        let got = repo.get_api_key_by_key("sk-plain-b").unwrap().unwrap();
+        assert_eq!(got.key, "sk-plain-b");
+        // 幂等：二次迁移不再改动
+        assert_eq!(repo.migrate_plaintext_keys().unwrap(), 0);
+    }
+
+    #[test]
+    fn cipher_roundtrips_channel_api_key() {
+        let db = Db::new_in_memory().unwrap();
+        let mut repo = Repository::new(db);
+        repo.set_cipher(std::sync::Arc::new(
+            crate::security::crypto::Cipher::random(),
+        ));
+        let mut c = ch("c1");
+        c.api_key = "sk-upstream-x".into();
+        repo.insert_channel(&c).unwrap();
+        assert_eq!(
+            repo.get_channel("c1").unwrap().unwrap().api_key,
+            "sk-upstream-x"
+        );
+        {
+            let conn = repo.db.conn();
+            let conn = conn.lock();
+            let raw: String = conn
+                .query_row("SELECT api_key FROM channels WHERE id='c1'", [], |r| {
+                    r.get(0)
+                })
+                .unwrap();
+            assert!(crate::security::crypto::Cipher::is_encrypted(&raw));
+        }
+        // 已加密行不被重复迁移
+        assert_eq!(repo.migrate_plaintext_keys().unwrap(), 0);
+    }
+
+    #[test]
     fn consume_quota_atomic_caps_at_total() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         let k = ApiKey {
@@ -2019,6 +2080,10 @@ mod tests {
             role: "coder".into(),
             channel_id: "ch1".into(),
             target_model: "gpt-4o".into(),
+            priority: 0,
+            weight: 1,
+            breaker_max_failures: 5,
+            breaker_cooldown_secs: 60,
             enabled: true,
             updated_at: 1,
         };
@@ -2026,9 +2091,26 @@ mod tests {
         let routes = repo.list_role_routes().unwrap();
         assert_eq!(routes.len(), 1);
         assert_eq!(routes[0].role, "coder");
+        assert_eq!(routes[0].breaker_max_failures, 5);
 
-        repo.delete_role_route("coder").unwrap();
-        assert!(repo.list_role_routes().unwrap().is_empty());
+        // 同一角色可存在多条路由
+        let rr2 = RoleRoute {
+            id: "rr2".into(),
+            role: "coder".into(),
+            channel_id: "ch1".into(),
+            target_model: "gpt-4o-mini".into(),
+            priority: 10,
+            weight: 2,
+            ..rr.clone()
+        };
+        repo.upsert_role_route(&rr2).unwrap();
+        let by_role = repo.get_role_routes("coder").unwrap();
+        assert_eq!(by_role.len(), 2);
+        // 按 priority 降序
+        assert_eq!(by_role[0].id, "rr2");
+
+        repo.delete_role_route("rr1").unwrap();
+        assert_eq!(repo.list_role_routes().unwrap().len(), 1);
     }
 
     #[test]
@@ -2919,7 +3001,7 @@ mod tests {
         ))
         .unwrap();
 
-        let series = repo.log_timeseries(&LogFilter::default(), 60).unwrap();
+        let series = repo.log_timeseries(&LogFilter::default(), 60, 0).unwrap();
         assert_eq!(series.len(), 3);
 
         assert_eq!(series[0].bucket, 0);
@@ -2957,6 +3039,47 @@ mod tests {
     }
 
     #[test]
+    fn log_timeseries_aligns_daily_buckets_to_tz_offset() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+
+        // UTC 0 = 本地(UTC+8) 1月1日 08:00；UTC 90000 = 本地 1月2日 09:00
+        repo.insert_log(&make_log_stats(1, 200, "ch1", "c", "alice", "clean", 1, 1, 0))
+            .unwrap();
+        repo.insert_log(&make_log_stats(2, 200, "ch1", "c", "alice", "clean", 1, 1, 90000))
+            .unwrap();
+
+        // 无偏移：桶落在 UTC 零点 [0, 86400]
+        let utc = repo.log_timeseries(&LogFilter::default(), 86400, 0).unwrap();
+        assert_eq!(utc.len(), 2);
+        assert_eq!(utc[0].bucket, 0);
+        assert_eq!(utc[1].bucket, 86400);
+
+        // 本地偏移 +8h：桶边界落在本地零点，即 UTC 前一日 16:00 [-28800, 57600]
+        let local = repo
+            .log_timeseries(&LogFilter::default(), 86400, 28800)
+            .unwrap();
+        assert_eq!(local.len(), 2);
+        assert_eq!(local[0].bucket, -28800);
+        assert_eq!(local[1].bucket, 57600);
+        assert_eq!(local[0].calls, 1);
+        assert_eq!(local[1].calls, 1);
+    }
+
+    #[test]
     fn log_timeseries_empty_when_no_match() {
         let repo = Repository::new(Db::new_in_memory().unwrap());
         repo.insert_channel(&ch("ch1")).unwrap();
@@ -2991,7 +3114,7 @@ mod tests {
             api_key_id: Some("non-existent".into()),
             ..Default::default()
         };
-        let series = repo.log_timeseries(&filter, 60).unwrap();
+        let series = repo.log_timeseries(&filter, 60, 0).unwrap();
         assert!(series.is_empty());
     }
 
@@ -3285,158 +3408,6 @@ mod tests {
         repo.delete_mcp_server("m1").unwrap();
         assert!(repo.get_mcp_server("m1").unwrap().is_none());
         assert_eq!(repo.list_mcp_servers().unwrap().len(), 1);
-    }
-
-    fn log_in_trace(seq: i64, trace_id: &str, role: &str, created_at: i64) -> RequestLog {
-        let mut l = make_log(seq, "gpt-4o", 10, 100, created_at);
-        l.trace_id = trace_id.into();
-        l.role = Some(role.into());
-        l
-    }
-
-    #[test]
-    fn list_sessions_groups_by_trace() {
-        let repo = Repository::new(Db::new_in_memory().unwrap());
-        repo.insert_channel(&ch("ch1")).unwrap();
-        repo.insert_api_key(&ApiKey {
-            id: "k1".into(),
-            key: "sk-lgw-a".into(),
-            name: "alice".into(),
-            enabled: true,
-            quota_total: None,
-            quota_used: 0,
-            total_calls: 0,
-            total_tokens: 0,
-            created_at: 1,
-            last_used_at: None,
-        })
-        .unwrap();
-
-        repo.insert_log(&log_in_trace(1, "tr1", "user", 100))
-            .unwrap();
-        repo.insert_log(&log_in_trace(2, "tr1", "assistant", 200))
-            .unwrap();
-        repo.insert_log(&log_in_trace(3, "tr2", "user", 300))
-            .unwrap();
-        repo.insert_log(&log_in_trace(4, "tr2", "assistant", 400))
-            .unwrap();
-
-        let sessions = repo.list_sessions().unwrap();
-        assert_eq!(sessions.len(), 2);
-        // 按 last_active 降序：tr2(400) 在前
-        assert_eq!(sessions[0].trace_id, "tr2");
-        assert_eq!(sessions[0].first_active, 300);
-        assert_eq!(sessions[0].last_active, 400);
-        assert_eq!(sessions[0].message_count, 2);
-        assert!(sessions[0].title.is_none());
-        assert_eq!(sessions[1].trace_id, "tr1");
-        assert_eq!(sessions[1].first_active, 100);
-        assert_eq!(sessions[1].last_active, 200);
-        assert_eq!(sessions[1].message_count, 2);
-
-        // roles 子查询汇总（按 role 分组）
-        let mut roles: Vec<(String, i64)> = sessions[1].roles.clone();
-        roles.sort();
-        assert_eq!(
-            roles,
-            vec![("assistant".to_string(), 1), ("user".to_string(), 1)]
-        );
-    }
-
-    #[test]
-    fn list_session_titles_returns_first_user_body() {
-        let repo = Repository::new(Db::new_in_memory().unwrap());
-        repo.insert_channel(&ch("ch1")).unwrap();
-        repo.insert_api_key(&ApiKey {
-            id: "k1".into(),
-            key: "sk-lgw-a".into(),
-            name: "alice".into(),
-            enabled: true,
-            quota_total: None,
-            quota_used: 0,
-            total_calls: 0,
-            total_tokens: 0,
-            created_at: 1,
-            last_used_at: None,
-        })
-        .unwrap();
-
-        // tr1: 首条 user 消息（seq 1）→ 标题取自它，而不是 seq 3 的后续 user 消息
-        let mut m1 = log_in_trace(1, "tr1", "user", 100);
-        m1.request_body =
-            Some(r#"{"messages":[{"role":"user","content":"First user title"}]}"#.into());
-        repo.insert_log(&m1).unwrap();
-        let mut m2 = log_in_trace(2, "tr1", "assistant", 200);
-        m2.response_body = Some(r#"{"content":"reply"}"#.into());
-        repo.insert_log(&m2).unwrap();
-        let mut m3 = log_in_trace(3, "tr1", "user", 300);
-        m3.request_body =
-            Some(r#"{"messages":[{"role":"user","content":"Later user title"}]}"#.into());
-        repo.insert_log(&m3).unwrap();
-
-        // tr2: 无 user 消息 → 不返回该 trace（标题候选为 None）
-        let mut a1 = log_in_trace(4, "tr2", "assistant", 400);
-        a1.response_body = Some(r#"{"content":"hi"}"#.into());
-        repo.insert_log(&a1).unwrap();
-
-        // tr3: user 消息 role 为空字符串 → 仍视为标题候选
-        let mut c1 = log_in_trace(5, "tr3", "", 500);
-        c1.request_body =
-            Some(r#"{"messages":[{"role":"user","content":"Empty role title"}]}"#.into());
-        repo.insert_log(&c1).unwrap();
-
-        let titles: std::collections::HashMap<String, Option<String>> =
-            repo.list_session_titles().unwrap().into_iter().collect();
-        assert_eq!(
-            titles.get("tr1").cloned().flatten().as_deref(),
-            Some(r#"{"messages":[{"role":"user","content":"First user title"}]}"#)
-        );
-        assert!(
-            titles.get("tr2").cloned().flatten().is_none(),
-            "no user message → no title candidate"
-        );
-        assert_eq!(
-            titles.get("tr3").cloned().flatten().as_deref(),
-            Some(r#"{"messages":[{"role":"user","content":"Empty role title"}]}"#)
-        );
-    }
-
-    #[test]
-    fn delete_session_cascades_findings() {
-        let repo = Repository::new(Db::new_in_memory().unwrap());
-        repo.insert_channel(&ch("ch1")).unwrap();
-        repo.insert_api_key(&ApiKey {
-            id: "k1".into(),
-            key: "sk-lgw-a".into(),
-            name: "alice".into(),
-            enabled: true,
-            quota_total: None,
-            quota_used: 0,
-            total_calls: 0,
-            total_tokens: 0,
-            created_at: 1,
-            last_used_at: None,
-        })
-        .unwrap();
-
-        repo.insert_log(&log_in_trace(1, "tr1", "user", 100))
-            .unwrap();
-        repo.insert_log(&log_in_trace(2, "tr1", "assistant", 200))
-            .unwrap();
-        repo.insert_log(&log_in_trace(3, "tr2", "user", 300))
-            .unwrap();
-        insert_raw_finding(&repo, "f1", "l1", 100);
-        insert_raw_finding(&repo, "f2", "l2", 200);
-        insert_raw_finding(&repo, "f3", "l3", 300);
-
-        let deleted = repo.delete_session("tr1").unwrap();
-        assert_eq!(deleted, 2);
-        assert_eq!(count_table(&repo, "request_logs"), 1);
-        assert_eq!(count_table(&repo, "request_security_findings"), 1);
-        assert!(repo.get_session_logs("tr1").unwrap().is_empty());
-        assert!(repo.get_findings("l1").unwrap().is_empty());
-        assert!(repo.get_findings("l2").unwrap().is_empty());
-        assert_eq!(repo.get_findings("l3").unwrap().len(), 1);
     }
 
     #[test]

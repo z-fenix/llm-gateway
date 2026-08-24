@@ -426,6 +426,10 @@ mod tests {
             role: "bad-role".into(),
             channel_id: "missing-channel".into(),
             target_model: "gpt-4o".into(),
+            priority: 0,
+            weight: 1,
+            breaker_max_failures: 5,
+            breaker_cooldown_secs: 60,
             enabled: true,
             updated_at: 1,
         });
@@ -436,7 +440,7 @@ mod tests {
         assert_eq!(r.skipped, 1);
         assert_eq!(r.overwritten, 0);
         assert!(state.repo.get_channel("good-channel").unwrap().is_some());
-        assert!(state.repo.get_role_route("bad-role").unwrap().is_none());
+        assert!(state.repo.get_role_routes("bad-role").unwrap().is_empty());
     }
 
     #[test]

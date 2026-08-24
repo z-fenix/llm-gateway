@@ -295,10 +295,80 @@ pub fn write_cli_config(
     }
 }
 
+/// 把当前网关地址与所选密钥合并进给定的 Claude Code settings.json JSON 文本：
+/// 仅改写 env.ANTHROPIC_BASE_URL / env.ANTHROPIC_AUTH_TOKEN，保留其余全部键，
+/// 返回合并后的 JSON（不落盘，交由前端编辑确认后保存）。
+#[tauri::command]
+pub fn merge_gateway_env(
+    state: State<AppState>,
+    json_content: String,
+    api_key_id: String,
+) -> Result<String, String> {
+    merge_gateway_env_inner(&state, &json_content, &api_key_id)
+}
+
+pub(crate) fn merge_gateway_env_inner(
+    state: &AppState,
+    json_content: &str,
+    api_key_id: &str,
+) -> Result<String, String> {
+    let base_url = resolve_base_url(*state.bound_addr.read())?;
+    let keys = state.repo.list_api_keys().map_err(|e| e.to_string())?;
+    let key = keys
+        .iter()
+        .find(|k| k.id == api_key_id)
+        .ok_or_else(|| "API 密钥不存在".to_string())?;
+    let (merged, _changed) =
+        claude_code::merge_settings(Some(json_content), &base_url, &key.key)?;
+    Ok(merged)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::db::Db;
+
+    #[test]
+    fn merge_gateway_env_inner_sets_only_env_vars() {
+        use crate::db::models::ApiKey;
+        use crate::db::Db;
+
+        let db = Db::new_in_memory().unwrap();
+        let repo = crate::db::repository::Repository::new(db.clone());
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-abc".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+        let state = AppState::new(db);
+        *state.bound_addr.write() = Some("127.0.0.1:8779".parse().unwrap());
+
+        let out = merge_gateway_env_inner(
+            &state,
+            r#"{"model":"opus","env":{"OTHER":"1"}}"#,
+            "k1",
+        )
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v["model"], serde_json::json!("opus"));
+        assert_eq!(v["env"]["OTHER"], serde_json::json!("1"));
+        assert_eq!(
+            v["env"]["ANTHROPIC_BASE_URL"],
+            serde_json::json!("http://127.0.0.1:8779")
+        );
+        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-abc"));
+
+        let err = merge_gateway_env_inner(&state, "{}", "missing").unwrap_err();
+        assert!(err.contains("API 密钥不存在"));
+    }
 
     /// 轮询等待 bound_addr 变为 Some 并返回地址(最多 ~5s)。
     fn wait_bound(state: &AppState) -> Option<SocketAddr> {

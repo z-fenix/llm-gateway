@@ -96,6 +96,7 @@ describe("LogsPage", () => {
       );
       expect(mockedApi.getLogTimeseries).toHaveBeenCalledWith(
         expect.objectContaining({ keyword: "foo" }),
+        expect.any(Number),
         expect.any(Number)
       );
     });

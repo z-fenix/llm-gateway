@@ -1,5 +1,6 @@
 use crate::db::models::{RolePattern, RoleRoute};
 use crate::proxy::state::AppState;
+use serde::Serialize;
 use tauri::State;
 use tauri_plugin_store::StoreExt;
 
@@ -8,30 +9,50 @@ pub fn list_role_routes(state: State<AppState>) -> Result<Vec<RoleRoute>, String
     state.repo.list_role_routes().map_err(|e| e.to_string())
 }
 
+/// 新增（id 为空）或更新（id 已有）一条角色路由；同一角色可有多条。
 #[tauri::command]
-pub fn set_role_route(
-    state: State<AppState>,
-    role: String,
-    channel_id: String,
-    target_model: String,
-) -> Result<(), String> {
-    let rr = RoleRoute {
-        id: uuid::Uuid::new_v4().to_string(),
-        role,
-        channel_id,
-        target_model,
-        enabled: true,
-        updated_at: chrono::Utc::now().timestamp(),
-    };
-    state.repo.upsert_role_route(&rr).map_err(|e| e.to_string())
+pub fn upsert_role_route(state: State<AppState>, mut route: RoleRoute) -> Result<(), String> {
+    if route.id.is_empty() {
+        route.id = uuid::Uuid::new_v4().to_string();
+    }
+    if route.weight <= 0 {
+        route.weight = 1;
+    }
+    route.updated_at = chrono::Utc::now().timestamp();
+    state
+        .repo
+        .upsert_role_route(&route)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn delete_role_route(state: State<AppState>, role: String) -> Result<(), String> {
+pub fn delete_role_route(state: State<AppState>, id: String) -> Result<(), String> {
     state
         .repo
-        .delete_role_route(&role)
+        .delete_role_route(&id)
         .map_err(|e| e.to_string())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BreakerStatus {
+    pub route_id: String,
+    pub state: String,
+    pub failures: u32,
+}
+
+/// 各角色路由熔断器当前状态（closed/open/half_open）。
+#[tauri::command]
+pub fn get_breaker_status(state: State<AppState>) -> Vec<BreakerStatus> {
+    let breakers = state.circuit_breakers.read();
+    breakers
+        .iter()
+        .map(|(id, b)| BreakerStatus {
+            route_id: id.clone(),
+            state: b.state().label().to_string(),
+            failures: b.failures(),
+        })
+        .collect()
 }
 
 #[tauri::command]

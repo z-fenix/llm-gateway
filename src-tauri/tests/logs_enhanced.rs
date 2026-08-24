@@ -211,7 +211,7 @@ async fn log_stats_reflects_real_requests() {
     // 趋势接口同样不返回 body，仅做聚合断言
     let buckets = state
         .repo
-        .log_timeseries(&LogFilter::default(), 60)
+        .log_timeseries(&LogFilter::default(), 60, 0)
         .unwrap();
     assert_eq!(buckets.len(), 1);
     let bucket = &buckets[0];

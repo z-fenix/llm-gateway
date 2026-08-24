@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Layers, List, Search } from "lucide-react";
 import { api } from "../lib/api";
+import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
+import { useRefreshInterval } from "../lib/useRefreshInterval";
+import RefreshControls from "../components/RefreshControls";
 import type { ApiKey, Channel, LogFilter, LogStats, RequestLog, SecurityFinding, TimeBucket, UsageRangeSelection } from "../types";
 import LogTrendChart, { type Dimension } from "../components/LogTrendChart";
 import PageHeader from "../components/PageHeader";
@@ -250,6 +253,8 @@ export default function LogsPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [openSession, setOpenSession] = useState<string | null>(null);
   const [view, setView] = useState<"flat" | "session">("flat");
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [secs, setSecs] = useRefreshInterval("logs-refresh");
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<LogStats | null>(null);
   const [buckets, setBuckets] = useState<TimeBucket[]>([]);
@@ -270,7 +275,7 @@ export default function LogsPage() {
   };
 
   const bucketFor = (f: LogFilter) =>
-    f.after && f.before && f.before - f.after <= 48 * 3600 ? 3600 : 86400;
+    bucketSizeForRange(f.after ?? 0, f.before ?? 0);
 
   const bucketSize = useMemo(() => bucketFor(filter), [filter.after, filter.before]);
 
@@ -281,20 +286,22 @@ export default function LogsPage() {
   };
 
   const loadStatsTrend = (f: LogFilter = filter) => {
+    const bs = bucketFor(f);
+    const off = localOffsetSecs();
     Promise.all([
       api.getLogStats(f),
-      api.getLogTimeseries(f, bucketFor(f)),
+      api.getLogTimeseries(f, bs, off),
     ]).then(([statsData, bucketsData]) => {
       setStats(statsData);
-      setBuckets(bucketsData);
+      setBuckets(fillBuckets(bucketsData, f.after ?? 0, f.before ?? 0, bs, off));
       setError(null);
     }).catch(handleError);
   };
 
-  // page effect 负责列表请求：初始挂载、分页、查询都会通过 page/searchNonce 触发
-  useEffect(() => { loadList(); }, [page, searchNonce]);
+  // page effect 负责列表请求：初始挂载、分页、查询、刷新都会触发
+  useEffect(() => { loadList(); }, [page, searchNonce, refreshNonce]);
 
-  // 挂载时加载元数据、统计与趋势；不重复请求列表（由 page effect 负责）
+  // 挂载时加载元数据（渠道/密钥/保留天数），不随刷新重复请求
   useEffect(() => {
     api.listChannels().then(setChannels).catch(handleError);
     api.listApiKeys().then(setApiKeys).catch(handleError);
@@ -302,8 +309,20 @@ export default function LogsPage() {
       setRetentionDays(days);
       setRetentionInput(String(days));
     }).catch(handleError);
-    loadStatsTrend();
   }, []);
+
+  // 统计与趋势随刷新非ce变化重新加载
+  useEffect(() => {
+    loadStatsTrend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce]);
+
+  // 自动刷新
+  useEffect(() => {
+    if (!secs) return;
+    const t = setInterval(() => setRefreshNonce((n) => n + 1), secs * 1000);
+    return () => clearInterval(t);
+  }, [secs]);
 
   const updateFilter = (patch: Partial<LogFilter>) => {
     setFilter((prev) => ({ ...prev, ...patch }));
@@ -387,6 +406,13 @@ export default function LogsPage() {
       <PageHeader
         title="请求日志"
         description="查看网关请求记录、安全风险与调用趋势，可按会话分组浏览"
+        action={
+          <RefreshControls
+            secs={secs}
+            onSecsChange={setSecs}
+            onRefresh={() => setRefreshNonce((n) => n + 1)}
+          />
+        }
       />
       {error && (
         <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">

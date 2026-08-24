@@ -76,10 +76,11 @@ pub fn get_log_timeseries(
     state: State<AppState>,
     filter: CommandLogFilter,
     bucket: i64,
+    tz_offset_secs: Option<i64>,
 ) -> Result<Vec<TimeBucket>, String> {
     state
         .repo
-        .log_timeseries(&filter.to_filter(), bucket)
+        .log_timeseries(&filter.to_filter(), bucket, tz_offset_secs.unwrap_or(0))
         .map_err(|e| e.to_string())
 }
 

@@ -237,6 +237,26 @@ export default function SettingsPage() {
     void readCliConfigFor(target);
   };
 
+  // 编辑 Claude Code 配置时：把当前网关地址与所选密钥合并进编辑中的 JSON（仅改 env 两变量）
+  const applyGatewayEnv = async () => {
+    if (!apiKeyId) {
+      toast.error("请先选择 API 密钥");
+      return;
+    }
+    clearError();
+    setCliLoading(true);
+    try {
+      const merged = await api.mergeGatewayEnv(cliJson, apiKeyId);
+      setCliJson(merged);
+      toast.success("已填入当前网关地址与密钥");
+    } catch (err) {
+      handleError(err);
+      toast.error("设置当前网关失败");
+    } finally {
+      setCliLoading(false);
+    }
+  };
+
   const exportConfig = async () => {
     const path = exportPath.trim();
     if (!path) {
@@ -638,6 +658,42 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </div>
+              {target === "claude_code" && (
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="min-w-[220px] space-y-1.5">
+                    <Label htmlFor="editor-api-key">
+                      API 密钥（写入 ANTHROPIC_AUTH_TOKEN）
+                    </Label>
+                    <Select value={apiKeyId} onValueChange={setApiKeyId}>
+                      <SelectTrigger
+                        id="editor-api-key"
+                        className="h-8"
+                        aria-label="编辑器 API 密钥"
+                      >
+                        <SelectValue placeholder="选择密钥" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {apiKeys.map((k) => (
+                          <SelectItem key={k.id} value={k.id}>
+                            {k.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={applyGatewayEnv}
+                    disabled={cliLoading}
+                  >
+                    设置当前网关
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    仅改写 env.ANTHROPIC_BASE_URL 与 env.ANTHROPIC_AUTH_TOKEN，其余保持 Claude Code 默认
+                  </p>
+                </div>
+              )}
               {cliLoading && (
                 <p className="text-xs text-muted-foreground">读取中...</p>
               )}

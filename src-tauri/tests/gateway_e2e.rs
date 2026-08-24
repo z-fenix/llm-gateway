@@ -57,6 +57,10 @@ async fn end_to_end_openai_with_role_route_and_logging() {
         role: "sonnet".into(),
         channel_id: "c1".into(),
         target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
         enabled: true,
         updated_at: 1,
     })
@@ -244,6 +248,10 @@ async fn configured_auto_route_used_for_unmatched() {
         role: "auto".into(),
         channel_id: "c1".into(),
         target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
         enabled: true,
         updated_at: 1,
     })

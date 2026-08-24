@@ -33,6 +33,8 @@ pub struct AppState {
     pub app: Arc<RwLock<AppConfig>>,
     /// 上游 MCP server 活跃连接句柄（id -> handle）
     pub mcp_clients: Arc<RwLock<HashMap<String, tokio::task::JoinHandle<()>>>>,
+    /// 角色路由熔断器（key = role_route id）
+    pub circuit_breakers: Arc<RwLock<HashMap<String, crate::router::breaker::Breaker>>>,
 }
 
 impl AppState {
@@ -61,6 +63,7 @@ impl AppState {
             gateway_handle: Arc::new(RwLock::new(None)),
             app: Arc::new(RwLock::new(AppConfig::default())),
             mcp_clients: Arc::new(RwLock::new(HashMap::new())),
+            circuit_breakers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }

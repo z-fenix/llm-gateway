@@ -3,8 +3,11 @@ use crate::protocol::types::ChatRequest;
 use crate::provider::adapter::{auth_header, build_upstream_body, upstream_url};
 use crate::proxy::sse::Usage;
 use crate::proxy::state::AppState;
+use crate::router::breaker::Breaker;
+use crate::router::dispatch::{order_by_priority_weight, plan_route, RoleCandidate};
 use bytes::Bytes;
 use futures::Stream;
+use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -47,58 +50,126 @@ fn is_failover_status(status: u16) -> bool {
     status == 429 || status == 401 || status == 403 || status >= 500
 }
 
+fn breaker_record_success(state: &AppState, route_id: &str) {
+    if let Some(b) = state.circuit_breakers.write().get_mut(route_id) {
+        b.record_success();
+    }
+}
+
+fn breaker_record_failure(state: &AppState, route_id: &str) {
+    if let Some(b) = state.circuit_breakers.write().get_mut(route_id) {
+        b.record_failure();
+    }
+}
+
+/// 组装一次请求的候选序列：(channel, model, via_fallback, route_id)。
+/// - 角色路由：该角色全部启用路由按 priority 分组、组内按 weight 加权随机排序，
+///   熔断器不放行的路由被跳过，末尾追加全局兜底。
+/// - 否则：普通调度（plan_route），route_id 为 None。
+fn build_candidates(
+    state: &AppState,
+    all: &[Channel],
+    role: &Option<String>,
+    request_model: &str,
+) -> Vec<(Channel, String, bool, Option<String>)> {
+    let by_id = |id: &str| all.iter().find(|c| c.id == id).cloned();
+    let maps_fn = |c: &Channel, m: &str| {
+        let maps = state.repo.get_model_map(&c.id).unwrap_or_default();
+        crate::router::model_map::resolve_model(&maps, m)
+    };
+    let fallback_pair = state
+        .fallback
+        .read()
+        .clone()
+        .and_then(|(fid, fmodel)| by_id(&fid).map(|fch| (fch, fmodel)));
+
+    let mut out: Vec<(Channel, String, bool, Option<String>)> = Vec::new();
+    if let Some(role) = role {
+        let routes = state.repo.get_role_routes(role).unwrap_or_default();
+        if !routes.is_empty() {
+            let route_cfg: HashMap<String, (i64, i64)> = routes
+                .iter()
+                .map(|rr| (rr.id.clone(), (rr.breaker_max_failures, rr.breaker_cooldown_secs)))
+                .collect();
+            let role_cands: Vec<RoleCandidate> = routes
+                .iter()
+                .filter_map(|rr| {
+                    by_id(&rr.channel_id).map(|ch| RoleCandidate {
+                        route_id: rr.id.clone(),
+                        channel: ch,
+                        model: rr.target_model.clone(),
+                        priority: rr.priority,
+                        weight: rr.weight,
+                    })
+                })
+                .collect();
+            for rc in order_by_priority_weight(
+                role_cands,
+                |rc| rc.priority,
+                |rc| rc.weight.max(0) as u64,
+                |rc| rc.route_id.as_str(),
+                1,
+            ) {
+                let (max_failures, cooldown) = route_cfg
+                    .get(&rc.route_id)
+                    .copied()
+                    .unwrap_or((5, 60));
+                let allow = {
+                    let mut breakers = state.circuit_breakers.write();
+                    breakers
+                        .entry(rc.route_id.clone())
+                        .or_insert_with(|| Breaker::new(max_failures, cooldown))
+                        .allow()
+                };
+                if allow {
+                    out.push((rc.channel, rc.model, false, Some(rc.route_id)));
+                }
+            }
+            if let Some((fch, fmodel)) = fallback_pair {
+                out.push((fch, fmodel, true, None));
+            }
+            return out;
+        }
+    }
+    // 普通调度
+    for t in plan_route(&[], fallback_pair, all, &maps_fn, request_model, 1) {
+        out.push((t.channel, t.model, t.via_fallback, None));
+    }
+    out
+}
+
 /// 编排一次转发。
-/// role_route: Some((channel_id, target_model)) 表示已识别角色并有绑定。
+/// role: Some(role) 表示已识别角色，走该角色的多供应商路由（含熔断）。
 pub async fn forward(
     state: &AppState,
     chat: &ChatRequest,
-    role_route: Option<(String, String)>,
+    role: Option<String>,
     _api_key: &ApiKey,
 ) -> Result<ForwardResult, ForwardError> {
-    // 组装候选序列
     let all = state
         .repo
         .list_channels()
         .map_err(|e| ForwardError::Http(e.to_string()))?;
-    let by_id = |id: &str| all.iter().find(|c| c.id == id).cloned();
 
-    let mut candidates: Vec<(Channel, String, bool)> = Vec::new(); // (channel, model, via_fallback)
-    if let Some((cid, model)) = &role_route {
-        if let Some(ch) = by_id(cid) {
-            candidates.push((ch, model.clone(), false));
-        }
-        if let Some((fid, fmodel)) = state.fallback.read().clone() {
-            if let Some(fch) = by_id(&fid) {
-                candidates.push((fch, fmodel, true));
-            }
-        }
-    } else {
-        // 普通调度：复用 dispatch 排序
-        let maps_fn = |c: &Channel, m: &str| {
-            let maps = state.repo.get_model_map(&c.id).unwrap_or_default();
-            crate::router::model_map::resolve_model(&maps, m)
-        };
-        let plan = crate::router::dispatch::plan_route(None, None, &all, &maps_fn, &chat.model, 1);
-        for t in plan {
-            candidates.push((t.channel, t.model, t.via_fallback));
-        }
-    }
-
+    let candidates = build_candidates(state, &all, &role, &chat.model);
     if candidates.is_empty() {
         return Err(ForwardError::NoChannel);
     }
 
-    let max = if role_route.is_some() {
+    let max = if role.is_some() {
         candidates.len()
     } else {
         (state.retry_count + 1).min(candidates.len())
     };
     let mut last_err: Option<ForwardError> = None;
-    for (ch, model, via_fallback) in candidates.into_iter().take(max) {
+    for (ch, model, via_fallback, route_id) in candidates.into_iter().take(max) {
         let start = std::time::Instant::now();
         match try_channel(state, &ch, &model, chat).await {
             Ok((status, body, usage)) => {
                 let latency = start.elapsed().as_millis() as i64;
+                if let Some(rid) = &route_id {
+                    breaker_record_success(state, rid);
+                }
                 if let Err(e) = state.repo.record_channel_stats(
                     &ch.id,
                     (usage.input_tokens + usage.output_tokens) as i64,
@@ -117,11 +188,14 @@ pub async fn forward(
                         via_fallback,
                         latency_ms: latency,
                     },
-                    role: None,
+                    role,
                 });
             }
             Err(e) => {
                 let latency = start.elapsed().as_millis() as i64;
+                if let Some(rid) = &route_id {
+                    breaker_record_failure(state, rid);
+                }
                 if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
                     log::error!("failed to record channel stats: {}", e);
                 }
@@ -141,43 +215,24 @@ pub async fn forward(
 pub async fn forward_stream(
     state: &AppState,
     chat: &ChatRequest,
-    role_route: Option<(String, String)>,
+    role: Option<String>,
 ) -> Result<StreamHandle, ForwardError> {
     let all = state
         .repo
         .list_channels()
         .map_err(|e| ForwardError::Http(e.to_string()))?;
-    let by_id = |id: &str| all.iter().find(|c| c.id == id).cloned();
-    let mut candidates: Vec<(Channel, String, bool)> = Vec::new();
-    if let Some((cid, model)) = &role_route {
-        if let Some(ch) = by_id(cid) {
-            candidates.push((ch, model.clone(), false));
-        }
-        if let Some((fid, fmodel)) = state.fallback.read().clone() {
-            if let Some(fch) = by_id(&fid) {
-                candidates.push((fch, fmodel, true));
-            }
-        }
-    } else {
-        let maps_fn = |c: &Channel, m: &str| {
-            let maps = state.repo.get_model_map(&c.id).unwrap_or_default();
-            crate::router::model_map::resolve_model(&maps, m)
-        };
-        for t in crate::router::dispatch::plan_route(None, None, &all, &maps_fn, &chat.model, 1) {
-            candidates.push((t.channel, t.model, t.via_fallback));
-        }
-    }
+    let candidates = build_candidates(state, &all, &role, &chat.model);
     if candidates.is_empty() {
         return Err(ForwardError::NoChannel);
     }
 
-    let max = if role_route.is_some() {
+    let max = if role.is_some() {
         candidates.len()
     } else {
         (state.retry_count + 1).min(candidates.len())
     };
     let mut last_err = None;
-    for (ch, model, via_fallback) in candidates.into_iter().take(max) {
+    for (ch, model, via_fallback, route_id) in candidates.into_iter().take(max) {
         let start = std::time::Instant::now();
         let url = upstream_url(
             &ch.upstream_protocol,
@@ -200,6 +255,9 @@ pub async fn forward_stream(
         match resp {
             Ok(r) if r.status().is_success() => {
                 let latency = start.elapsed().as_millis() as i64;
+                if let Some(rid) = &route_id {
+                    breaker_record_success(state, rid);
+                }
                 if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, true) {
                     log::error!("failed to record channel stats: {}", e);
                 }
@@ -218,6 +276,9 @@ pub async fn forward_stream(
             }
             Ok(r) => {
                 let latency = start.elapsed().as_millis() as i64;
+                if let Some(rid) = &route_id {
+                    breaker_record_failure(state, rid);
+                }
                 let status = r.status().as_u16();
                 let text = r.text().await.unwrap_or_default();
                 if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
@@ -231,6 +292,9 @@ pub async fn forward_stream(
             }
             Err(e) => {
                 let latency = start.elapsed().as_millis() as i64;
+                if let Some(rid) = &route_id {
+                    breaker_record_failure(state, rid);
+                }
                 if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
                     log::error!("failed to record channel stats: {}", e);
                 }
