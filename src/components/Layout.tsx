@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen, Settings, FileText, MessagesSquare, Cable, Sparkles } from "lucide-react";
+import { LayoutDashboard, Server, KeyRound, Route, ShieldCheck, ScrollText, BookOpen, Settings, FileText, Cable, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
 
 const nav = [
@@ -8,8 +8,7 @@ const nav = [
   { to: "/keys", label: "密钥", icon: KeyRound },
   { to: "/roles", label: "角色路由", icon: Route },
   { to: "/security", label: "安全审计", icon: ShieldCheck },
-  { to: "/logs", label: "日志", icon: ScrollText },
-  { to: "/sessions", label: "会话", icon: MessagesSquare },
+  { to: "/logs", label: "日志与会话", icon: ScrollText },
   { to: "/knowledge", label: "知识库", icon: BookOpen },
   { to: "/prompts", label: "Prompt", icon: FileText },
   { to: "/mcp-servers", label: "MCP", icon: Cable },
