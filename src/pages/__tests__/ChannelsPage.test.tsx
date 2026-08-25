@@ -10,7 +10,27 @@ vi.mock("../../lib/api", () => ({
     createChannel: vi.fn().mockResolvedValue({ id: "c-new" }),
     updateChannel: vi.fn().mockResolvedValue(undefined),
     deleteChannel: vi.fn().mockResolvedValue(undefined),
-    duplicateChannel: vi.fn().mockResolvedValue(undefined),
+    duplicateChannel: vi
+      .fn()
+      .mockResolvedValue({
+        id: "c-new",
+        name: "渠道c-new",
+        supplier: "openai",
+        upstream_protocol: "openai-chat",
+        base_url: "https://api.openai.com",
+        api_key: "sk-x",
+        models: ["gpt-4o"],
+        priority: 0,
+        weight: 1,
+        enabled: true,
+        timeout_secs: 60,
+        total_calls: 0,
+        total_tokens: 0,
+        success_rate: 0,
+        avg_latency_ms: 0,
+        created_at: 1,
+        updated_at: 1,
+      }),
     testChannel: vi.fn().mockResolvedValue({ ok: true, latency_ms: 120, error: null }),
     getModelMap: vi.fn().mockResolvedValue([]),
     setModelMap: vi.fn().mockResolvedValue(undefined),
@@ -48,7 +68,7 @@ describe("ChannelsPage", () => {
     mockedApi.createChannel.mockResolvedValue(channel("c-new"));
     mockedApi.updateChannel.mockResolvedValue(undefined);
     mockedApi.deleteChannel.mockResolvedValue(undefined);
-    mockedApi.duplicateChannel.mockResolvedValue(undefined);
+    mockedApi.duplicateChannel.mockResolvedValue(channel("c-new"));
     mockedApi.testChannel.mockResolvedValue({ ok: true, latency_ms: 120, error: null });
     mockedApi.getModelMap.mockResolvedValue([]);
     mockedApi.setModelMap.mockResolvedValue(undefined);
