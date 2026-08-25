@@ -6,11 +6,8 @@ import ApiKeysPage from "./pages/ApiKeysPage";
 import RoleRoutesPage from "./pages/RoleRoutesPage";
 import SecurityPage from "./pages/SecurityPage";
 import RecordsPage from "./pages/RecordsPage";
-import KnowledgePage from "./pages/KnowledgePage";
+import ResourcesPage from "./pages/ResourcesPage";
 import SettingsPage from "./pages/SettingsPage";
-import PromptsPage from "./pages/PromptsPage";
-import McpServersPage from "./pages/McpServersPage";
-import SkillsPage from "./pages/SkillsPage";
 
 export default function App() {
   return (
@@ -22,11 +19,8 @@ export default function App() {
         <Route path="/roles" element={<RoleRoutesPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/logs" element={<RecordsPage />} />
-        <Route path="/knowledge" element={<KnowledgePage />} />
+        <Route path="/knowledge" element={<ResourcesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/prompts" element={<PromptsPage />} />
-        <Route path="/mcp-servers" element={<McpServersPage />} />
-        <Route path="/skills" element={<SkillsPage />} />
       </Route>
     </Routes>
   );
