@@ -18,7 +18,6 @@ vi.mock("../../lib/api", () => ({
       },
       { target: "codex", configured: false, path: "~/.codex/config.toml" },
     ]),
-    writeCliConfig: vi.fn().mockResolvedValue([]),
     readCliConfig: vi.fn().mockResolvedValue('{"env":{"A":"1"}}'),
     writeCliConfigContent: vi.fn().mockResolvedValue({
       path: "~/.claude/settings.json",
@@ -82,19 +81,6 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByRole("combobox", { name: "目标 CLI" }));
     expect(await screen.findByRole("option", { name: "Claude Code" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Codex" })).toBeInTheDocument();
-  });
-
-  it("切换 target 后一键写入调用 writeCliConfig(target, apiKeyId, writeEnv)", async () => {
-    render(<SettingsPage />);
-    await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "目标 CLI" })).toBeInTheDocument()
-    );
-    fireEvent.click(screen.getByRole("combobox", { name: "目标 CLI" }));
-    fireEvent.click(await screen.findByRole("option", { name: "Codex" }));
-    fireEvent.click(screen.getByRole("button", { name: "一键写入" }));
-    await waitFor(() =>
-      expect(mockedApi.writeCliConfig).toHaveBeenCalledWith("codex", "k1", true)
-    );
   });
 
   it("保存端口调用 setPreferredPort", async () => {

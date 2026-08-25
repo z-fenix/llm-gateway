@@ -89,13 +89,4 @@ describe("api invoke 参数键（camelCase 契约）", () => {
     await api.searchKb("kb", "q");
     expect(invoke).toHaveBeenCalledWith("search_kb", { kbId: "kb", query: "q" });
   });
-
-  it("writeCliConfig → apiKeyId/writeEnv", async () => {
-    await api.writeCliConfig("claude", "k1", true);
-    expect(invoke).toHaveBeenCalledWith("write_cli_config", {
-      target: "claude",
-      apiKeyId: "k1",
-      writeEnv: true,
-    });
-  });
 });

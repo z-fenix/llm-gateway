@@ -14,7 +14,6 @@ import type {
   ApiKey,
   AppConfigInfo,
   CliTargetInfo,
-  CliWriteResult,
   ImportPreview,
   ImportResult,
   RectifierConfig,
@@ -59,8 +58,6 @@ export default function SettingsPage() {
   const [target, setTarget] = useState<string>(CLI_TARGETS[0]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [apiKeyId, setApiKeyId] = useState<string>("");
-  const [writeEnv, setWriteEnv] = useState(true);
-  const [cliResults, setCliResults] = useState<CliWriteResult[] | null>(null);
   const [cliEditorOpen, setCliEditorOpen] = useState(false);
   const [cliJson, setCliJson] = useState("");
   const [cliLoading, setCliLoading] = useState(false);
@@ -161,22 +158,6 @@ export default function SettingsPage() {
       handleError(err);
     } finally {
       setRestarting(false);
-    }
-  };
-
-  const writeCli = async () => {
-    if (!apiKeyId) {
-      setError("请选择 API 密钥");
-      return;
-    }
-    clearError();
-    setCliResults(null);
-    try {
-      const results = await api.writeCliConfig(target, apiKeyId, writeEnv);
-      setCliResults(results);
-      toast.success("CLI 配置写入完成");
-    } catch (err) {
-      handleError(err);
     }
   };
 
@@ -496,122 +477,39 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="cli-target">目标 CLI</Label>
-              <Select
-                value={target}
-                onValueChange={(v) => {
-                  setTarget(v);
-                  if (cliEditorOpen) {
-                    void readCliConfigFor(v);
-                  }
-                }}
-              >
-                <SelectTrigger id="cli-target" aria-label="目标 CLI">
-                  <SelectValue placeholder="选择目标 CLI" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLI_TARGETS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {CLI_TARGET_LABELS[t] ?? t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {targetInfo && (
-                <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                  <p>
-                    状态: {targetInfo.configured ? "已配置" : "未配置"}
-                  </p>
-                  <p className="truncate" title={targetInfo.path}>
-                    路径: {targetInfo.path}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cli-api-key">API 密钥</Label>
-              <Select
-                value={apiKeyId}
-                onValueChange={setApiKeyId}
-                disabled={apiKeys.length === 0}
-              >
-                <SelectTrigger id="cli-api-key" aria-label="API 密钥">
-                  <SelectValue placeholder="选择 API 密钥" />
-                </SelectTrigger>
-                <SelectContent>
-                  {apiKeys.length === 0 && (
-                    <SelectItem value="__none__">暂无密钥</SelectItem>
-                  )}
-                  {apiKeys.map((k) => (
-                    <SelectItem key={k.id} value={k.id}>
-                      {k.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="mb-4 space-y-1.5">
+            <Label htmlFor="cli-target">目标 CLI</Label>
+            <Select
+              value={target}
+              onValueChange={(v) => {
+                setTarget(v);
+                if (cliEditorOpen) {
+                  void readCliConfigFor(v);
+                }
+              }}
+            >
+              <SelectTrigger id="cli-target" aria-label="目标 CLI">
+                <SelectValue placeholder="选择目标 CLI" />
+              </SelectTrigger>
+              <SelectContent>
+                {CLI_TARGETS.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {CLI_TARGET_LABELS[t] ?? t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {targetInfo && (
+              <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                <p>
+                  状态: {targetInfo.configured ? "已配置" : "未配置"}
+                </p>
+                <p className="truncate" title={targetInfo.path}>
+                  路径: {targetInfo.path}
+                </p>
+              </div>
+            )}
           </div>
-
-          {target === "codex" && (
-            <label className="mb-4 flex w-fit items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300"
-                checked={writeEnv}
-                onChange={(e) => setWriteEnv(e.target.checked)}
-              />
-              同时写入用户环境变量
-            </label>
-          )}
-
-          <Button onClick={writeCli} disabled={!apiKeyId}>
-            <TerminalSquare className="h-4 w-4" />
-            一键写入
-          </Button>
-
-          {cliResults && (
-            <div className="mt-4 space-y-3">
-              {cliResults.map((r, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-lg border border-border p-3 text-sm"
-                >
-                  <p>
-                    <span className="text-muted-foreground">配置文件:</span>{" "}
-                    <span className="font-mono">{r.path}</span>
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">备份文件:</span>{" "}
-                    <span className="font-mono">
-                      {r.backup_path ?? "无"}
-                    </span>
-                  </p>
-                  <p className="text-muted-foreground">变更键:</p>
-                  {r.changed_keys.length === 0 ? (
-                    <p className="text-muted-foreground/70">无变更</p>
-                  ) : (
-                    <ul className="list-inside list-disc font-mono text-xs">
-                      {r.changed_keys.map((k) => (
-                        <li key={k}>{k}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {r.env_instructions && (
-                    <>
-                      <p className="mt-2 text-muted-foreground">
-                        环境变量说明:
-                      </p>
-                      <pre className="mt-1 overflow-auto rounded-md border border-border bg-muted/40 p-2 text-xs">
-                        {r.env_instructions}
-                      </pre>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
 
           <div className="mt-4 flex items-center gap-2">
             <Button variant="outline" onClick={toggleCliEditor}>
