@@ -1,6 +1,6 @@
 use super::models::{
     ApiKey, BuiltinRule, Channel, CustomRule, KbChunk, KbDocument, KnowledgeBase, McpServer,
-    Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, Skill,
+    ModelPrice, Prompt, RequestLog, RequestSecurityFinding, RolePattern, RoleRoute, Skill,
 };
 use super::Db;
 use crate::error::AppResult;
@@ -52,6 +52,12 @@ pub struct LogStats {
     pub total_calls: i64,
     pub total_input_tokens: i64,
     pub total_output_tokens: i64,
+    /// 缓存命中 token 聚合
+    pub cache_read_tokens: i64,
+    /// 缓存写入 token 聚合
+    pub cache_creation_tokens: i64,
+    /// 总成本（USD）
+    pub cost: f64,
     pub success_count: i64,
     pub risk_distribution: Vec<(String, i64)>,
     pub top_channels: Vec<(String, i64)>,
@@ -64,11 +70,25 @@ pub struct TimeBucket {
     pub calls: i64,
     pub input_tokens: i64,
     pub output_tokens: i64,
+    /// 缓存命中 token 聚合
+    pub cache_read_tokens: i64,
+    /// 缓存写入 token 聚合
+    pub cache_creation_tokens: i64,
+    /// 总成本（USD）
+    pub cost: f64,
+    /// 去重缓存后的 fresh input 聚合（读时派生，用于命中率）
+    pub fresh_input: i64,
     pub error_count: i64,
     pub risk_counts: BTreeMap<String, i64>,
 }
 
 /// 按角色聚合的日志统计（用于角色卡片展示；无日志的角色不出现在结果中，由前端补 0）。
+/// 仪表盘汇总统计（`stats()` 返回元组）：
+/// (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms,
+///  today_input_tokens, today_output_tokens, today_cache_read_tokens, today_cache_creation_tokens,
+///  today_cost, total_cost)
+pub type UsageStatsTuple = (i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, f64, f64);
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct RoleStats {
     pub role: String,
@@ -135,6 +155,76 @@ fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
     }
 
     (sql, values)
+}
+
+/// 缓存包含型协议：上游 input_tokens 已含缓存命中/写入，计价 input 需扣减。
+/// 对齐 cc-switch 的 SQL（protocol 存上游协议名）。
+fn is_cache_inclusive_protocol(protocol: &str) -> bool {
+    matches!(
+        protocol,
+        "openai-chat" | "openai-responses" | "gemini-native"
+    )
+}
+
+/// 计算单行成本（USD）。无价格时四项均为 0。
+/// billable_input = inclusive 协议 input−cache_read−cache_creation（下限 0），exclusive 协议直接取 input。
+/// 四项 cost = tokens × per_million / 1e6；total = 四项和。
+fn compute_costs(
+    protocol: &str,
+    input_tokens: i64,
+    output_tokens: i64,
+    cache_read_tokens: i64,
+    cache_creation_tokens: i64,
+    price: Option<&ModelPrice>,
+) -> (f64, f64, f64, f64, f64) {
+    let Some(p) = price else {
+        return (0.0, 0.0, 0.0, 0.0, 0.0);
+    };
+    let billable_input = if is_cache_inclusive_protocol(protocol) {
+        (input_tokens - cache_read_tokens - cache_creation_tokens).max(0)
+    } else {
+        input_tokens.max(0)
+    };
+    let million = 1_000_000.0_f64;
+    let input_cost = billable_input as f64 * p.input_cost_per_million / million;
+    let output_cost = output_tokens.max(0) as f64 * p.output_cost_per_million / million;
+    let cache_read_cost = cache_read_tokens.max(0) as f64 * p.cache_read_cost_per_million / million;
+    let cache_creation_cost =
+        cache_creation_tokens.max(0) as f64 * p.cache_creation_cost_per_million / million;
+    let total_cost = input_cost + output_cost + cache_read_cost + cache_creation_cost;
+    (
+        input_cost,
+        output_cost,
+        cache_read_cost,
+        cache_creation_cost,
+        total_cost,
+    )
+}
+
+/// 按 model_id 精确查 model_pricing（model_id 已归一化）。
+fn query_model_price(
+    conn: &rusqlite::Connection,
+    model_id: &str,
+) -> rusqlite::Result<Option<ModelPrice>> {
+    use rusqlite::OptionalExtension;
+    conn.query_row(
+        "SELECT model_id, display_name, input_cost_per_million, output_cost_per_million,
+                cache_read_cost_per_million, cache_creation_cost_per_million, updated_at
+         FROM model_pricing WHERE model_id = ?1",
+        [model_id],
+        |r| {
+            Ok(ModelPrice {
+                model_id: r.get(0)?,
+                display_name: r.get(1)?,
+                input_cost_per_million: r.get(2)?,
+                output_cost_per_million: r.get(3)?,
+                cache_read_cost_per_million: r.get(4)?,
+                cache_creation_cost_per_million: r.get(5)?,
+                updated_at: r.get(6)?,
+            })
+        },
+    )
+    .optional()
 }
 
 impl Repository {
@@ -403,16 +493,41 @@ impl Repository {
             conn.query_row("SELECT COALESCE(MAX(seq),0)+1 FROM request_logs", [], |r| {
                 r.get(0)
             })?;
+        // 写时成本核算：按 normalize(upstream_model) 查 model_pricing；无价格 → 四项全 0。
+        let pricing_model =
+            crate::commands::pricing::normalize_model(l.upstream_model.as_deref().unwrap_or(""));
+        let pricing = if pricing_model.is_empty() {
+            None
+        } else {
+            query_model_price(&conn, &pricing_model)
+                .map_err(|e| crate::error::AppError::Msg(format!("resolve pricing failed: {e}")))?
+        };
+        let (input_cost, output_cost, cache_read_cost, cache_creation_cost, total_cost) =
+            compute_costs(
+                &l.protocol,
+                l.input_tokens,
+                l.output_tokens,
+                l.cache_read_tokens,
+                l.cache_creation_tokens,
+                pricing.as_ref(),
+            );
+        let pricing_model_col = if pricing_model.is_empty() {
+            None
+        } else {
+            Some(pricing_model)
+        };
         conn.execute(
-            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30)",
+            "INSERT INTO request_logs (id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,cache_read_tokens,cache_creation_tokens,input_cost_usd,output_cost_usd,cache_read_cost_usd,cache_creation_cost_usd,total_cost_usd,pricing_model,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30,?31,?32,?33,?34,?35,?36,?37,?38)",
             params![
                 l.id, seq, l.trace_id, l.api_key_id, l.key_name, l.channel_id, l.channel_name,
                 l.role, l.request_model, l.upstream_model, l.protocol, l.status_code,
-                l.input_tokens, l.output_tokens, l.latency_ms, l.is_stream as i64, l.error,
-                l.fallback as i64, l.tool_calls, l.request_body, l.response_body,
-                l.risk_level, l.risk_score, l.risk_summary, l.security_action, l.sanitized as i64,
-                l.blocked_reason, l.session_id, l.session_provider, l.created_at
+                l.input_tokens, l.output_tokens, l.cache_read_tokens, l.cache_creation_tokens,
+                input_cost, output_cost, cache_read_cost, cache_creation_cost, total_cost,
+                pricing_model_col, l.latency_ms, l.is_stream as i64, l.error, l.fallback as i64,
+                l.tool_calls, l.request_body, l.response_body, l.risk_level, l.risk_score,
+                l.risk_summary, l.security_action, l.sanitized as i64, l.blocked_reason,
+                l.session_id, l.session_provider, l.created_at
             ],
         )?;
         Ok(())
@@ -442,6 +557,134 @@ impl Repository {
         let deleted = tx.execute("DELETE FROM request_logs", [])?;
         tx.commit()?;
         Ok(deleted)
+    }
+
+    // ---------- Model Pricing ----------
+
+    /// 按 model_id（已归一化）精确查价。
+    pub fn resolve_pricing(&self, model: &str) -> AppResult<Option<ModelPrice>> {
+        let model_id = crate::commands::pricing::normalize_model(model);
+        if model_id.is_empty() {
+            return Ok(None);
+        }
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        query_model_price(&conn, &model_id)
+            .map_err(|e| crate::error::AppError::Msg(format!("resolve pricing failed: {e}")))
+    }
+
+    pub fn list_model_prices(&self) -> AppResult<Vec<ModelPrice>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let mut stmt = conn.prepare(
+            "SELECT model_id, display_name, input_cost_per_million, output_cost_per_million,
+                    cache_read_cost_per_million, cache_creation_cost_per_million, updated_at
+             FROM model_pricing ORDER BY model_id ASC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(ModelPrice {
+                model_id: r.get(0)?,
+                display_name: r.get(1)?,
+                input_cost_per_million: r.get(2)?,
+                output_cost_per_million: r.get(3)?,
+                cache_read_cost_per_million: r.get(4)?,
+                cache_creation_cost_per_million: r.get(5)?,
+                updated_at: r.get(6)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
+    /// upsert 单条定价；model_id 归一化后作为主键落库。
+    pub fn upsert_model_price(&self, p: &ModelPrice) -> AppResult<()> {
+        let model_id = crate::commands::pricing::normalize_model(&p.model_id);
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute(
+            "INSERT INTO model_pricing (model_id, display_name, input_cost_per_million, output_cost_per_million, cache_read_cost_per_million, cache_creation_cost_per_million, updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7)
+             ON CONFLICT(model_id) DO UPDATE SET display_name=excluded.display_name,
+               input_cost_per_million=excluded.input_cost_per_million,
+               output_cost_per_million=excluded.output_cost_per_million,
+               cache_read_cost_per_million=excluded.cache_read_cost_per_million,
+               cache_creation_cost_per_million=excluded.cache_creation_cost_per_million,
+               updated_at=excluded.updated_at",
+            params![
+                model_id,
+                p.display_name,
+                p.input_cost_per_million,
+                p.output_cost_per_million,
+                p.cache_read_cost_per_million,
+                p.cache_creation_cost_per_million,
+                p.updated_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_model_price(&self, model_id: &str) -> AppResult<()> {
+        let model_id = crate::commands::pricing::normalize_model(model_id);
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        conn.execute("DELETE FROM model_pricing WHERE model_id=?1", [&model_id])?;
+        Ok(())
+    }
+
+    /// 定价变更后的 backfill：重算 `pricing_model = model_id` 的历史行成本。
+    /// 返回受影响行数。定价已删除时按无价格重算为 0。
+    pub fn recompute_cost_for_model(&self, model_id: &str) -> AppResult<usize> {
+        let model_id = crate::commands::pricing::normalize_model(model_id);
+        if model_id.is_empty() {
+            return Ok(0);
+        }
+        let conn = self.db.conn();
+        let mut conn = conn.lock();
+        let tx = conn.transaction()?;
+        let mut stmt = tx.prepare(
+            "SELECT id, protocol, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens
+             FROM request_logs WHERE pricing_model = ?1",
+        )?;
+        let rows = stmt.query_map([&model_id], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, i64>(2)?,
+                r.get::<_, i64>(3)?,
+                r.get::<_, i64>(4)?,
+                r.get::<_, i64>(5)?,
+            ))
+        })?;
+        let mut pending = Vec::new();
+        for r in rows {
+            pending.push(r?);
+        }
+        drop(stmt);
+        let price = query_model_price(&tx, &model_id)
+            .map_err(|e| crate::error::AppError::Msg(format!("resolve pricing failed: {e}")))?;
+        let mut updated = 0usize;
+        for (id, protocol, input, output, cache_read, cache_creation) in pending {
+            let (ic, oc, crc, ccc, total) = compute_costs(
+                &protocol,
+                input,
+                output,
+                cache_read,
+                cache_creation,
+                price.as_ref(),
+            );
+            tx.execute(
+                "UPDATE request_logs SET input_cost_usd=?2, output_cost_usd=?3,
+                 cache_read_cost_usd=?4, cache_creation_cost_usd=?5, total_cost_usd=?6
+                 WHERE id=?1",
+                params![id, ic, oc, crc, ccc, total],
+            )?;
+            updated += 1;
+        }
+        tx.commit()?;
+        Ok(updated)
     }
 
     /// 返回某角色的全部启用路由，按 priority 降序（同优先级按插入顺序）。
@@ -507,7 +750,7 @@ impl Repository {
         let conn = self.db.conn();
         let conn = conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at FROM request_logs ORDER BY seq DESC LIMIT 1",
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at,cache_read_tokens,cache_creation_tokens,input_cost_usd,output_cost_usd,cache_read_cost_usd,cache_creation_cost_usd,total_cost_usd,pricing_model FROM request_logs ORDER BY seq DESC LIMIT 1",
         )?;
         let mut rows = stmt.query([])?;
         if let Some(r) = rows.next()? {
@@ -542,6 +785,14 @@ impl Repository {
                 session_id: r.get(27)?,
                 session_provider: r.get(28)?,
                 created_at: r.get(29)?,
+                cache_read_tokens: r.get(30)?,
+                cache_creation_tokens: r.get(31)?,
+                input_cost_usd: r.get(32)?,
+                output_cost_usd: r.get(33)?,
+                cache_read_cost_usd: r.get(34)?,
+                cache_creation_cost_usd: r.get(35)?,
+                total_cost_usd: r.get(36)?,
+                pricing_model: r.get(37)?,
             }))
         } else {
             Ok(None)
@@ -662,17 +913,32 @@ impl Repository {
         let (where_sql, values) = build_where(filter);
 
         let agg_sql = format!(
-            "SELECT COUNT(*), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), COALESCE(SUM(CASE WHEN status_code BETWEEN 200 AND 299 THEN 1 ELSE 0 END),0) FROM request_logs {}",
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0), \
+             COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_creation_tokens),0), \
+             COALESCE(SUM(total_cost_usd),0), \
+             COALESCE(SUM(CASE WHEN status_code BETWEEN 200 AND 299 THEN 1 ELSE 0 END),0) FROM request_logs {}",
             where_sql
         );
-        let (total_calls, total_input_tokens, total_output_tokens, success_count): (
-            i64,
-            i64,
-            i64,
-            i64,
-        ) = conn.query_row(&agg_sql, rusqlite::params_from_iter(values.iter()), |r| {
-            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
-        })?;
+        let (
+            total_calls,
+            total_input_tokens,
+            total_output_tokens,
+            cache_read_tokens,
+            cache_creation_tokens,
+            cost,
+            success_count,
+        ): (i64, i64, i64, i64, i64, f64, i64) =
+            conn.query_row(&agg_sql, rusqlite::params_from_iter(values.iter()), |r| {
+                Ok((
+                    r.get(0)?,
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                    r.get(5)?,
+                    r.get(6)?,
+                ))
+            })?;
 
         let risk_sql = format!(
             "SELECT risk_level, COUNT(*) FROM request_logs {} GROUP BY risk_level ORDER BY COUNT(*) DESC, risk_level ASC",
@@ -717,6 +983,9 @@ impl Repository {
             total_calls,
             total_input_tokens,
             total_output_tokens,
+            cache_read_tokens,
+            cache_creation_tokens,
+            cost,
             success_count,
             risk_distribution,
             top_channels,
@@ -768,11 +1037,19 @@ impl Repository {
         let (where_sql, where_values) = build_where(filter);
 
         // 桶边界按本地时区对齐：先加偏移取整再减回，使小时/日桶落在本地边界。
+        // fresh_input：inclusive 协议（openai-chat/openai-responses/gemini-native）input 含缓存，
+        // 扣减 cache_read+cache_creation 后为 fresh input；exclusive（anthropic-messages）直接取 input。
         let sql = format!(
             "SELECT ((created_at + ?) / ?) * ? - ? AS bucket, \
              COUNT(*), \
              COALESCE(SUM(input_tokens), 0), \
              COALESCE(SUM(output_tokens), 0), \
+             COALESCE(SUM(cache_read_tokens), 0), \
+             COALESCE(SUM(cache_creation_tokens), 0), \
+             COALESCE(SUM(total_cost_usd), 0), \
+             COALESCE(SUM(CASE WHEN protocol IN ('openai-chat','openai-responses','gemini-native') \
+               THEN MAX(input_tokens - cache_read_tokens - cache_creation_tokens, 0) \
+               ELSE input_tokens END), 0), \
              COALESCE(SUM(CASE WHEN status_code NOT BETWEEN 200 AND 299 THEN 1 ELSE 0 END), 0), \
              COALESCE(SUM(CASE WHEN risk_level = 'clean' THEN 1 ELSE 0 END), 0), \
              COALESCE(SUM(CASE WHEN risk_level = 'info' THEN 1 ELSE 0 END), 0), \
@@ -800,16 +1077,24 @@ impl Repository {
             let calls: i64 = r.get(1)?;
             let input_tokens: i64 = r.get(2)?;
             let output_tokens: i64 = r.get(3)?;
-            let error_count: i64 = r.get(4)?;
+            let cache_read_tokens: i64 = r.get(4)?;
+            let cache_creation_tokens: i64 = r.get(5)?;
+            let cost: f64 = r.get(6)?;
+            let fresh_input: i64 = r.get(7)?;
+            let error_count: i64 = r.get(8)?;
             let mut risk_counts = BTreeMap::<String, i64>::new();
             for (idx, level) in risk_levels.iter().enumerate() {
-                risk_counts.insert(level.to_string(), r.get::<_, i64>(5 + idx)?);
+                risk_counts.insert(level.to_string(), r.get::<_, i64>(9 + idx)?);
             }
             Ok(TimeBucket {
                 bucket,
                 calls,
                 input_tokens,
                 output_tokens,
+                cache_read_tokens,
+                cache_creation_tokens,
+                cost,
+                fresh_input,
                 error_count,
                 risk_counts,
             })
@@ -831,7 +1116,7 @@ impl Repository {
         let conn = conn.lock();
         let (where_sql, values) = build_where(filter);
         let sql = format!(
-            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at FROM request_logs {} ORDER BY seq DESC LIMIT ? OFFSET ?",
+            "SELECT id,seq,trace_id,api_key_id,key_name,channel_id,channel_name,role,request_model,upstream_model,protocol,status_code,input_tokens,output_tokens,latency_ms,is_stream,error,fallback,tool_calls,request_body,response_body,risk_level,risk_score,risk_summary,security_action,sanitized,blocked_reason,session_id,session_provider,created_at,cache_read_tokens,cache_creation_tokens,input_cost_usd,output_cost_usd,cache_read_cost_usd,cache_creation_cost_usd,total_cost_usd,pricing_model FROM request_logs {} ORDER BY seq DESC LIMIT ? OFFSET ?",
             where_sql
         );
         let mut stmt = conn.prepare(&sql)?;
@@ -869,6 +1154,14 @@ impl Repository {
                     session_id: r.get(27)?,
                     session_provider: r.get(28)?,
                     created_at: r.get(29)?,
+                    cache_read_tokens: r.get(30)?,
+                    cache_creation_tokens: r.get(31)?,
+                    input_cost_usd: r.get(32)?,
+                    output_cost_usd: r.get(33)?,
+                    cache_read_cost_usd: r.get(34)?,
+                    cache_creation_cost_usd: r.get(35)?,
+                    total_cost_usd: r.get(36)?,
+                    pricing_model: r.get(37)?,
                 })
             },
         )?;
@@ -1031,8 +1324,11 @@ impl Repository {
         conn.execute("DELETE FROM security_custom_rules WHERE id=?1", [id])?;
         Ok(())
     }
-    pub fn stats(&self) -> AppResult<(i64, i64, i64, i64, i64, i64)> {
-        // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms)
+    pub fn stats(&self) -> AppResult<UsageStatsTuple> {
+        // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms,
+        //  today_input_tokens, today_output_tokens, today_cache_read_tokens, today_cache_creation_tokens,
+        //  today_cost, total_cost)
+        // today_tokens 保持 input+output 组合口径不变；新增 today_* 分项供前端展示。
         let conn = self.db.conn();
         let conn = conn.lock();
         // 本地日历日的零点,按本地时区解释为 UTC 时间戳。
@@ -1045,13 +1341,30 @@ impl Repository {
             .and_local_timezone(chrono::Local)
             .unwrap()
             .timestamp();
-        let (tr, tt): (i64,i64) = conn.query_row(
-            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs WHERE created_at>=?1",
-            [today_start], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        let (ar, at): (i64, i64) = conn.query_row(
-            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0) FROM request_logs",
+        let (tr, tt, tii, too, tcr, tcc, tcost): (i64, i64, i64, i64, i64, i64, f64) = conn
+            .query_row(
+                "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0),
+                        COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0),
+                        COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_creation_tokens),0),
+                        COALESCE(SUM(total_cost_usd),0)
+                 FROM request_logs WHERE created_at>=?1",
+                [today_start],
+                |r| {
+                    Ok((
+                        r.get(0)?,
+                        r.get(1)?,
+                        r.get(2)?,
+                        r.get(3)?,
+                        r.get(4)?,
+                        r.get(5)?,
+                        r.get(6)?,
+                    ))
+                },
+            )?;
+        let (ar, at, tcost_total): (i64, i64, f64) = conn.query_row(
+            "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0), COALESCE(SUM(total_cost_usd),0) FROM request_logs",
             [],
-            |r| Ok((r.get(0)?, r.get(1)?)),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )?;
         let ac: i64 = conn.query_row("SELECT COUNT(*) FROM channels WHERE enabled=1", [], |r| {
             r.get(0)
@@ -1061,7 +1374,20 @@ impl Repository {
             [],
             |r| r.get(0),
         )?;
-        Ok((tr, tt, ar, at, ac, lat))
+        Ok((
+            tr,
+            tt,
+            ar,
+            at,
+            ac,
+            lat,
+            tii,
+            too,
+            tcr,
+            tcc,
+            tcost,
+            tcost_total,
+        ))
     }
 
     // 知识库 CRUD
@@ -2272,6 +2598,14 @@ mod tests {
             status_code: Some(200),
             input_tokens: tokens,
             output_tokens: tokens,
+            cache_read_tokens: 0,
+            cache_creation_tokens: 0,
+            input_cost_usd: 0.0,
+            output_cost_usd: 0.0,
+            cache_read_cost_usd: 0.0,
+            cache_creation_cost_usd: 0.0,
+            total_cost_usd: 0.0,
+            pricing_model: None,
             latency_ms: latency,
             is_stream: false,
             error: None,
@@ -2313,6 +2647,14 @@ mod tests {
             status_code: Some(status),
             input_tokens: 10,
             output_tokens: 10,
+            cache_read_tokens: 0,
+            cache_creation_tokens: 0,
+            input_cost_usd: 0.0,
+            output_cost_usd: 0.0,
+            cache_read_cost_usd: 0.0,
+            cache_creation_cost_usd: 0.0,
+            total_cost_usd: 0.0,
+            pricing_model: None,
             latency_ms: 100,
             is_stream: false,
             error: None,
@@ -2521,13 +2863,21 @@ mod tests {
         repo.insert_log(&make_log(2, "gpt-4o", 20, 200, today - 86400 * 2))
             .unwrap();
 
-        let (tr, tt, ar, at, ac, lat) = repo.stats().unwrap();
+        let (tr, tt, ar, at, ac, lat, tii, too, tcr, tcc, tcost, tcost_total) =
+            repo.stats().unwrap();
         assert_eq!(tr, 1);
         assert_eq!(tt, 20);
         assert_eq!(ar, 2);
         assert_eq!(at, 60);
         assert_eq!(ac, 1);
         assert_eq!(lat, 150);
+        // 新增分项：今天 input=10 output=10；缓存与成本无价格 → 0
+        assert_eq!(tii, 10);
+        assert_eq!(too, 10);
+        assert_eq!(tcr, 0);
+        assert_eq!(tcc, 0);
+        assert_eq!(tcost, 0.0);
+        assert_eq!(tcost_total, 0.0);
     }
 
     fn make_log_risk(seq: i64, model: &str, risk_level: &str, risk_score: i64) -> RequestLog {
@@ -2546,6 +2896,14 @@ mod tests {
             status_code: Some(200),
             input_tokens: 10,
             output_tokens: 10,
+            cache_read_tokens: 0,
+            cache_creation_tokens: 0,
+            input_cost_usd: 0.0,
+            output_cost_usd: 0.0,
+            cache_read_cost_usd: 0.0,
+            cache_creation_cost_usd: 0.0,
+            total_cost_usd: 0.0,
+            pricing_model: None,
             latency_ms: 100,
             is_stream: false,
             error: None,
@@ -2821,6 +3179,14 @@ mod tests {
             status_code: Some(status),
             input_tokens,
             output_tokens,
+            cache_read_tokens: 0,
+            cache_creation_tokens: 0,
+            input_cost_usd: 0.0,
+            output_cost_usd: 0.0,
+            cache_read_cost_usd: 0.0,
+            cache_creation_cost_usd: 0.0,
+            total_cost_usd: 0.0,
+            pricing_model: None,
             latency_ms: 100,
             is_stream: false,
             error: None,
@@ -3240,6 +3606,270 @@ mod tests {
         };
         let series = repo.log_timeseries(&filter, 60, 0).unwrap();
         assert!(series.is_empty());
+    }
+
+    // ---------- 使用统计：缓存 token / 写时成本 / backfill ----------
+
+    fn make_log_priced(
+        seq: i64,
+        protocol: &str,
+        model: &str,
+        input_tokens: i64,
+        output_tokens: i64,
+        cache_read_tokens: i64,
+        cache_creation_tokens: i64,
+        created_at: i64,
+    ) -> RequestLog {
+        RequestLog {
+            id: format!("l{}", seq),
+            seq,
+            trace_id: format!("t{}", seq),
+            api_key_id: Some("k1".into()),
+            key_name: Some("alice".into()),
+            channel_id: Some("ch1".into()),
+            channel_name: Some("ch".into()),
+            role: Some("coder".into()),
+            request_model: Some(model.into()),
+            upstream_model: Some(model.into()),
+            protocol: protocol.into(),
+            status_code: Some(200),
+            input_tokens,
+            output_tokens,
+            cache_read_tokens,
+            cache_creation_tokens,
+            input_cost_usd: 0.0,
+            output_cost_usd: 0.0,
+            cache_read_cost_usd: 0.0,
+            cache_creation_cost_usd: 0.0,
+            total_cost_usd: 0.0,
+            pricing_model: None,
+            latency_ms: 100,
+            is_stream: false,
+            error: None,
+            fallback: false,
+            tool_calls: None,
+            request_body: None,
+            response_body: None,
+            risk_level: "clean".into(),
+            risk_score: 0,
+            risk_summary: None,
+            security_action: "allow".into(),
+            sanitized: false,
+            blocked_reason: None,
+            session_id: None,
+            session_provider: None,
+            created_at,
+        }
+    }
+
+    fn price(model_id: &str, input: f64, output: f64, cr: f64, cc: f64) -> ModelPrice {
+        ModelPrice {
+            model_id: model_id.into(),
+            display_name: model_id.into(),
+            input_cost_per_million: input,
+            output_cost_per_million: output,
+            cache_read_cost_per_million: cr,
+            cache_creation_cost_per_million: cc,
+            updated_at: 1,
+        }
+    }
+
+    fn setup_priced_repo() -> Repository {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+        repo
+    }
+
+    #[test]
+    fn insert_log_write_time_cost_inclusive_protocol() {
+        let repo = setup_priced_repo();
+        // gpt-4o: input $3/M, output $15/M, cache_read $0.3/M, cache_creation $3/M
+        repo.upsert_model_price(&price("gpt-4o", 3.0, 15.0, 0.3, 3.0))
+            .unwrap();
+        // openai-chat 含缓存：billable input = 100 − 40 − 10 = 50
+        repo.insert_log(&make_log_priced(
+            1,
+            "openai-chat",
+            "gpt-4o",
+            100,
+            20,
+            40,
+            10,
+            1,
+        ))
+        .unwrap();
+        let got = repo
+            .list_logs(&LogFilter::default(), 10, 0)
+            .unwrap()
+            .remove(0);
+        assert_eq!(got.cache_read_tokens, 40);
+        assert_eq!(got.cache_creation_tokens, 10);
+        assert_eq!(got.pricing_model.as_deref(), Some("gpt-4o"));
+        assert!((got.input_cost_usd - 50.0 * 3.0 / 1e6).abs() < 1e-12);
+        assert!((got.output_cost_usd - 20.0 * 15.0 / 1e6).abs() < 1e-12);
+        assert!((got.cache_read_cost_usd - 40.0 * 0.3 / 1e6).abs() < 1e-12);
+        assert!((got.cache_creation_cost_usd - 10.0 * 3.0 / 1e6).abs() < 1e-12);
+        let expected_total =
+            50.0 * 3.0 / 1e6 + 20.0 * 15.0 / 1e6 + 40.0 * 0.3 / 1e6 + 10.0 * 3.0 / 1e6;
+        assert!((got.total_cost_usd - expected_total).abs() < 1e-12);
+    }
+
+    #[test]
+    fn insert_log_write_time_cost_exclusive_protocol() {
+        let repo = setup_priced_repo();
+        repo.upsert_model_price(&price("claude-sonnet-4.5", 3.0, 15.0, 0.3, 3.0))
+            .unwrap();
+        // anthropic-messages input 为 fresh：billable input = 100（不扣缓存）
+        repo.insert_log(&make_log_priced(
+            1,
+            "anthropic-messages",
+            "claude-sonnet-4.5",
+            100,
+            20,
+            40,
+            10,
+            1,
+        ))
+        .unwrap();
+        let got = repo
+            .list_logs(&LogFilter::default(), 10, 0)
+            .unwrap()
+            .remove(0);
+        assert!((got.input_cost_usd - 100.0 * 3.0 / 1e6).abs() < 1e-12);
+        assert!((got.cache_read_cost_usd - 40.0 * 0.3 / 1e6).abs() < 1e-12);
+        let expected_total =
+            100.0 * 3.0 / 1e6 + 20.0 * 15.0 / 1e6 + 40.0 * 0.3 / 1e6 + 10.0 * 3.0 / 1e6;
+        assert!((got.total_cost_usd - expected_total).abs() < 1e-12);
+    }
+
+    #[test]
+    fn insert_log_no_price_zero_cost_but_records_pricing_model() {
+        let repo = setup_priced_repo();
+        // 未配置该模型价格 → 四项成本全 0，但仍记录归一化 pricing_model 供日后 backfill
+        repo.insert_log(&make_log_priced(
+            1,
+            "openai-chat",
+            "openrouter/unknown/Claude-Sonnet-4.5:free",
+            100,
+            20,
+            40,
+            10,
+            1,
+        ))
+        .unwrap();
+        let got = repo
+            .list_logs(&LogFilter::default(), 10, 0)
+            .unwrap()
+            .remove(0);
+        assert_eq!(got.input_cost_usd, 0.0);
+        assert_eq!(got.output_cost_usd, 0.0);
+        assert_eq!(got.cache_read_cost_usd, 0.0);
+        assert_eq!(got.cache_creation_cost_usd, 0.0);
+        assert_eq!(got.total_cost_usd, 0.0);
+        assert_eq!(
+            got.pricing_model.as_deref(),
+            Some("unknown/claude-sonnet-4.5")
+        );
+    }
+
+    #[test]
+    fn pricing_change_backfills_historical_costs() {
+        let repo = setup_priced_repo();
+        repo.insert_log(&make_log_priced(
+            1,
+            "openai-chat",
+            "gpt-4o",
+            100,
+            20,
+            40,
+            10,
+            1,
+        ))
+        .unwrap();
+        let got0 = repo
+            .list_logs(&LogFilter::default(), 10, 0)
+            .unwrap()
+            .remove(0);
+        assert_eq!(got0.total_cost_usd, 0.0);
+
+        // upsert 定价后 backfill 重算
+        repo.upsert_model_price(&price("gpt-4o", 3.0, 15.0, 0.3, 3.0))
+            .unwrap();
+        let n = repo.recompute_cost_for_model("gpt-4o").unwrap();
+        assert_eq!(n, 1);
+        let got1 = repo
+            .list_logs(&LogFilter::default(), 10, 0)
+            .unwrap()
+            .remove(0);
+        let expected = 50.0 * 3.0 / 1e6 + 20.0 * 15.0 / 1e6 + 40.0 * 0.3 / 1e6 + 10.0 * 3.0 / 1e6;
+        assert!((got1.total_cost_usd - expected).abs() < 1e-12);
+
+        // 删除定价后 backfill 重算为 0
+        repo.delete_model_price("gpt-4o").unwrap();
+        let n2 = repo.recompute_cost_for_model("gpt-4o").unwrap();
+        assert_eq!(n2, 1);
+        let got2 = repo
+            .list_logs(&LogFilter::default(), 10, 0)
+            .unwrap()
+            .remove(0);
+        assert_eq!(got2.total_cost_usd, 0.0);
+    }
+
+    #[test]
+    fn log_timeseries_bucket_aggregates_cache_and_cost() {
+        let repo = setup_priced_repo();
+        repo.upsert_model_price(&price("gpt-4o", 3.0, 15.0, 0.3, 3.0))
+            .unwrap();
+        // 同桶两条：一条 inclusive（含缓存），一条 exclusive（fresh input）
+        repo.insert_log(&make_log_priced(
+            1,
+            "openai-chat",
+            "gpt-4o",
+            100,
+            20,
+            40,
+            10,
+            5,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_priced(
+            2,
+            "anthropic-messages",
+            "gpt-4o",
+            50,
+            10,
+            5,
+            2,
+            5,
+        ))
+        .unwrap();
+
+        let series = repo.log_timeseries(&LogFilter::default(), 60, 0).unwrap();
+        assert_eq!(series.len(), 1);
+        let b = &series[0];
+        assert_eq!(b.calls, 2);
+        assert_eq!(b.input_tokens, 150);
+        assert_eq!(b.output_tokens, 30);
+        assert_eq!(b.cache_read_tokens, 45);
+        assert_eq!(b.cache_creation_tokens, 12);
+        // fresh_input = (100−40−10) + 50 = 100
+        assert_eq!(b.fresh_input, 100);
+        let cost1 = 50.0 * 3.0 / 1e6 + 20.0 * 15.0 / 1e6 + 40.0 * 0.3 / 1e6 + 10.0 * 3.0 / 1e6;
+        let cost2 = 50.0 * 3.0 / 1e6 + 10.0 * 15.0 / 1e6 + 5.0 * 0.3 / 1e6 + 2.0 * 3.0 / 1e6;
+        assert!((b.cost - (cost1 + cost2)).abs() < 1e-12);
     }
 
     // 知识库测试

@@ -151,7 +151,7 @@ async fn failure_paths_persist_request_log() {
     let log = repo.latest_log().unwrap().unwrap();
     assert_eq!(log.status_code, Some(401));
     assert_eq!(log.error.as_deref(), Some("invalid_api_key"));
-    assert_eq!(log.protocol, "openai");
+    assert_eq!(log.protocol, "openai-chat");
     assert!(!log.trace_id.is_empty());
 
     // quota exceeded → 429 (anthropic 端点，鉴权失败发生在协议解析之前)
@@ -168,7 +168,7 @@ async fn failure_paths_persist_request_log() {
     let log = repo.latest_log().unwrap().unwrap();
     assert_eq!(log.status_code, Some(429));
     assert_eq!(log.error.as_deref(), Some("quota_exceeded"));
-    assert_eq!(log.protocol, "anthropic");
+    assert_eq!(log.protocol, "anthropic-messages");
     assert!(!log.trace_id.is_empty());
     assert_ne!(log.trace_id, trace_401);
 }

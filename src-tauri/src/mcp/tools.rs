@@ -175,7 +175,8 @@ impl KbMcpServer {
 
     /// 全局用量统计(today/total 请求与 token、活跃渠道、平均延迟),返回 JSON 文本。
     pub async fn do_stats_quota(&self) -> Result<String, String> {
-        let (tr, tt, ar, at, ac, lat) = self.state.repo.stats().map_err(|e| e.to_string())?;
+        let (tr, tt, ar, at, ac, lat, _, _, _, _, _, _) =
+            self.state.repo.stats().map_err(|e| e.to_string())?;
         let json = serde_json::json!({
             "today_requests": tr, "today_tokens": tt,
             "total_requests": ar, "total_tokens": at,

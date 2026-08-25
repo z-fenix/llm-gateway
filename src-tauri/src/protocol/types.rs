@@ -49,5 +49,11 @@ pub struct ChatResponse {
     pub stop_reason: Option<String>,
     pub input_tokens: u64,
     pub output_tokens: u64,
+    /// 缓存命中 token（仅内部记账用，不回写客户端 usage）
+    #[serde(default)]
+    pub cache_read_tokens: u64,
+    /// 缓存写入 token（仅内部记账用，不回写客户端 usage）
+    #[serde(default)]
+    pub cache_creation_tokens: u64,
     pub raw: serde_json::Value,
 }

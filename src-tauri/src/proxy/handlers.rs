@@ -631,14 +631,18 @@ async fn handle_stream(
                     role,
                     request_model: Some(req_model),
                     upstream_model: Some(model),
-                    protocol: match proto {
-                        Protocol::OpenAI => "openai".into(),
-                        Protocol::Anthropic => "anthropic".into(),
-                        Protocol::Responses => "responses".into(),
-                    },
+                    protocol: channel.upstream_protocol,
                     status_code,
                     input_tokens: usage.input_tokens as i64,
                     output_tokens: usage.output_tokens as i64,
+                    cache_read_tokens: usage.cache_read_tokens as i64,
+                    cache_creation_tokens: usage.cache_creation_tokens as i64,
+                    input_cost_usd: 0.0,
+                    output_cost_usd: 0.0,
+                    cache_read_cost_usd: 0.0,
+                    cache_creation_cost_usd: 0.0,
+                    total_cost_usd: 0.0,
+                    pricing_model: None,
                     latency_ms: started.elapsed().as_millis() as i64,
                     is_stream: true,
                     error,
@@ -719,14 +723,18 @@ async fn handle_stream(
                 role,
                 request_model: Some(request_model.to_string()),
                 upstream_model: None,
-                protocol: match proto {
-                    Protocol::OpenAI => "openai".into(),
-                    Protocol::Anthropic => "anthropic".into(),
-                    Protocol::Responses => "responses".into(),
-                },
+                protocol: default_upstream_protocol(proto).to_string(),
                 status_code: Some(status.as_u16() as i64),
                 input_tokens: 0,
                 output_tokens: 0,
+                cache_read_tokens: 0,
+                cache_creation_tokens: 0,
+                input_cost_usd: 0.0,
+                output_cost_usd: 0.0,
+                cache_read_cost_usd: 0.0,
+                cache_creation_cost_usd: 0.0,
+                total_cost_usd: 0.0,
+                pricing_model: None,
                 latency_ms: latency,
                 is_stream: true,
                 error: Some(e.to_string()),
@@ -785,6 +793,8 @@ fn to_chat_response(o: &forwarder::Outcome, model: &str) -> crate::protocol::typ
         stop_reason: stop,
         input_tokens: o.usage.input_tokens,
         output_tokens: o.usage.output_tokens,
+        cache_read_tokens: o.usage.cache_read_tokens,
+        cache_creation_tokens: o.usage.cache_creation_tokens,
         raw: raw.clone(),
     }
 }
@@ -829,6 +839,15 @@ fn merge_scan_for_log(req: &SecurityScanResult, resp: &SecurityScanResult) -> Se
     merged
 }
 
+/// 客户端协议 → 上游协议默认值（无渠道信息时的兜底，仅用于日志 protocol 列）。
+fn default_upstream_protocol(proto: Protocol) -> &'static str {
+    match proto {
+        Protocol::OpenAI => "openai-chat",
+        Protocol::Anthropic => "anthropic-messages",
+        Protocol::Responses => "openai-responses",
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn write_log(
     state: &AppState,
@@ -868,6 +887,10 @@ fn write_log(
         };
     let log_id = uuid::Uuid::new_v4().to_string();
     let (session_id, session_provider) = resolve_log_session(state, proto, req_body);
+    // protocol 列存上游协议名（写时成本按它判定 input 是否含缓存）
+    let protocol = o
+        .map(|x| x.channel.upstream_protocol.clone())
+        .unwrap_or_else(|| default_upstream_protocol(proto).to_string());
     let log = RequestLog {
         id: log_id.clone(),
         seq: 0,
@@ -879,14 +902,18 @@ fn write_log(
         role: role.cloned().flatten(),
         request_model: request_model.map(|s| s.to_string()),
         upstream_model: o.map(|x| x.model.clone()),
-        protocol: match proto {
-            Protocol::OpenAI => "openai".into(),
-            Protocol::Anthropic => "anthropic".into(),
-            Protocol::Responses => "responses".into(),
-        },
+        protocol,
         status_code: status_code.or_else(|| o.map(|x| x.status as i64)),
         input_tokens: o.map(|x| x.usage.input_tokens as i64).unwrap_or(0),
         output_tokens: o.map(|x| x.usage.output_tokens as i64).unwrap_or(0),
+        cache_read_tokens: o.map(|x| x.usage.cache_read_tokens as i64).unwrap_or(0),
+        cache_creation_tokens: o.map(|x| x.usage.cache_creation_tokens as i64).unwrap_or(0),
+        input_cost_usd: 0.0,
+        output_cost_usd: 0.0,
+        cache_read_cost_usd: 0.0,
+        cache_creation_cost_usd: 0.0,
+        total_cost_usd: 0.0,
+        pricing_model: None,
         latency_ms: latency,
         is_stream: false,
         error,

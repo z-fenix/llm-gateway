@@ -86,7 +86,7 @@ async fn responses_non_stream_e2e() {
     assert_eq!(v["usage"]["total_tokens"], 8);
 
     let log = repo.latest_log().unwrap().unwrap();
-    assert_eq!(log.protocol, "responses");
+    assert_eq!(log.protocol, "openai-chat");
     assert_eq!(log.status_code, Some(200));
 }
 
@@ -164,7 +164,7 @@ async fn responses_stream_sse_e2e() {
     assert!(body.contains("\"delta\":\"hello from stream\""));
 
     let log = repo.latest_log().unwrap().unwrap();
-    assert_eq!(log.protocol, "responses");
+    assert_eq!(log.protocol, "openai-chat");
     assert_eq!(log.status_code, Some(200));
     assert_eq!(log.is_stream, false); // 内部非流式转发,响应侧合成 SSE
 }

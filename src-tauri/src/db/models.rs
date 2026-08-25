@@ -109,6 +109,26 @@ pub struct RequestLog {
     pub status_code: Option<i64>,
     pub input_tokens: i64,
     pub output_tokens: i64,
+    /// 缓存命中 token（来自上游 usage）
+    #[serde(default)]
+    pub cache_read_tokens: i64,
+    /// 缓存写入 token（来自上游 usage）
+    #[serde(default)]
+    pub cache_creation_tokens: i64,
+    /// 写时核算成本（USD）
+    #[serde(default)]
+    pub input_cost_usd: f64,
+    #[serde(default)]
+    pub output_cost_usd: f64,
+    #[serde(default)]
+    pub cache_read_cost_usd: f64,
+    #[serde(default)]
+    pub cache_creation_cost_usd: f64,
+    #[serde(default)]
+    pub total_cost_usd: f64,
+    /// 写入时实际用于计价的归一化模型名
+    #[serde(default)]
+    pub pricing_model: Option<String>,
     pub latency_ms: i64,
     pub is_stream: bool,
     pub error: Option<String>,
@@ -125,6 +145,23 @@ pub struct RequestLog {
     pub session_id: Option<String>,
     pub session_provider: Option<String>,
     pub created_at: i64,
+}
+
+/// 模型定价表 `model_pricing` 行。成本单位：每百万 token 的 USD。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModelPrice {
+    pub model_id: String,
+    pub display_name: String,
+    #[serde(default)]
+    pub input_cost_per_million: f64,
+    #[serde(default)]
+    pub output_cost_per_million: f64,
+    #[serde(default)]
+    pub cache_read_cost_per_million: f64,
+    #[serde(default)]
+    pub cache_creation_cost_per_million: f64,
+    #[serde(default)]
+    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

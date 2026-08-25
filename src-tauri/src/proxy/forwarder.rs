@@ -347,6 +347,14 @@ fn extract_usage(ch: &Channel, text: &str) -> Usage {
             let mut us = Usage::default();
             us.input_tokens = u.get("input_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
             us.output_tokens = u.get("output_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            us.cache_read_tokens = u
+                .get("cache_read_input_tokens")
+                .and_then(|t| t.as_u64())
+                .unwrap_or(0);
+            us.cache_creation_tokens = u
+                .get("cache_creation_input_tokens")
+                .and_then(|t| t.as_u64())
+                .unwrap_or(0);
             us
         }
         "gemini-native" => {
@@ -361,6 +369,11 @@ fn extract_usage(ch: &Channel, text: &str) -> Usage {
                 .unwrap_or(0);
             us.output_tokens = u
                 .get("candidatesTokenCount")
+                .and_then(|t| t.as_u64())
+                .unwrap_or(0);
+            // promptTokenCount 含缓存命中；cachedContentTokenCount 为缓存读，无缓存写
+            us.cache_read_tokens = u
+                .get("cachedContentTokenCount")
                 .and_then(|t| t.as_u64())
                 .unwrap_or(0);
             us

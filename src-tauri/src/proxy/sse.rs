@@ -2,9 +2,15 @@
 pub struct Usage {
     pub input_tokens: u64,
     pub output_tokens: u64,
+    /// 缓存命中 token（openai 的 cached_tokens / anthropic 的 cache_read_input_tokens / gemini 的 cachedContentTokenCount）
+    pub cache_read_tokens: u64,
+    /// 缓存写入 token（openai 的 cache_write_tokens / anthropic 的 cache_creation_input_tokens；gemini 恒为 0）
+    pub cache_creation_tokens: u64,
 }
 
 /// 从 OpenAI chunk 的 usage 字段提取（若存在）。
+/// 缓存回退链（对齐 cc-switch）：直传 cache_read_input_tokens → input_tokens_details/cached_tokens → prompt_tokens_details/cached_tokens；
+/// 写入 cache_creation_input_tokens → input_tokens_details/cache_write_tokens → prompt_tokens_details/cache_write_tokens。
 pub fn extract_openai_usage(v: &serde_json::Value) -> Option<Usage> {
     let u = v.get("usage")?;
     if u.is_null() {
@@ -15,12 +21,38 @@ pub fn extract_openai_usage(v: &serde_json::Value) -> Option<Usage> {
         .get("completion_tokens")
         .and_then(|t| t.as_u64())
         .unwrap_or(0);
+    let cache_read = u
+        .get("cache_read_input_tokens")
+        .and_then(|t| t.as_u64())
+        .or_else(|| {
+            u.pointer("/input_tokens_details/cached_tokens")
+                .and_then(|t| t.as_u64())
+        })
+        .or_else(|| {
+            u.pointer("/prompt_tokens_details/cached_tokens")
+                .and_then(|t| t.as_u64())
+        })
+        .unwrap_or(0);
+    let cache_creation = u
+        .get("cache_creation_input_tokens")
+        .and_then(|t| t.as_u64())
+        .or_else(|| {
+            u.pointer("/input_tokens_details/cache_write_tokens")
+                .and_then(|t| t.as_u64())
+        })
+        .or_else(|| {
+            u.pointer("/prompt_tokens_details/cache_write_tokens")
+                .and_then(|t| t.as_u64())
+        })
+        .unwrap_or(0);
     if input == 0 && output == 0 {
         return None;
     }
     Some(Usage {
         input_tokens: input,
         output_tokens: output,
+        cache_read_tokens: cache_read,
+        cache_creation_tokens: cache_creation,
     })
 }
 
@@ -34,6 +66,16 @@ pub fn apply_anthropic_event(acc: &mut Usage, v: &serde_json::Value) {
                 }
                 if let Some(o) = u.get("output_tokens").and_then(|t| t.as_u64()) {
                     acc.output_tokens = o;
+                }
+                // 缓存字段只在 message_start 一次性给出
+                if let Some(c) = u.get("cache_read_input_tokens").and_then(|t| t.as_u64()) {
+                    acc.cache_read_tokens = c;
+                }
+                if let Some(c) = u
+                    .get("cache_creation_input_tokens")
+                    .and_then(|t| t.as_u64())
+                {
+                    acc.cache_creation_tokens = c;
                 }
             }
         }
@@ -127,6 +169,10 @@ impl SseAccumulator {
                     if let Some(o) = u.get("candidatesTokenCount").and_then(|t| t.as_u64()) {
                         self.usage.output_tokens = o;
                     }
+                    // Gemini 的 promptTokenCount 含缓存命中；cachedContentTokenCount 为缓存读，无缓存写。
+                    if let Some(c) = u.get("cachedContentTokenCount").and_then(|t| t.as_u64()) {
+                        self.usage.cache_read_tokens = c;
+                    }
                 }
                 if let Some(text) = v
                     .get("candidates")
@@ -212,5 +258,67 @@ mod tests {
         // 无 data: 前缀的裸 JSON 行在非 Gemini 协议下必须被忽略
         acc.feed_line(r#"{"choices":[{"delta":{"content":"sneaky"}}]}"#);
         assert_eq!(acc.text(), "");
+    }
+
+    #[test]
+    fn openai_cache_fallback_chain() {
+        // 直传 cache_read_input_tokens / cache_creation_input_tokens 优先
+        let mut acc = SseAccumulator::new(Protocol::OpenAI);
+        acc.feed_line(r#"data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":50,"cache_read_input_tokens":80,"cache_creation_input_tokens":15}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 100);
+        assert_eq!(u.output_tokens, 50);
+        assert_eq!(u.cache_read_tokens, 80);
+        assert_eq!(u.cache_creation_tokens, 15);
+    }
+
+    #[test]
+    fn openai_cache_from_prompt_tokens_details() {
+        // 回退链:input_tokens_details/cached_tokens → prompt_tokens_details/cached_tokens
+        let mut acc = SseAccumulator::new(Protocol::OpenAI);
+        acc.feed_line(r#"data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":50,"input_tokens_details":{"cached_tokens":60}}}"#);
+        let u = acc.usage();
+        assert_eq!(u.cache_read_tokens, 60);
+        assert_eq!(u.cache_creation_tokens, 0);
+
+        let mut acc = SseAccumulator::new(Protocol::OpenAI);
+        acc.feed_line(r#"data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":50,"prompt_tokens_details":{"cached_tokens":70,"cache_write_tokens":20}}}"#);
+        let u = acc.usage();
+        assert_eq!(u.cache_read_tokens, 70);
+        assert_eq!(u.cache_creation_tokens, 20);
+    }
+
+    #[test]
+    fn openai_cache_write_from_input_tokens_details() {
+        let mut acc = SseAccumulator::new(Protocol::OpenAI);
+        acc.feed_line(r#"data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":50,"input_tokens_details":{"cache_write_tokens":12}}}"#);
+        let u = acc.usage();
+        assert_eq!(u.cache_read_tokens, 0);
+        assert_eq!(u.cache_creation_tokens, 12);
+    }
+
+    #[test]
+    fn anthropic_cache_from_message_start() {
+        let mut acc = SseAccumulator::new(Protocol::Anthropic);
+        acc.feed_line(r#"data: {"type":"message_start","message":{"usage":{"input_tokens":25,"output_tokens":1,"cache_read_input_tokens":10,"cache_creation_input_tokens":5}}}"#);
+        acc.feed_line(r#"data: {"type":"message_delta","usage":{"output_tokens":12}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 25);
+        assert_eq!(u.output_tokens, 12);
+        assert_eq!(u.cache_read_tokens, 10);
+        assert_eq!(u.cache_creation_tokens, 5);
+        // message_delta 只带 output_tokens，不覆盖缓存字段
+        assert_eq!(u.cache_read_tokens, 10);
+    }
+
+    #[test]
+    fn gemini_cache_from_cached_content_token_count() {
+        let mut acc = SseAccumulator::new(Protocol::Gemini);
+        acc.feed_line(r#"{"candidates":[{"content":{"parts":[{"text":"hello"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":100,"candidatesTokenCount":30,"cachedContentTokenCount":40}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 100);
+        assert_eq!(u.output_tokens, 30);
+        assert_eq!(u.cache_read_tokens, 40);
+        assert_eq!(u.cache_creation_tokens, 0, "gemini 无缓存写");
     }
 }

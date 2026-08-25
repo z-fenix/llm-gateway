@@ -5,6 +5,7 @@ pub mod config;
 pub mod knowledge;
 pub mod log;
 pub mod mcp_server;
+pub mod pricing;
 pub mod prompt;
 pub mod rectifier;
 pub mod role_route;

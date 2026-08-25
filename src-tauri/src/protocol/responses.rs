@@ -283,6 +283,8 @@ mod tests {
             stop_reason: Some("stop".into()),
             input_tokens: 3,
             output_tokens: 5,
+            cache_read_tokens: 0,
+            cache_creation_tokens: 0,
             raw: serde_json::json!({}),
         };
         let out = chat_to_response(&chat);
