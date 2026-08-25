@@ -260,13 +260,14 @@ impl Repository {
     }
 
     /// 读取后解密：密文解出明文，明文（旧数据）原样返回。
+    /// 解密失败返回空串并记录错误——绝不把密文 blob 当作明文 key 泄漏给上游。
     fn dec(&self, s: &str) -> String {
         match &self.cipher {
             Some(c) => {
                 if crate::security::crypto::Cipher::is_encrypted(s) {
                     c.decrypt(s).unwrap_or_else(|e| {
                         log::error!("decrypt failed for stored secret: {e}");
-                        s.to_string()
+                        String::new()
                     })
                 } else {
                     s.to_string()

@@ -105,6 +105,15 @@ pub async fn test_channel(state: State<'_, AppState>, id: String) -> Result<Test
         .get_channel(&id)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "channel not found".to_string())?;
+    // 密钥为空通常是主密钥变更后旧密文无法解密（dec 解密失败返回空串）；
+    // 保存时已强制 api_key 非空，因此空值必为解密失败，给出可操作的报错而非发给上游 401。
+    if ch.api_key.is_empty() {
+        return Ok(TestResult {
+            ok: false,
+            latency_ms: 0,
+            error: Some("渠道密钥为空（解密失败），请在编辑中重新填写 API Key".into()),
+        });
+    }
     let model = ch.models.get(0).cloned().unwrap_or("test".into());
     let url = crate::provider::adapter::upstream_url(
         &ch.upstream_protocol,
