@@ -127,6 +127,13 @@ export interface LogStats {
   top_channels: [string, number][];
   top_api_keys: [string, number][];
 }
+export interface RoleStats {
+  role: string;
+  requests: number;
+  tokens: number;
+  success_count: number;
+  avg_latency_ms: number;
+}
 export interface TimeBucket {
   bucket: number;
   calls: number;

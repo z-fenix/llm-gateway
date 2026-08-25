@@ -23,6 +23,7 @@ import type {
   RetrievedChunk,
   RolePattern,
   RoleRoute,
+  RoleStats,
   BreakerStatus,
   SecurityFinding,
   SecuritySettings,
@@ -90,6 +91,7 @@ export const api = {
     invoke<void>("set_log_retention_days", { days }),
 
   getStats: () => invoke<Stats>("get_stats"),
+  getRoleStats: () => invoke<RoleStats[]>("get_role_stats"),
 
   getSecuritySettings: () => invoke<SecuritySettings>("get_security_settings"),
   setSecuritySetting: (key: string, value: unknown) =>

@@ -11,6 +11,7 @@ vi.mock("../../lib/api", () => ({
     listChannels: vi.fn(),
     getFallback: vi.fn(),
     getBreakerStatus: vi.fn(),
+    getRoleStats: vi.fn(),
     upsertRoleRoute: vi.fn().mockResolvedValue(undefined),
     deleteRoleRoute: vi.fn().mockResolvedValue(undefined),
     setFallback: vi.fn().mockResolvedValue(undefined),
@@ -78,28 +79,45 @@ describe("RoleRoutesPage", () => {
     mockedApi.getBreakerStatus.mockResolvedValue([
       { route_id: "r1", state: "closed", failures: 0 },
     ]);
+    mockedApi.getRoleStats.mockResolvedValue([]);
   });
 
-  it("空列表展示空状态与新增入口", async () => {
+  const openSonnetDetail = async () => {
+    fireEvent.click(
+      screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+    );
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument()
+    );
+  };
+
+  it("总览展示 5 张角色卡，点击进入详情空状态与新增入口", async () => {
     mockedApi.listRoleRoutes.mockResolvedValue([]);
     render(<RoleRoutesPage />);
     await waitFor(() => expect(mockedApi.listRoleRoutes).toHaveBeenCalled());
-    expect(screen.getByText("暂无角色路由")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "新增路由" }).length).toBeGreaterThan(0);
+    // 5 张角色汇总卡（含 auto）
+    expect(screen.getByRole("button", { name: "查看 sonnet 角色详情" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看 auto 角色详情" })).toBeInTheDocument();
+    expect(screen.getAllByText("配置 0 条")).toHaveLength(5);
+    // 点击卡片 → 详情面板空状态与新增入口
+    fireEvent.click(screen.getByRole("button", { name: "查看 sonnet 角色详情" }));
+    expect(await screen.findByText("暂无「sonnet」路由")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "新增路由" }).length
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "返回" })).toBeInTheDocument();
   });
 
   it("渲染路由行、上游模型与熔断状态", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() =>
-      expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument()
-    );
-    expect(screen.getAllByText("sonnet").length).toBeGreaterThan(0);
+    await openSonnetDetail();
+    expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument();
     expect(screen.getByText("正常")).toBeInTheDocument();
   });
 
   it("切换路由渠道调用 upsertRoleRoute 保留其他字段", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await openSonnetDetail();
 
     const select = screen.getByRole("combobox", { name: "sonnet 渠道" });
     fireEvent.click(select);
@@ -115,9 +133,9 @@ describe("RoleRoutesPage", () => {
     });
   });
 
-  it("新增路由对话框创建多供应商路由", async () => {
+  it("详情面板新增路由对话框创建多供应商路由", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await openSonnetDetail();
 
     fireEvent.click(screen.getByRole("button", { name: "新增路由" }));
     expect(
@@ -158,7 +176,7 @@ describe("RoleRoutesPage", () => {
 
   it("删除路由走确认对话框并调用 deleteRoleRoute(id)", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await openSonnetDetail();
 
     fireEvent.click(screen.getByRole("button", { name: "删除路由" }));
     expect(
@@ -172,7 +190,11 @@ describe("RoleRoutesPage", () => {
 
   it("切换全局兜底渠道调用 setFallback，清除按钮调用 clearFallback", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+      ).toBeInTheDocument()
+    );
 
     const fallbackSelect = screen.getByRole("combobox", { name: "兜底渠道" });
     fireEvent.click(fallbackSelect);
@@ -187,7 +209,11 @@ describe("RoleRoutesPage", () => {
 
   it("新增规则：对话框填写并调用 upsertRolePattern", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+      ).toBeInTheDocument()
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "新增规则" }));
     expect(
@@ -213,7 +239,11 @@ describe("RoleRoutesPage", () => {
 
   it("编辑规则：对话框预填并保存原 id", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+      ).toBeInTheDocument()
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     expect(
@@ -237,7 +267,11 @@ describe("RoleRoutesPage", () => {
 
   it("删除规则走确认对话框并调用 deleteRolePattern", async () => {
     render(<RoleRoutesPage />);
-    await waitFor(() => expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+      ).toBeInTheDocument()
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "删除" }));
     expect(
