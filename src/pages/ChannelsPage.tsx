@@ -33,10 +33,13 @@ const STATUS_OPTIONS = [
 ];
 
 function protocolBadgeVariant(protocol: string): string {
-  if (protocol.includes("openai")) return "bg-blue-100 text-blue-700";
-  if (protocol.includes("anthropic")) return "bg-purple-100 text-purple-700";
-  if (protocol.includes("gemini")) return "bg-teal-100 text-teal-700";
-  return "bg-muted text-muted-foreground";
+  if (protocol.includes("openai"))
+    return "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300";
+  if (protocol.includes("anthropic"))
+    return "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
+  if (protocol.includes("gemini"))
+    return "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300";
+  return "bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200";
 }
 
 function supplierInitials(supplier: string): string {
@@ -241,14 +244,14 @@ export default function ChannelsPage() {
             <div
               key={c.id}
               className={cn(
-                "flex flex-col rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md",
+                "group flex flex-col rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md",
                 !c.enabled && "opacity-75"
               )}
             >
-              <div className="mb-3 flex items-start gap-3">
+              <div className="mb-2.5 flex items-start gap-3">
                 <div
                   className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xs font-bold text-white",
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br text-xs font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-105",
                     supplierGradient(c.supplier)
                   )}
                 >
@@ -263,13 +266,13 @@ export default function ChannelsPage() {
                       {c.enabled ? "启用" : "禁用"}
                     </Badge>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="font-normal">
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center rounded-md bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-700/60 dark:text-slate-200">
                       {c.supplier}
-                    </Badge>
+                    </span>
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.5 text-xs font-medium",
+                        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
                         protocolBadgeVariant(c.upstream_protocol)
                       )}
                     >
@@ -305,26 +308,34 @@ export default function ChannelsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-3 text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-2 border-t pt-2.5 text-xs">
                 <div>
                   <div className="text-muted-foreground">调用</div>
-                  <div className="font-medium text-foreground">{c.total_calls}</div>
+                  <div className="font-medium tabular-nums text-foreground">
+                    {c.total_calls}
+                  </div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">Token</div>
-                  <div className="font-medium text-foreground">
+                  <div className="font-medium tabular-nums text-foreground">
                     {c.total_tokens.toLocaleString()}
                   </div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">成功率</div>
-                  <div className="font-medium text-foreground">
+                  <div className="font-medium tabular-nums text-foreground">
                     {(c.success_rate * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">平均延迟</div>
+                  <div className="font-medium tabular-nums text-foreground">
+                    {c.avg_latency_ms}ms
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
