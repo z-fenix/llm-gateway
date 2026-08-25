@@ -73,6 +73,14 @@ export interface RequestLog {
   status_code: number | null;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  input_cost_usd?: number;
+  output_cost_usd?: number;
+  cache_read_cost_usd?: number;
+  cache_creation_cost_usd?: number;
+  total_cost_usd?: number;
+  pricing_model?: string | null;
   latency_ms: number;
   is_stream: boolean;
   error: string | null;
@@ -97,6 +105,12 @@ export interface Stats {
   total_tokens: number;
   active_channels: number;
   avg_latency_ms: number;
+  today_input_tokens?: number;
+  today_output_tokens?: number;
+  today_cache_read_tokens?: number;
+  today_cache_creation_tokens?: number;
+  today_cost?: number;
+  total_cost?: number;
 }
 export interface LogPage {
   items: RequestLog[];
@@ -122,6 +136,9 @@ export interface LogStats {
   total_calls: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  cost?: number;
   success_count: number;
   risk_distribution: [string, number][];
   top_channels: [string, number][];
@@ -139,6 +156,10 @@ export interface TimeBucket {
   calls: number;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  cost?: number;
+  fresh_input?: number;
   error_count: number;
   risk_counts: Record<string, number>;
 }
