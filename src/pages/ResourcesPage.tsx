@@ -19,13 +19,13 @@ export default function ResourcesPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-1 rounded-xl border bg-card p-1 w-fit">
+      <div className="sticky top-0 z-10 mb-4 flex w-fit items-center gap-1 rounded-xl border bg-card p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+              "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
               tab === t.id
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
