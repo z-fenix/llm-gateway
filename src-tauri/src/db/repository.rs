@@ -68,6 +68,16 @@ pub struct TimeBucket {
     pub risk_counts: BTreeMap<String, i64>,
 }
 
+/// 按角色聚合的日志统计（用于角色卡片展示；无日志的角色不出现在结果中，由前端补 0）。
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+pub struct RoleStats {
+    pub role: String,
+    pub requests: i64,
+    pub tokens: i64,
+    pub success_count: i64,
+    pub avg_latency_ms: i64,
+}
+
 fn build_where(filter: &LogFilter) -> (String, Vec<rusqlite::types::Value>) {
     let mut sql = String::from("WHERE 1=1");
     let mut values: Vec<rusqlite::types::Value> = Vec::new();
@@ -287,7 +297,11 @@ impl Repository {
         for (id, plain) in pending {
             conn.execute(
                 "UPDATE api_keys SET key=?2, key_hash=?3 WHERE id=?1",
-                params![id, self.enc(&plain), crate::security::crypto::sha256_b64(&plain)],
+                params![
+                    id,
+                    self.enc(&plain),
+                    crate::security::crypto::sha256_b64(&plain)
+                ],
             )?;
             migrated += 1;
         }
@@ -708,6 +722,35 @@ impl Repository {
             top_channels,
             top_api_keys,
         })
+    }
+
+    /// 按 `request_logs.role` 聚合每个角色的请求数 / Token(input+output) / 成功数 / 平均延迟。
+    /// 无日志的角色不会出现，由调用方与路由数据合并时补 0。
+    pub fn role_stats(&self) -> AppResult<Vec<RoleStats>> {
+        let conn = self.db.conn();
+        let conn = conn.lock();
+        let sql = "SELECT role, COUNT(*), \
+                   COALESCE(SUM(input_tokens+output_tokens), 0), \
+                   COALESCE(SUM(CASE WHEN status_code BETWEEN 200 AND 299 THEN 1 ELSE 0 END), 0), \
+                   COALESCE(AVG(latency_ms), 0) \
+                   FROM request_logs \
+                   WHERE role IS NOT NULL AND role != '' \
+                   GROUP BY role ORDER BY role";
+        let mut stmt = conn.prepare(sql)?;
+        let rows = stmt.query_map([], |r| {
+            Ok(RoleStats {
+                role: r.get(0)?,
+                requests: r.get(1)?,
+                tokens: r.get(2)?,
+                success_count: r.get(3)?,
+                avg_latency_ms: r.get::<_, f64>(4)? as i64,
+            })
+        })?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
     }
 
     pub fn log_timeseries(
@@ -1618,7 +1661,6 @@ impl Repository {
         )?;
         Ok(())
     }
-
 }
 
 fn row_to_role_route(r: &rusqlite::Row) -> AppResult<RoleRoute> {
@@ -1900,7 +1942,9 @@ mod tests {
             );
             assert_ne!(raw, "sk-secret-a");
             let hash: String = conn
-                .query_row("SELECT key_hash FROM api_keys WHERE id='k1'", [], |r| r.get(0))
+                .query_row("SELECT key_hash FROM api_keys WHERE id='k1'", [], |r| {
+                    r.get(0)
+                })
                 .unwrap();
             assert_eq!(hash, crate::security::crypto::sha256_b64("sk-secret-a"));
         }
@@ -2158,6 +2202,58 @@ mod tests {
             .unwrap()
             .iter()
             .any(|x| x.id == "rp1"));
+    }
+
+    #[test]
+    fn role_stats_aggregates_by_role() {
+        let repo = Repository::new(Db::new_in_memory().unwrap());
+        repo.insert_channel(&ch("ch1")).unwrap();
+        repo.insert_api_key(&ApiKey {
+            id: "k1".into(),
+            key: "sk-lgw-a".into(),
+            name: "alice".into(),
+            enabled: true,
+            quota_total: None,
+            quota_used: 0,
+            total_calls: 0,
+            total_tokens: 0,
+            created_at: 1,
+            last_used_at: None,
+        })
+        .unwrap();
+        let mut l1 = make_log(1, "gpt-4o", 10, 100, 1);
+        l1.role = Some("sonnet".into());
+        let mut l2 = make_log(2, "gpt-4o", 20, 200, 2);
+        l2.role = Some("sonnet".into());
+        let mut l3 = make_log(3, "gpt-4o", 30, 300, 3);
+        l3.role = Some("opus".into());
+        l3.status_code = Some(500); // 失败
+        repo.insert_log(&l1).unwrap();
+        repo.insert_log(&l2).unwrap();
+        repo.insert_log(&l3).unwrap();
+
+        let stats = repo.role_stats().unwrap();
+        assert_eq!(stats.len(), 2);
+
+        let sonnet = stats.iter().find(|s| s.role == "sonnet").unwrap();
+        assert_eq!(sonnet.requests, 2);
+        // make_log 的 input=output=tokens，故每行 2*tokens
+        assert_eq!(sonnet.tokens, 60);
+        assert_eq!(sonnet.success_count, 2);
+        assert_eq!(sonnet.avg_latency_ms, 150);
+
+        let opus = stats.iter().find(|s| s.role == "opus").unwrap();
+        assert_eq!(opus.requests, 1);
+        assert_eq!(opus.tokens, 60);
+        assert_eq!(opus.success_count, 0);
+        assert_eq!(opus.avg_latency_ms, 300);
+
+        // 无日志的角色不出现，由前端补 0
+        assert!(!stats.iter().any(|s| s.role == "haiku"));
+
+        // 空库返回空
+        let empty = Repository::new(Db::new_in_memory().unwrap());
+        assert!(empty.role_stats().unwrap().is_empty());
     }
 
     fn make_log(seq: i64, model: &str, tokens: i64, latency: i64, created_at: i64) -> RequestLog {
@@ -3079,13 +3175,19 @@ mod tests {
         .unwrap();
 
         // UTC 0 = 本地(UTC+8) 1月1日 08:00；UTC 90000 = 本地 1月2日 09:00
-        repo.insert_log(&make_log_stats(1, 200, "ch1", "c", "alice", "clean", 1, 1, 0))
-            .unwrap();
-        repo.insert_log(&make_log_stats(2, 200, "ch1", "c", "alice", "clean", 1, 1, 90000))
-            .unwrap();
+        repo.insert_log(&make_log_stats(
+            1, 200, "ch1", "c", "alice", "clean", 1, 1, 0,
+        ))
+        .unwrap();
+        repo.insert_log(&make_log_stats(
+            2, 200, "ch1", "c", "alice", "clean", 1, 1, 90000,
+        ))
+        .unwrap();
 
         // 无偏移：桶落在 UTC 零点 [0, 86400]
-        let utc = repo.log_timeseries(&LogFilter::default(), 86400, 0).unwrap();
+        let utc = repo
+            .log_timeseries(&LogFilter::default(), 86400, 0)
+            .unwrap();
         assert_eq!(utc.len(), 2);
         assert_eq!(utc[0].bucket, 0);
         assert_eq!(utc[1].bucket, 86400);

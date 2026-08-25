@@ -172,6 +172,7 @@ pub fn run() {
             commands::skill::import_installed_skill,
             commands::skill::sync_skill_mcp,
             commands::stats::get_stats,
+            commands::stats::get_role_stats,
             commands::security::get_security_settings,
             commands::security::set_security_setting,
             commands::security::get_builtin_security_rules,

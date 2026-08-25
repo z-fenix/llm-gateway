@@ -1,3 +1,4 @@
+use crate::db::repository::RoleStats;
 use crate::proxy::state::AppState;
 use serde::Serialize;
 use tauri::State;
@@ -23,4 +24,9 @@ pub fn get_stats(state: State<AppState>) -> Result<Stats, String> {
         active_channels: ac,
         avg_latency_ms: lat,
     })
+}
+
+#[tauri::command]
+pub fn get_role_stats(state: State<AppState>) -> Result<Vec<RoleStats>, String> {
+    state.repo.role_stats().map_err(|e| e.to_string())
 }
