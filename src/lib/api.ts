@@ -176,6 +176,8 @@ export const api = {
   getAppConfig: () => invoke<AppConfigInfo>("get_app_config"),
   setPreferredPort: (port: number) =>
     invoke<void>("set_preferred_port", { port }),
+  setMinimizeToTray: (enabled: boolean) =>
+    invoke<void>("set_minimize_to_tray", { enabled }),
   restartGateway: () => invoke<void>("restart_gateway"),
   getCliTargets: () => invoke<CliTargetInfo[]>("get_cli_targets"),
   readCliConfig: (target: string) => invoke<string>("read_cli_config", { target }),

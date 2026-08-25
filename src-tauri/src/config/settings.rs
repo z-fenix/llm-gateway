@@ -4,16 +4,18 @@ use tauri_plugin_store::StoreExt;
 pub const MIN_PORT: u16 = 8777;
 pub const MAX_PORT: u16 = 8787;
 
-/// 应用配置：首选端口（下次启动生效）。
+/// 应用配置：首选端口（下次启动生效）、关闭时最小化到托盘（默认开启）。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AppConfig {
     pub preferred_port: u16,
+    pub minimize_to_tray: bool,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             preferred_port: 8779,
+            minimize_to_tray: true,
         }
     }
 }
@@ -37,6 +39,9 @@ pub fn merge_from_store(
     {
         c.preferred_port = clamp_port(p);
     }
+    if let Some(m) = values.get("app.minimize_to_tray").and_then(|v| v.as_bool()) {
+        c.minimize_to_tray = m;
+    }
     c
 }
 
@@ -46,6 +51,9 @@ pub fn get_app_config(app: &tauri::AppHandle) -> AppConfig {
         let mut values = serde_json::Map::new();
         if let Some(v) = store.get("app.preferred_port") {
             values.insert("app.preferred_port".to_string(), v);
+        }
+        if let Some(v) = store.get("app.minimize_to_tray") {
+            values.insert("app.minimize_to_tray".to_string(), v);
         }
         c = merge_from_store(c, &values);
     }
@@ -82,6 +90,28 @@ mod tests {
         assert_eq!(
             merge_from_store(AppConfig::default(), &serde_json::Map::new()),
             AppConfig::default()
+        );
+    }
+
+    #[test]
+    fn merge_minimize_to_tray_defaults_and_parses_bool() {
+        // 缺省 → true
+        assert_eq!(
+            merge_from_store(AppConfig::default(), &serde_json::Map::new()).minimize_to_tray,
+            true
+        );
+        // 显式 false → false
+        let mut v = serde_json::Map::new();
+        v.insert("app.minimize_to_tray".into(), serde_json::json!(false));
+        assert_eq!(
+            merge_from_store(AppConfig::default(), &v).minimize_to_tray,
+            false
+        );
+        // 显式 true → true
+        v.insert("app.minimize_to_tray".into(), serde_json::json!(true));
+        assert_eq!(
+            merge_from_store(AppConfig::default(), &v).minimize_to_tray,
+            true
         );
     }
 }

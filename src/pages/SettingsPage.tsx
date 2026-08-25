@@ -4,6 +4,7 @@ import {
   Download,
   FileJson,
   Import,
+  Minimize2,
   RefreshCw,
   Server,
   TerminalSquare,
@@ -77,6 +78,17 @@ export default function SettingsPage() {
     request_media_heuristic: true,
   });
 
+  const [minimizeToTray, setMinimizeToTray] = useState<boolean>(true);
+
+  const updateMinimizeToTray = (value: boolean) => {
+    const prev = minimizeToTray;
+    setMinimizeToTray(value);
+    api.setMinimizeToTray(value).catch(() => {
+      setMinimizeToTray(prev);
+      toast.error("保存失败");
+    });
+  };
+
   const updateRectifier = (key: keyof RectifierConfig, value: boolean) => {
     const prev = rectifier[key];
     setRectifier((r) => ({ ...r, [key]: value }));
@@ -100,6 +112,7 @@ export default function SettingsPage() {
       .then((c) => {
         setConfig(c);
         setPreferredPort(String(c.preferred_port));
+        setMinimizeToTray(c.minimize_to_tray);
       })
       .catch(handleError);
     api.getCliTargets().then(setCliTargets).catch(handleError);
@@ -365,6 +378,34 @@ export default function SettingsPage() {
             {restarted && (
               <p className="text-sm text-emerald-600">网关已重启。</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 关闭时最小化到托盘 */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Minimize2 className="h-4 w-4 text-muted-foreground" />
+            关闭行为
+          </CardTitle>
+          <CardDescription>
+            点击窗口关闭按钮时隐藏到系统托盘，网关继续在后台运行
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label>关闭时最小化到托盘</Label>
+              <p className="text-xs text-muted-foreground">
+                开启后关闭窗口仅隐藏到托盘，可从托盘菜单“显示主窗口”或“退出”恢复/结束
+              </p>
+            </div>
+            <Switch
+              checked={minimizeToTray}
+              onCheckedChange={updateMinimizeToTray}
+              aria-label="关闭时最小化到托盘"
+            />
           </div>
         </CardContent>
       </Card>

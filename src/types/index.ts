@@ -253,6 +253,7 @@ export interface RectifierConfig {
 export interface AppConfigInfo {
   preferred_port: number;
   bound_addr: string | null;
+  minimize_to_tray: boolean;
 }
 
 export interface CliTargetInfo {

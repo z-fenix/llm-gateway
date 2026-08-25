@@ -194,6 +194,7 @@ pub fn import_config(
 pub struct AppConfigInfo {
     pub preferred_port: u16,
     pub bound_addr: Option<String>,
+    pub minimize_to_tray: bool,
 }
 
 #[derive(Serialize)]
@@ -218,7 +219,24 @@ pub fn get_app_config(state: State<AppState>) -> AppConfigInfo {
     AppConfigInfo {
         preferred_port: state.app.read().preferred_port,
         bound_addr: state.bound_addr.read().map(|a| a.to_string()),
+        minimize_to_tray: state.app.read().minimize_to_tray,
     }
+}
+
+#[tauri::command]
+pub fn set_minimize_to_tray(
+    app: AppHandle,
+    state: State<AppState>,
+    enabled: bool,
+) -> Result<(), String> {
+    state.app.write().minimize_to_tray = enabled;
+    if let Ok(store) = app.store("store.bin") {
+        let _ = store.set("app.minimize_to_tray", json!(enabled));
+        if let Err(e) = store.save() {
+            log::error!("failed to save minimize_to_tray store: {}", e);
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]

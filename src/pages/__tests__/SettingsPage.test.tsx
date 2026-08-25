@@ -7,7 +7,11 @@ vi.mock("../../lib/api", () => ({
   api: {
     getAppConfig: vi
       .fn()
-      .mockResolvedValue({ preferred_port: 8777, bound_addr: "127.0.0.1:8777" }),
+      .mockResolvedValue({
+        preferred_port: 8777,
+        bound_addr: "127.0.0.1:8777",
+        minimize_to_tray: true,
+      }),
     setPreferredPort: vi.fn().mockResolvedValue(undefined),
     restartGateway: vi.fn().mockResolvedValue(undefined),
     getCliTargets: vi.fn().mockResolvedValue([
@@ -52,6 +56,7 @@ vi.mock("../../lib/api", () => ({
       request_media_heuristic: true,
     }),
     setRectifierConfig: vi.fn().mockResolvedValue(undefined),
+    setMinimizeToTray: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -101,6 +106,7 @@ describe("SettingsPage", () => {
     mockedApi.getAppConfig.mockResolvedValue({
       preferred_port: 8777,
       bound_addr: "127.0.0.1:8777",
+      minimize_to_tray: true,
     });
     render(<SettingsPage />);
     await waitFor(() =>
@@ -229,5 +235,20 @@ describe("SettingsPage", () => {
     expect(
       await screen.findByText("config.toml（将转为 JSON 编辑）")
     ).toBeInTheDocument();
+  });
+
+  it("关闭行为卡片渲染且默认开启，点击调用 setMinimizeToTray", async () => {
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("switch", { name: "关闭时最小化到托盘" })
+      ).toBeInTheDocument()
+    );
+    const toggle = screen.getByRole("switch", { name: "关闭时最小化到托盘" });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    await waitFor(() =>
+      expect(mockedApi.setMinimizeToTray).toHaveBeenCalledWith(false)
+    );
   });
 });

@@ -255,7 +255,12 @@ pub fn import(
             crate::config::settings::MIN_PORT,
             crate::config::settings::MAX_PORT,
         );
-        *state.app.write() = crate::config::settings::AppConfig { preferred_port: p };
+        // 保留当前 minimize_to_tray（导入包不包含该设置，避免覆盖用户偏好）
+        let minimize = state.app.read().minimize_to_tray;
+        *state.app.write() = crate::config::settings::AppConfig {
+            preferred_port: p,
+            minimize_to_tray: minimize,
+        };
     }
 
     Ok(res)

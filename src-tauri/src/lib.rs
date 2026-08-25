@@ -18,8 +18,16 @@ use db::Db;
 use proxy::state::AppState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 use tauri_plugin_store::StoreExt;
+
+/// 显示并聚焦主窗口（托盘点击 / 托盘菜单“显示主窗口”共用）。
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
 
 pub fn run() {
     tauri::Builder::default()
@@ -97,22 +105,22 @@ pub fn run() {
                 commands::mcp_server::reconnect_enabled(&mcp_state).await;
             });
 
-            // 系统托盘：退出 + 点击显示窗口
+            // 系统托盘：显示主窗口 + 退出；点击托盘图标同样显示窗口
+            let show_item = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&quit_item])?;
+            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
             let mut tray_builder = TrayIconBuilder::new()
                 .menu(&menu)
                 .on_menu_event(|app, event| {
-                    if event.id.as_ref() == "quit" {
+                    if event.id.as_ref() == "show" {
+                        show_main_window(app);
+                    } else if event.id.as_ref() == "quit" {
                         app.exit(0);
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click { .. } = event {
-                        if let Some(window) = tray.app_handle().get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        show_main_window(tray.app_handle());
                     }
                 });
             if let Some(icon) = app.default_window_icon() {
@@ -125,6 +133,21 @@ pub fn run() {
             // 启动网关（独立 tokio runtime 线程，避免阻塞 Tauri）
             commands::config::spawn_gateway(&state);
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                // 关闭时最小化到托盘（默认开启，可在设置中关闭）
+                let minimize = window
+                    .app_handle()
+                    .state::<AppState>()
+                    .app
+                    .read()
+                    .minimize_to_tray;
+                if minimize {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::channel::list_channels,
@@ -214,6 +237,7 @@ pub fn run() {
             commands::config::import_config,
             commands::config::get_app_config,
             commands::config::set_preferred_port,
+            commands::config::set_minimize_to_tray,
             commands::config::restart_gateway,
             commands::config::get_cli_targets,
             commands::config::write_cli_config,
