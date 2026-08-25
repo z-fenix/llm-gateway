@@ -123,4 +123,44 @@ describe("DashboardPage", () => {
     expect(screen.getByText("今天还没有请求记录")).toBeInTheDocument();
     expect(screen.queryByTestId("trend-chart")).not.toBeInTheDocument();
   });
+
+  it("渲染缓存/成本 KPI 行（真实消耗/缓存命中/命中率/估算费用）", async () => {
+    mockedApi.getStats.mockResolvedValue({
+      ...stats,
+      today_input_tokens: 100,
+      today_output_tokens: 50,
+      today_cache_read_tokens: 30,
+      today_cache_creation_tokens: 20,
+      today_cost: 0.0012,
+      total_cost: 5.5,
+    });
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText("真实消耗 Tokens")).toBeInTheDocument());
+    // 真实消耗 = input+output+cache_creation+cache_read = 200
+    expect(screen.getByText("200")).toBeInTheDocument();
+    expect(screen.getByText("30")).toBeInTheDocument(); // 今日缓存命中
+    // 命中率 = cache_read/(input+cache_creation+cache_read) = 30/(100+20+30) = 20%
+    expect(screen.getByText("20.0%")).toBeInTheDocument();
+    expect(screen.getByText("$0.001200")).toBeInTheDocument();
+    expect(screen.getByText("$5.5000")).toBeInTheDocument();
+  });
+
+  it("缓存/成本维度为 0 时命中率兜底显示 0.0%", async () => {
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText("真实消耗 Tokens")).toBeInTheDocument());
+    expect(screen.getByText("0.0%")).toBeInTheDocument();
+  });
+
+  it("趋势维度包含缓存/成本 tab 并可切换", async () => {
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("tab", { name: "缓存" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "cache")
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "成本" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "cost")
+    );
+  });
 });

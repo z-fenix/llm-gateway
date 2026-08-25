@@ -46,6 +46,9 @@ export function fillBuckets(
         calls: 0,
         input_tokens: 0,
         output_tokens: 0,
+        cache_read_tokens: 0,
+        cache_creation_tokens: 0,
+        cost: 0,
         error_count: 0,
         risk_counts: { ...EMPTY_RISK },
       });

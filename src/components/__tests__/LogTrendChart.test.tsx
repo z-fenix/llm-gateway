@@ -103,6 +103,16 @@ describe("LogTrendChart component (Recharts)", () => {
     expect(screen.getAllByTestId("area")).toHaveLength(1);
   });
 
+  it("cache 维度渲染 2 个 Area(缓存创建/缓存命中)", () => {
+    render(<LogTrendChart buckets={[baseBucket]} dimension="cache" bucketSecs={3600} />);
+    expect(screen.getAllByTestId("area")).toHaveLength(2);
+  });
+
+  it("cost 维度渲染 1 个 Area(费用)", () => {
+    render(<LogTrendChart buckets={[baseBucket]} dimension="cost" bucketSecs={3600} />);
+    expect(screen.getAllByTestId("area")).toHaveLength(1);
+  });
+
   it("risk 维度渲染 6 个 Area(stacked)", () => {
     render(<LogTrendChart buckets={[baseBucket]} dimension="risk" bucketSecs={3600} />);
     expect(screen.getAllByTestId("area")).toHaveLength(6);

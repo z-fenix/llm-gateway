@@ -11,12 +11,15 @@ import LoadingState from "../components/LoadingState";
 import EmptyState from "../components/EmptyState";
 import LogTrendChart, { type Dimension } from "../components/LogTrendChart";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { cacheHitRatePercent, formatUsd, realTokens } from "../lib/usage";
 
 const DIMENSION_TABS: { label: string; value: Dimension }[] = [
   { label: "调用量", value: "calls" },
   { label: "Token", value: "tokens" },
   { label: "成功率", value: "success" },
   { label: "风险分布", value: "risk" },
+  { label: "缓存", value: "cache" },
+  { label: "成本", value: "cost" },
 ];
 
 export default function DashboardPage() {
@@ -60,6 +63,24 @@ export default function DashboardPage() {
     { label: "平均延迟(ms)", value: s.avg_latency_ms },
   ];
 
+  // 缓存/成本维度：真实消耗 = input(近似 fresh) + output + cache_creation + cache_read
+  const todayInput = s.today_input_tokens ?? 0;
+  const todayOutput = s.today_output_tokens ?? 0;
+  const todayCacheRead = s.today_cache_read_tokens ?? 0;
+  const todayCacheCreation = s.today_cache_creation_tokens ?? 0;
+  const todayRealTokens = realTokens(todayInput, todayOutput, todayCacheRead, todayCacheCreation);
+  // 命中率 = cache_read / (input + cache_creation + cache_read)，0 兜底（Stats 无直接命中率字段）
+  const todayHitRate = cacheHitRatePercent(todayInput, todayCacheRead, todayCacheCreation);
+  const todayCost = s.today_cost ?? 0;
+  const totalCost = s.total_cost ?? 0;
+
+  const usageCards = [
+    { label: "真实消耗 Tokens", value: todayRealTokens.toLocaleString() },
+    { label: "今日缓存命中", value: todayCacheRead.toLocaleString() },
+    { label: "今日估算费用", value: formatUsd(todayCost) },
+    { label: "累计估算费用", value: formatUsd(totalCost) },
+  ];
+
   const rangeLabel = getUsageRangePresetLabel(rangeSel.preset);
 
   return (
@@ -83,6 +104,27 @@ export default function DashboardPage() {
             <div className="mt-1 text-2xl font-bold text-foreground">{c.value}</div>
           </Card>
         ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {usageCards.map((c) => (
+          <Card key={c.label} className="p-4">
+            <div className="text-sm text-muted-foreground">{c.label}</div>
+            <div className="mt-1 text-2xl font-bold text-foreground">{c.value}</div>
+          </Card>
+        ))}
+        <Card className="p-4">
+          <div className="text-sm text-muted-foreground">今日缓存命中率</div>
+          <div className="mt-1 text-2xl font-bold text-foreground">
+            {todayHitRate.toFixed(1)}%
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-purple-500"
+              style={{ width: `${Math.min(100, todayHitRate)}%` }}
+            />
+          </div>
+        </Card>
       </div>
 
       <Card className="mt-6">

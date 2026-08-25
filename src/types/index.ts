@@ -151,6 +151,16 @@ export interface RoleStats {
   success_count: number;
   avg_latency_ms: number;
 }
+/** 模型定价（每百万 token 美元）——对应后端 db::models::ModelPrice。 */
+export interface ModelPrice {
+  model_id: string;
+  display_name: string;
+  input_cost_per_million: number;
+  output_cost_per_million: number;
+  cache_read_cost_per_million: number;
+  cache_creation_cost_per_million: number;
+  updated_at: number;
+}
 export interface TimeBucket {
   bucket: number;
   calls: number;

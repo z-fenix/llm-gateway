@@ -355,4 +355,59 @@ describe("LogsPage", () => {
     expect(mockedApi.getLogStats).toHaveBeenCalledTimes(2);
     expect(mockedApi.getLogStats.mock.calls[1][0].after).toBe(f2.after);
   });
+
+  it("统计卡展示估算费用与缓存命中率", async () => {
+    mockedApi.getLogStats.mockResolvedValue({
+      total_calls: 100,
+      total_input_tokens: 100,
+      total_output_tokens: 50,
+      cache_read_tokens: 20,
+      cache_creation_tokens: 30,
+      cost: 0.0015,
+      success_count: 90,
+      risk_distribution: [],
+      top_channels: [],
+      top_api_keys: [],
+    });
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText("估算费用")).toBeInTheDocument());
+    // 命中率 = cache_read/(input+cache_creation+cache_read) = 20/(100+30+20) = 13.3%
+    expect(screen.getByText("13.3%")).toBeInTheDocument();
+    expect(screen.getByText("$0.001500")).toBeInTheDocument();
+  });
+
+  it("日志表渲染缓存读取/缓存创建/费用列", async () => {
+    mockedApi.listLogs.mockResolvedValue({
+      total: 1,
+      items: [
+        makeLog({
+          id: "l1",
+          cache_read_tokens: 30,
+          cache_creation_tokens: 12,
+          total_cost_usd: 0.000123,
+        }),
+      ],
+    });
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText("$0.000123")).toBeInTheDocument());
+    const row = screen.getByText("$0.000123").closest("tr")!;
+    expect(within(row).getByText("30")).toBeInTheDocument();
+    expect(within(row).getByText("12")).toBeInTheDocument();
+  });
+
+  it("趋势维度包含缓存/成本 tab 并可切换", async () => {
+    mockedApi.getLogTimeseries.mockResolvedValue([
+      { bucket: 1, calls: 1, input_tokens: 1, output_tokens: 1, error_count: 0, risk_counts: {} },
+    ]);
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("tab", { name: "缓存" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "cache")
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "成本" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "cost")
+    );
+  });
 });

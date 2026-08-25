@@ -15,6 +15,7 @@ import type {
   LogPage,
   LogStats,
   ModelMapEntry,
+  ModelPrice,
   McpServer,
   McpServerView,
   RagSettings,
@@ -92,6 +93,12 @@ export const api = {
 
   getStats: () => invoke<Stats>("get_stats"),
   getRoleStats: () => invoke<RoleStats[]>("get_role_stats"),
+
+  listModelPrices: () => invoke<ModelPrice[]>("list_model_prices"),
+  upsertModelPrice: (price: ModelPrice) =>
+    invoke<number | null>("upsert_model_price", { price }),
+  deleteModelPrice: (modelId: string) =>
+    invoke<number | null>("delete_model_price", { modelId }),
 
   getSecuritySettings: () => invoke<SecuritySettings>("get_security_settings"),
   setSecuritySetting: (key: string, value: unknown) =>

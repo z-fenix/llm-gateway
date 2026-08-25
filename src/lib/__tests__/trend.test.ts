@@ -53,4 +53,32 @@ describe("trend helpers", () => {
     const filled = fillBuckets([], 0, 7200, bs, off);
     expect(filled).toEqual([]);
   });
+
+  it("fillBuckets 空桶补全缓存/成本字段零值", () => {
+    const off = 28800;
+    const bs = 86400;
+    const buckets: TimeBucket[] = [
+      {
+        bucket: -28800,
+        calls: 1,
+        input_tokens: 10,
+        output_tokens: 5,
+        cache_read_tokens: 7,
+        cache_creation_tokens: 3,
+        cost: 0.0012,
+        error_count: 0,
+        risk_counts: { clean: 1, info: 0, low: 0, medium: 0, high: 0, critical: 0 },
+      },
+    ];
+    const filled = fillBuckets(buckets, 0, 90000, bs, off);
+    expect(filled).toHaveLength(2);
+    // 已有桶原样保留
+    expect(filled[0].cache_read_tokens).toBe(7);
+    expect(filled[0].cache_creation_tokens).toBe(3);
+    expect(filled[0].cost).toBe(0.0012);
+    // 空桶补零
+    expect(filled[1].cache_read_tokens).toBe(0);
+    expect(filled[1].cache_creation_tokens).toBe(0);
+    expect(filled[1].cost).toBe(0);
+  });
 });

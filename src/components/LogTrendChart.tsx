@@ -9,8 +9,9 @@ import {
   YAxis,
 } from "recharts";
 import type { TimeBucket } from "../types";
+import { formatUsd, formatUsdAxis } from "../lib/usage";
 
-export type Dimension = "calls" | "tokens" | "success" | "risk";
+export type Dimension = "calls" | "tokens" | "success" | "risk" | "cache" | "cost";
 
 export function niceCeil(n: number): number {
   if (n <= 0) return 1;
@@ -130,7 +131,11 @@ function CustomTooltip({
             />
             <span className="text-muted-foreground">{e.name}:</span>
             <span className="font-medium text-foreground">
-              {dimension === "success" ? `${e.value}%` : String(e.value)}
+              {dimension === "success"
+                ? `${e.value}%`
+                : dimension === "cost"
+                  ? formatUsd(Number(e.value))
+                  : String(e.value)}
             </span>
           </div>
         ))}
@@ -155,6 +160,9 @@ export default function LogTrendChart({
         calls: b.calls,
         input: b.input_tokens,
         output: b.output_tokens,
+        cache_read: b.cache_read_tokens || 0,
+        cache_creation: b.cache_creation_tokens || 0,
+        cost: b.cost || 0,
         success: successRate(b),
         ...Object.fromEntries(RISK_ORDER.map((l) => [l, b.risk_counts[l] || 0])),
       })),
@@ -186,6 +194,18 @@ export default function LogTrendChart({
               <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
               <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
             </linearGradient>
+            <linearGradient id="colorCacheCreation" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f97316" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorCacheRead" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+            </linearGradient>
           </defs>
           <CartesianGrid
             strokeDasharray="3 3"
@@ -207,9 +227,11 @@ export default function LogTrendChart({
             tickFormatter={(v: number) =>
               dimension === "success"
                 ? `${v}%`
-                : v >= 1000
-                  ? `${(v / 1000).toFixed(1)}k`
-                  : String(v)
+                : dimension === "cost"
+                  ? formatUsdAxis(v)
+                  : v >= 1000
+                    ? `${(v / 1000).toFixed(1)}k`
+                    : String(v)
             }
             width={44}
           />
@@ -243,6 +265,37 @@ export default function LogTrendChart({
                 fill="url(#colorOutput)"
               />
             </>
+          )}
+          {dimension === "cache" && (
+            <>
+              <Area
+                type="monotone"
+                dataKey="cache_creation"
+                name="缓存创建"
+                stroke="#f97316"
+                strokeWidth={2}
+                fill="url(#colorCacheCreation)"
+              />
+              <Area
+                type="monotone"
+                dataKey="cache_read"
+                name="缓存命中"
+                stroke="#a855f7"
+                strokeWidth={2}
+                fill="url(#colorCacheRead)"
+              />
+            </>
+          )}
+          {dimension === "cost" && (
+            <Area
+              type="monotone"
+              dataKey="cost"
+              name="费用"
+              stroke="#ef4444"
+              strokeWidth={2}
+              strokeDasharray="5 3"
+              fill="url(#colorCost)"
+            />
           )}
           {dimension === "success" && (
             <Area

@@ -22,6 +22,7 @@ import { Label } from "../components/ui/label";
 import { cn } from "../lib/utils";
 import { getUsageRangePresetLabel, resolveUsageRange } from "../lib/usageRange";
 import { UsageDateRangePicker } from "../components/UsageDateRangePicker";
+import { cacheHitRatePercent, formatUsd } from "../lib/usage";
 
 function prettyJson(s?: string | null): string {
   if (!s) return "(无内容)";
@@ -145,10 +146,13 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
   { label: "Token", value: "tokens" },
   { label: "成功率", value: "success" },
   { label: "风险分布", value: "risk" },
+  { label: "缓存", value: "cache" },
+  { label: "成本", value: "cost" },
 ];
 
 const LOG_COLUMNS = [
-  "#", "时间", "密钥", "角色", "本地会话", "请求模型", "上游模型", "渠道", "状态", "风险", "Token", "延迟", "兜底",
+  "#", "时间", "密钥", "角色", "本地会话", "请求模型", "上游模型", "渠道", "状态", "风险",
+  "Token", "缓存读取", "缓存创建", "费用", "延迟", "兜底",
 ];
 
 const selectCls =
@@ -237,6 +241,15 @@ function LogRow({
         <td className="px-4 py-3 text-muted-foreground">
           {log.input_tokens}+{log.output_tokens}
         </td>
+        <td className="px-4 py-3 text-muted-foreground">
+          {log.cache_read_tokens ? log.cache_read_tokens.toLocaleString() : "-"}
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">
+          {log.cache_creation_tokens ? log.cache_creation_tokens.toLocaleString() : "-"}
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">
+          {log.total_cost_usd ? formatUsd(log.total_cost_usd) : "-"}
+        </td>
         <td className="px-4 py-3 text-muted-foreground">{log.latency_ms}ms</td>
         <td className="px-4 py-3 text-muted-foreground">
           {log.fallback ? "是" : "-"}
@@ -244,7 +257,7 @@ function LogRow({
       </tr>
       {open && (
         <tr className="border-b border-border bg-muted/50">
-          <td colSpan={13} className="px-4 py-3">
+          <td colSpan={16} className="px-4 py-3">
             <div className="space-y-2">
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="font-mono">TraceID: {log.trace_id}</span>
@@ -417,6 +430,16 @@ export default function LogsPage() {
     return stats.total_input_tokens + stats.total_output_tokens;
   }, [stats]);
 
+  // 缓存命中率 = cache_read / (input + cache_creation + cache_read)，0 兜底（LogStats 无直接命中率字段）
+  const cacheHitRate = useMemo(() => {
+    if (!stats) return 0;
+    return cacheHitRatePercent(
+      stats.total_input_tokens,
+      stats.cache_read_tokens ?? 0,
+      stats.cache_creation_tokens ?? 0
+    );
+  }, [stats]);
+
   // 按 trace_id 对当前页结果分组：一个 trace 即一次会话
   const sessions = useMemo<SessionGroup[]>(() => {
     const map = new Map<string, RequestLog[]>();
@@ -573,7 +596,7 @@ export default function LogsPage() {
       </Card>
 
       {stats && (
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">总调用</div>
             <div className="mt-1 text-2xl font-bold text-foreground">{stats.total_calls}</div>
@@ -593,6 +616,20 @@ export default function LogsPage() {
               {stats.risk_distribution.map(([level, count]) => (
                 <span key={level} className={cn("rounded px-1 text-xs", riskBadgeClass(level))}>{level}: {count}</span>
               ))}
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-sm text-muted-foreground">估算费用</div>
+            <div className="mt-1 text-2xl font-bold text-foreground">{formatUsd(stats.cost ?? 0)}</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-sm text-muted-foreground">缓存命中率</div>
+            <div className="mt-1 text-2xl font-bold text-foreground">{cacheHitRate.toFixed(1)}%</div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-purple-500"
+                style={{ width: `${Math.min(100, cacheHitRate)}%` }}
+              />
             </div>
           </Card>
         </div>
