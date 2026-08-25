@@ -89,7 +89,12 @@ fn build_candidates(
         if !routes.is_empty() {
             let route_cfg: HashMap<String, (i64, i64)> = routes
                 .iter()
-                .map(|rr| (rr.id.clone(), (rr.breaker_max_failures, rr.breaker_cooldown_secs)))
+                .map(|rr| {
+                    (
+                        rr.id.clone(),
+                        (rr.breaker_max_failures, rr.breaker_cooldown_secs),
+                    )
+                })
                 .collect();
             let role_cands: Vec<RoleCandidate> = routes
                 .iter()
@@ -110,10 +115,8 @@ fn build_candidates(
                 |rc| rc.route_id.as_str(),
                 1,
             ) {
-                let (max_failures, cooldown) = route_cfg
-                    .get(&rc.route_id)
-                    .copied()
-                    .unwrap_or((5, 60));
+                let (max_failures, cooldown) =
+                    route_cfg.get(&rc.route_id).copied().unwrap_or((5, 60));
                 let allow = {
                     let mut breakers = state.circuit_breakers.write();
                     breakers
@@ -264,6 +267,7 @@ pub async fn forward_stream(
                 let usage_protocol = match ch.upstream_protocol.as_str() {
                     "anthropic-messages" => crate::proxy::sse::Protocol::Anthropic,
                     "gemini-native" => crate::proxy::sse::Protocol::Gemini,
+                    "openai-responses" => crate::proxy::sse::Protocol::Responses,
                     _ => crate::proxy::sse::Protocol::OpenAI,
                 };
                 return Ok(StreamHandle {
@@ -378,6 +382,10 @@ fn extract_usage(ch: &Channel, text: &str) -> Usage {
                 .unwrap_or(0);
             us
         }
+        "openai-responses" => v
+            .get("usage")
+            .and_then(crate::proxy::sse::extract_responses_usage)
+            .unwrap_or_default(),
         _ => crate::proxy::sse::extract_openai_usage(&v).unwrap_or_default(),
     }
 }
@@ -409,13 +417,11 @@ async fn try_channel(
         if ch.upstream_protocol == "anthropic-messages" {
             let before = body.clone();
             if crate::proxy::rectifier::thinking_signature::should_rectify_thinking_signature(
-                &text,
-                &cfg,
+                &text, &cfg,
             ) {
                 crate::proxy::rectifier::thinking_signature::rectify_anthropic_request(&mut body);
             } else if crate::proxy::rectifier::thinking_budget::should_rectify_thinking_budget(
-                &text,
-                &cfg,
+                &text, &cfg,
             ) {
                 crate::proxy::rectifier::thinking_budget::rectify_thinking_budget(&mut body);
             }
@@ -431,4 +437,61 @@ async fn try_channel(
         return Err(ForwardError::Upstream { status, body: text });
     }
     Ok((status, parse_body(&text), extract_usage(ch, &text)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::models::Channel;
+
+    fn ch(protocol: &str) -> Channel {
+        Channel {
+            id: "c1".into(),
+            name: "c1".into(),
+            supplier: "openai".into(),
+            upstream_protocol: protocol.into(),
+            base_url: "http://localhost".into(),
+            api_key: "sk-x".into(),
+            models: vec![],
+            priority: 0,
+            weight: 1,
+            enabled: true,
+            timeout_secs: 5,
+            total_calls: 0,
+            total_tokens: 0,
+            success_rate: 1.0,
+            avg_latency_ms: 0,
+            created_at: 1,
+            updated_at: 1,
+        }
+    }
+
+    #[test]
+    fn extract_usage_openai_chat_preserves_existing_behavior() {
+        let text = r#"{"choices":[{"message":{"content":"hi"}}],"usage":{"prompt_tokens":10,"completion_tokens":5,"prompt_tokens_details":{"cached_tokens":3}}}"#;
+        let u = extract_usage(&ch("openai-chat"), text);
+        assert_eq!(u.input_tokens, 10);
+        assert_eq!(u.output_tokens, 5);
+        assert_eq!(u.cache_read_tokens, 3);
+    }
+
+    #[test]
+    fn extract_usage_openai_responses_parses_input_output_cached() {
+        let text = r#"{"id":"resp_x","object":"response","usage":{"input_tokens":100,"output_tokens":40,"input_tokens_details":{"cached_tokens":60},"total_tokens":140}}"#;
+        let u = extract_usage(&ch("openai-responses"), text);
+        assert_eq!(u.input_tokens, 100);
+        assert_eq!(u.output_tokens, 40);
+        assert_eq!(u.cache_read_tokens, 60);
+        assert_eq!(u.cache_creation_tokens, 0);
+    }
+
+    #[test]
+    fn extract_usage_openai_responses_cache_write() {
+        let text = r#"{"usage":{"input_tokens":80,"output_tokens":20,"input_tokens_details":{"cached_tokens":10,"cache_write_tokens":15}}}"#;
+        let u = extract_usage(&ch("openai-responses"), text);
+        assert_eq!(u.input_tokens, 80);
+        assert_eq!(u.output_tokens, 20);
+        assert_eq!(u.cache_read_tokens, 10);
+        assert_eq!(u.cache_creation_tokens, 15);
+    }
 }

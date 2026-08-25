@@ -8,6 +8,31 @@ pub struct Usage {
     pub cache_creation_tokens: u64,
 }
 
+/// 从 OpenAI Responses 格式的 usage 对象提取（若存在）。
+/// Responses 用 input_tokens/output_tokens 而非 prompt_tokens/completion_tokens；
+/// 缓存命中在 input_tokens_details.cached_tokens，缓存写入在 input_tokens_details.cache_write_tokens。
+pub fn extract_responses_usage(u: &serde_json::Value) -> Option<Usage> {
+    let input = u.get("input_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+    let output = u.get("output_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+    let cache_read = u
+        .pointer("/input_tokens_details/cached_tokens")
+        .and_then(|t| t.as_u64())
+        .unwrap_or(0);
+    let cache_creation = u
+        .pointer("/input_tokens_details/cache_write_tokens")
+        .and_then(|t| t.as_u64())
+        .unwrap_or(0);
+    if input == 0 && output == 0 && cache_read == 0 && cache_creation == 0 {
+        return None;
+    }
+    Some(Usage {
+        input_tokens: input,
+        output_tokens: output,
+        cache_read_tokens: cache_read,
+        cache_creation_tokens: cache_creation,
+    })
+}
+
 /// 从 OpenAI chunk 的 usage 字段提取（若存在）。
 /// 缓存回退链（对齐 cc-switch）：直传 cache_read_input_tokens → input_tokens_details/cached_tokens → prompt_tokens_details/cached_tokens；
 /// 写入 cache_creation_input_tokens → input_tokens_details/cache_write_tokens → prompt_tokens_details/cache_write_tokens。
@@ -45,7 +70,8 @@ pub fn extract_openai_usage(v: &serde_json::Value) -> Option<Usage> {
                 .and_then(|t| t.as_u64())
         })
         .unwrap_or(0);
-    if input == 0 && output == 0 {
+    // 只有缓存 token 的 usage 也应保留（input+output 为 0 但命中/写入非空，不能丢弃）
+    if input == 0 && output == 0 && cache_read == 0 && cache_creation == 0 {
         return None;
     }
     Some(Usage {
@@ -102,6 +128,9 @@ pub enum Protocol {
     OpenAI,
     Anthropic,
     Gemini,
+    /// OpenAI Responses API：usage 用 input_tokens/output_tokens/input_tokens_details.cached_tokens，
+    /// 文本来自 response.output_text.delta 事件。
+    Responses,
 }
 
 impl SseAccumulator {
@@ -186,6 +215,22 @@ impl SseAccumulator {
                     self.text.push_str(text);
                 }
             }
+            Protocol::Responses => {
+                // 完整 usage 只在 response.completed 事件携带（response.usage 为 Responses 格式）
+                if v.get("type").and_then(|t| t.as_str()) == Some("response.completed") {
+                    if let Some(u) = v.get("response").and_then(|r| r.get("usage")) {
+                        if let Some(uu) = extract_responses_usage(u) {
+                            self.usage = uu;
+                        }
+                    }
+                }
+                // 文本增量来自 response.output_text.delta 事件
+                if v.get("type").and_then(|t| t.as_str()) == Some("response.output_text.delta") {
+                    if let Some(text) = v.get("delta").and_then(|d| d.as_str()) {
+                        self.text.push_str(text);
+                    }
+                }
+            }
         }
     }
 
@@ -247,8 +292,12 @@ mod tests {
     #[test]
     fn gemini_accepts_both_data_prefix_and_ndjson() {
         let mut acc = SseAccumulator::new(Protocol::Gemini);
-        acc.feed_line(r#"data: {"candidates":[{"content":{"parts":[{"text":"data "}],"role":"model"}}]}"#);
-        acc.feed_line(r#"{"candidates":[{"content":{"parts":[{"text":"ndjson"}],"role":"model"}}]}"#);
+        acc.feed_line(
+            r#"data: {"candidates":[{"content":{"parts":[{"text":"data "}],"role":"model"}}]}"#,
+        );
+        acc.feed_line(
+            r#"{"candidates":[{"content":{"parts":[{"text":"ndjson"}],"role":"model"}}]}"#,
+        );
         assert_eq!(acc.text(), "data ndjson");
     }
 
@@ -320,5 +369,61 @@ mod tests {
         assert_eq!(u.output_tokens, 30);
         assert_eq!(u.cache_read_tokens, 40);
         assert_eq!(u.cache_creation_tokens, 0, "gemini 无缓存写");
+    }
+
+    #[test]
+    fn responses_usage_from_completed_event() {
+        let mut acc = SseAccumulator::new(Protocol::Responses);
+        acc.feed_line(r#"data: {"type":"response.output_text.delta","delta":"hi"}"#);
+        acc.feed_line(r#"data: {"type":"response.completed","response":{"usage":{"input_tokens":100,"output_tokens":40,"input_tokens_details":{"cached_tokens":60},"total_tokens":140}}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 100);
+        assert_eq!(u.output_tokens, 40);
+        assert_eq!(u.cache_read_tokens, 60);
+        assert_eq!(u.cache_creation_tokens, 0);
+    }
+
+    #[test]
+    fn responses_cache_write_from_input_tokens_details() {
+        let mut acc = SseAccumulator::new(Protocol::Responses);
+        acc.feed_line(r#"data: {"type":"response.completed","response":{"usage":{"input_tokens":80,"output_tokens":20,"input_tokens_details":{"cached_tokens":10,"cache_write_tokens":15},"total_tokens":100}}}"#);
+        let u = acc.usage();
+        assert_eq!(u.input_tokens, 80);
+        assert_eq!(u.output_tokens, 20);
+        assert_eq!(u.cache_read_tokens, 10);
+        assert_eq!(u.cache_creation_tokens, 15);
+    }
+
+    #[test]
+    fn responses_text_from_output_text_delta_events() {
+        let mut acc = SseAccumulator::new(Protocol::Responses);
+        acc.feed_line(r#"data: {"type":"response.output_text.delta","delta":"Hello "}"#);
+        acc.feed_line(r#"data: {"type":"response.output_text.delta","delta":"world"}"#);
+        acc.feed_line(r#"data: {"type":"response.completed","response":{"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}"#);
+        assert_eq!(acc.text(), "Hello world");
+        // 非 delta 事件的顶层 delta 字段不被误收
+        acc.feed_line(r#"data: {"type":"response.completed","delta":"sneaky"}"#);
+        assert_eq!(acc.text(), "Hello world");
+    }
+
+    #[test]
+    fn extract_responses_usage_handles_only_cached_tokens() {
+        // 只有缓存 token 时也保留，不被 input+output==0 丢弃
+        let u = serde_json::json!({"input_tokens":0,"output_tokens":0,"input_tokens_details":{"cached_tokens":50}});
+        let parsed = extract_responses_usage(&u).unwrap();
+        assert_eq!(parsed.input_tokens, 0);
+        assert_eq!(parsed.output_tokens, 0);
+        assert_eq!(parsed.cache_read_tokens, 50);
+        assert_eq!(parsed.cache_creation_tokens, 0);
+    }
+
+    #[test]
+    fn openai_usage_keeps_cache_when_input_output_zero() {
+        // 缓存含型通道的 input 已含缓存，可能出现 prompt_tokens=0 但 cached_tokens>0 的 usage
+        let v = serde_json::json!({"usage":{"prompt_tokens":0,"completion_tokens":0,"prompt_tokens_details":{"cached_tokens":70}}});
+        let parsed = extract_openai_usage(&v).unwrap();
+        assert_eq!(parsed.input_tokens, 0);
+        assert_eq!(parsed.output_tokens, 0);
+        assert_eq!(parsed.cache_read_tokens, 70);
     }
 }

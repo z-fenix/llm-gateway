@@ -139,12 +139,23 @@ pub fn run() {
                 // 关闭时最小化到托盘（默认开启，可在设置中关闭）
                 let minimize = window
                     .app_handle()
-                    .state::<AppState>()
-                    .app
-                    .read()
-                    .minimize_to_tray;
+                    .try_state::<AppState>()
+                    .map(|st| {
+                        // parking_lot 读写锁不中毒，但 try_read 可避免写锁占用时阻塞关闭回调
+                        st.app
+                            .try_read()
+                            .map(|cfg| cfg.minimize_to_tray)
+                            .unwrap_or(false)
+                    })
+                    .unwrap_or(false);
                 if minimize {
                     api.prevent_close();
+                    // 托盘创建失败（启动时已记 warn）时窗口将无托可还原，这里再提示一次
+                    if window.app_handle().tray_by_id("main").is_none() {
+                        log::warn!(
+                            "hiding window to tray on close but no system tray is available; window may be unreachable"
+                        );
+                    }
                     let _ = window.hide();
                 }
             }

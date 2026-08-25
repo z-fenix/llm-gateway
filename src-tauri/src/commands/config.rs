@@ -14,7 +14,9 @@ use tauri_plugin_store::StoreExt;
 /// 在新线程启动网关(独立 tokio runtime),并把 bound_addr / gateway_handle 写入 state。
 /// 返回绑定结果 channel:成功为实际绑定地址,失败为错误(仅发送一次)。
 /// 供启动与重启共用;调用方可丢弃返回值(仅当需要感知绑定结果时再接收)。
-pub(crate) fn spawn_gateway(state: &AppState) -> std::sync::mpsc::Receiver<Result<SocketAddr, String>> {
+pub(crate) fn spawn_gateway(
+    state: &AppState,
+) -> std::sync::mpsc::Receiver<Result<SocketAddr, String>> {
     spawn_gateway_with_port(state, None)
 }
 
@@ -216,10 +218,11 @@ fn home() -> Result<PathBuf, String> {
 
 #[tauri::command]
 pub fn get_app_config(state: State<AppState>) -> AppConfigInfo {
+    let cfg = state.app.read();
     AppConfigInfo {
-        preferred_port: state.app.read().preferred_port,
+        preferred_port: cfg.preferred_port,
         bound_addr: state.bound_addr.read().map(|a| a.to_string()),
-        minimize_to_tray: state.app.read().minimize_to_tray,
+        minimize_to_tray: cfg.minimize_to_tray,
     }
 }
 
@@ -336,8 +339,7 @@ pub(crate) fn merge_gateway_env_inner(
         .iter()
         .find(|k| k.id == api_key_id)
         .ok_or_else(|| "API 密钥不存在".to_string())?;
-    let (merged, _changed) =
-        claude_code::merge_settings(Some(json_content), &base_url, &key.key)?;
+    let (merged, _changed) = claude_code::merge_settings(Some(json_content), &base_url, &key.key)?;
     Ok(merged)
 }
 
@@ -369,12 +371,8 @@ mod tests {
         let state = AppState::new(db);
         *state.bound_addr.write() = Some("127.0.0.1:8779".parse().unwrap());
 
-        let out = merge_gateway_env_inner(
-            &state,
-            r#"{"model":"opus","env":{"OTHER":"1"}}"#,
-            "k1",
-        )
-        .unwrap();
+        let out = merge_gateway_env_inner(&state, r#"{"model":"opus","env":{"OTHER":"1"}}"#, "k1")
+            .unwrap();
         let v: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v["model"], serde_json::json!("opus"));
         assert_eq!(v["env"]["OTHER"], serde_json::json!("1"));
@@ -382,7 +380,10 @@ mod tests {
             v["env"]["ANTHROPIC_BASE_URL"],
             serde_json::json!("http://127.0.0.1:8779")
         );
-        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-abc"));
+        assert_eq!(
+            v["env"]["ANTHROPIC_AUTH_TOKEN"],
+            serde_json::json!("sk-lgw-abc")
+        );
 
         let err = merge_gateway_env_inner(&state, "{}", "missing").unwrap_err();
         assert!(err.contains("API 密钥不存在"));
@@ -423,19 +424,18 @@ mod tests {
     fn assert_health_ok(addr: SocketAddr) {
         let client = no_proxy_client();
         let rt = tokio::runtime::Runtime::new().unwrap();
-        let body = rt
-            .block_on(async move {
-                client
-                    .get(format!("http://{}/health", addr))
-                    .send()
-                    .await
-                    .unwrap()
-                    .error_for_status()
-                    .unwrap()
-                    .text()
-                    .await
-                    .unwrap()
-            });
+        let body = rt.block_on(async move {
+            client
+                .get(format!("http://{}/health", addr))
+                .send()
+                .await
+                .unwrap()
+                .error_for_status()
+                .unwrap()
+                .text()
+                .await
+                .unwrap()
+        });
         assert_eq!(body, "ok");
     }
 
@@ -465,7 +465,10 @@ mod tests {
         spawn_gateway(&state);
 
         let addr = wait_bound(&state).expect("gateway should bind within 5s");
-        assert!(state.gateway_handle.read().is_some(), "handle should be stored");
+        assert!(
+            state.gateway_handle.read().is_some(),
+            "handle should be stored"
+        );
 
         // 新服务实际可访问 /health
         assert_health_ok(addr);
@@ -511,7 +514,10 @@ mod tests {
 
         // 失败后应尝试用旧端口恢复:网关重新在 8779 上提供服务
         let restored = wait_bound(&state).expect("gateway should be restored within 5s");
-        assert_eq!(restored, addr1, "restored gateway should reuse old bound addr");
+        assert_eq!(
+            restored, addr1,
+            "restored gateway should reuse old bound addr"
+        );
         assert_health_ok(restored);
 
         stop_gateway(&state);

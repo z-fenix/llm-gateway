@@ -86,8 +86,22 @@ pub struct TimeBucket {
 /// 仪表盘汇总统计（`stats()` 返回元组）：
 /// (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms,
 ///  today_input_tokens, today_output_tokens, today_cache_read_tokens, today_cache_creation_tokens,
-///  today_cost, total_cost)
-pub type UsageStatsTuple = (i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, f64, f64);
+///  today_fresh_input, today_cost, total_cost)
+pub type UsageStatsTuple = (
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    i64,
+    f64,
+    f64,
+);
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct RoleStats {
@@ -499,8 +513,17 @@ impl Repository {
         let pricing = if pricing_model.is_empty() {
             None
         } else {
-            query_model_price(&conn, &pricing_model)
-                .map_err(|e| crate::error::AppError::Msg(format!("resolve pricing failed: {e}")))?
+            // 价格查询失败仅视为无价格（成本全 0），绝不让查询错误丢弃整条日志
+            match query_model_price(&conn, &pricing_model) {
+                Ok(p) => p,
+                Err(e) => {
+                    log::warn!(
+                        "resolve pricing failed for model {}: {e}; costs treated as 0",
+                        pricing_model
+                    );
+                    None
+                }
+            }
         };
         let (input_cost, output_cost, cache_read_cost, cache_creation_cost, total_cost) =
             compute_costs(
@@ -1327,7 +1350,7 @@ impl Repository {
     pub fn stats(&self) -> AppResult<UsageStatsTuple> {
         // (today_requests, today_tokens, total_requests, total_tokens, active_channels, avg_latency_ms,
         //  today_input_tokens, today_output_tokens, today_cache_read_tokens, today_cache_creation_tokens,
-        //  today_cost, total_cost)
+        //  today_fresh_input, today_cost, total_cost)
         // today_tokens 保持 input+output 组合口径不变；新增 today_* 分项供前端展示。
         let conn = self.db.conn();
         let conn = conn.lock();
@@ -1341,26 +1364,33 @@ impl Repository {
             .and_local_timezone(chrono::Local)
             .unwrap()
             .timestamp();
-        let (tr, tt, tii, too, tcr, tcc, tcost): (i64, i64, i64, i64, i64, i64, f64) = conn
-            .query_row(
-                "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0),
-                        COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0),
-                        COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_creation_tokens),0),
-                        COALESCE(SUM(total_cost_usd),0)
-                 FROM request_logs WHERE created_at>=?1",
-                [today_start],
-                |r| {
-                    Ok((
-                        r.get(0)?,
-                        r.get(1)?,
-                        r.get(2)?,
-                        r.get(3)?,
-                        r.get(4)?,
-                        r.get(5)?,
-                        r.get(6)?,
-                    ))
-                },
-            )?;
+        // fresh_input：inclusive 协议（openai-chat/openai-responses/gemini-native）input 含缓存，
+        // 扣减 cache_read+cache_creation 后为 fresh input；exclusive（anthropic-messages）直接取 input。
+        let (tr, tt, tii, too, tcr, tcc, tfresh, tcost): (i64, i64, i64, i64, i64, i64, i64, f64) =
+            conn
+                .query_row(
+                    "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0),
+                            COALESCE(SUM(input_tokens),0), COALESCE(SUM(output_tokens),0),
+                            COALESCE(SUM(cache_read_tokens),0), COALESCE(SUM(cache_creation_tokens),0),
+                            COALESCE(SUM(CASE WHEN protocol IN ('openai-chat','openai-responses','gemini-native')
+                              THEN MAX(input_tokens - cache_read_tokens - cache_creation_tokens, 0)
+                              ELSE input_tokens END),0),
+                            COALESCE(SUM(total_cost_usd),0)
+                     FROM request_logs WHERE created_at>=?1",
+                    [today_start],
+                    |r| {
+                        Ok((
+                            r.get(0)?,
+                            r.get(1)?,
+                            r.get(2)?,
+                            r.get(3)?,
+                            r.get(4)?,
+                            r.get(5)?,
+                            r.get(6)?,
+                            r.get(7)?,
+                        ))
+                    },
+                )?;
         let (ar, at, tcost_total): (i64, i64, f64) = conn.query_row(
             "SELECT COUNT(*), COALESCE(SUM(input_tokens+output_tokens),0), COALESCE(SUM(total_cost_usd),0) FROM request_logs",
             [],
@@ -1385,6 +1415,7 @@ impl Repository {
             too,
             tcr,
             tcc,
+            tfresh,
             tcost,
             tcost_total,
         ))
@@ -2863,7 +2894,7 @@ mod tests {
         repo.insert_log(&make_log(2, "gpt-4o", 20, 200, today - 86400 * 2))
             .unwrap();
 
-        let (tr, tt, ar, at, ac, lat, tii, too, tcr, tcc, tcost, tcost_total) =
+        let (tr, tt, ar, at, ac, lat, tii, too, tcr, tcc, tfresh, tcost, tcost_total) =
             repo.stats().unwrap();
         assert_eq!(tr, 1);
         assert_eq!(tt, 20);
@@ -2876,6 +2907,7 @@ mod tests {
         assert_eq!(too, 10);
         assert_eq!(tcr, 0);
         assert_eq!(tcc, 0);
+        assert_eq!(tfresh, 10); // protocol "openai" 非含缓存型，fresh = input
         assert_eq!(tcost, 0.0);
         assert_eq!(tcost_total, 0.0);
     }

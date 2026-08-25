@@ -16,6 +16,8 @@ pub struct Stats {
     pub today_output_tokens: i64,
     pub today_cache_read_tokens: i64,
     pub today_cache_creation_tokens: i64,
+    /// 今日去重缓存后的 fresh input（含缓存型协议 input 已含缓存，需扣减）
+    pub today_fresh_input: i64,
     /// 今日总成本（USD）
     pub today_cost: f64,
     /// 历史总成本（USD）
@@ -24,7 +26,7 @@ pub struct Stats {
 
 #[tauri::command]
 pub fn get_stats(state: State<AppState>) -> Result<Stats, String> {
-    let (tr, tt, ar, at, ac, lat, tii, too, tcr, tcc, tcost, tcost_total) =
+    let (tr, tt, ar, at, ac, lat, tii, too, tcr, tcc, tfresh, tcost, tcost_total) =
         state.repo.stats().map_err(|e| e.to_string())?;
     Ok(Stats {
         today_requests: tr,
@@ -37,6 +39,7 @@ pub fn get_stats(state: State<AppState>) -> Result<Stats, String> {
         today_output_tokens: too,
         today_cache_read_tokens: tcr,
         today_cache_creation_tokens: tcc,
+        today_fresh_input: tfresh,
         today_cost: tcost,
         total_cost: tcost_total,
     })
