@@ -63,12 +63,14 @@ export default function DashboardPage() {
     { label: "平均延迟(ms)", value: s.avg_latency_ms },
   ];
 
-  // 缓存/成本维度：真实消耗 = input(近似 fresh) + output + cache_creation + cache_read
+  // 缓存/成本维度：真实消耗 = fresh_input + output + cache_creation + cache_read
+  // （含缓存型协议 input 已含缓存，用 today_fresh_input 去重避免重复计数）
   const todayInput = s.today_input_tokens ?? 0;
+  const todayFreshInput = s.today_fresh_input ?? todayInput;
   const todayOutput = s.today_output_tokens ?? 0;
   const todayCacheRead = s.today_cache_read_tokens ?? 0;
   const todayCacheCreation = s.today_cache_creation_tokens ?? 0;
-  const todayRealTokens = realTokens(todayInput, todayOutput, todayCacheRead, todayCacheCreation);
+  const todayRealTokens = realTokens(todayInput, todayOutput, todayCacheRead, todayCacheCreation, todayFreshInput);
   // 命中率 = cache_read / (input + cache_creation + cache_read)，0 兜底（Stats 无直接命中率字段）
   const todayHitRate = cacheHitRatePercent(todayInput, todayCacheRead, todayCacheCreation);
   const todayCost = s.today_cost ?? 0;

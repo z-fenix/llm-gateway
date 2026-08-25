@@ -24,10 +24,15 @@ describe("cacheHitRatePercent", () => {
 });
 
 describe("realTokens", () => {
-  it("真实消耗 = input + output + cache_creation + cache_read", () => {
-    // Stats 未提供 fresh_input，用 input 近似（缓存 token 两处各计一次）
+  it("真实消耗 = fresh_input + output + cache_creation + cache_read（缺省 fresh_input 退回 input）", () => {
+    // Stats 未提供 fresh_input 时用 input 近似
     expect(realTokens(100, 50, 20, 10)).toBe(180);
     expect(realTokens(0, 0, 0, 0)).toBe(0);
+  });
+
+  it("传入 fresh_input 时用它代替 input（含缓存型协议避免重复计数）", () => {
+    // input=100 含缓存 60（cached），fresh=40；真实消耗 = 40+50+20+10 = 120
+    expect(realTokens(100, 50, 20, 10, 40)).toBe(120);
   });
 });
 

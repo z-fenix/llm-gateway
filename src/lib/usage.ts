@@ -14,16 +14,18 @@ export function cacheHitRatePercent(input: number, cacheRead: number, cacheCreat
 
 /**
  * 真实消耗 Tokens = fresh_input + output + cache_creation + cache_read。
- * 说明：Stats 未提供 fresh_input 字段，用 input 近似（缓存 token 在 input 与 cache 两处
- * 各计一次，反映含缓存写入/命中的总吞吐量）。若后端补 fresh_input 可改用该字段。
+ * 含缓存型协议（openai-chat/openai-responses/gemini-native）的 input 已含缓存 token，
+ * 用 input 会把缓存重复计一次；后端 Stats 现提供 today_fresh_input，缺省时退回 input 保持兼容。
  */
 export function realTokens(
   input: number,
   output: number,
   cacheRead: number,
-  cacheCreation: number
+  cacheCreation: number,
+  freshInput?: number
 ): number {
-  return input + output + cacheRead + cacheCreation;
+  const fresh = freshInput ?? input;
+  return fresh + output + cacheRead + cacheCreation;
 }
 
 /** USD 小数值格式化（卡片/表格），如 $0 / $0.000123 / $1.2345。 */

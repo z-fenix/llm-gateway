@@ -109,6 +109,7 @@ export interface Stats {
   today_output_tokens?: number;
   today_cache_read_tokens?: number;
   today_cache_creation_tokens?: number;
+  today_fresh_input?: number;
   today_cost?: number;
   total_cost?: number;
 }

@@ -296,7 +296,7 @@ export default function SessionsPage() {
                       className="mr-2 shrink-0 text-muted-foreground hover:text-primary"
                       onClick={() =>
                         navigate(
-                          `/logs?session_id=${encodeURIComponent(s.sessionId)}&session_provider=${encodeURIComponent(s.providerId)}`
+                          `/logs?tab=logs&session_id=${encodeURIComponent(s.sessionId)}&session_provider=${encodeURIComponent(s.providerId)}`
                         )
                       }
                     >

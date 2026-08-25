@@ -75,7 +75,7 @@ describe("SettingsPage", () => {
     await waitFor(() =>
       expect(screen.getByText("端口配置")).toBeInTheDocument()
     );
-    expect(screen.getByText("CLI 一键写入")).toBeInTheDocument();
+    expect(screen.getByText("CLI 配置")).toBeInTheDocument();
     expect(screen.getByText("导出配置")).toBeInTheDocument();
     expect(screen.getByText("导入配置")).toBeInTheDocument();
     expect(screen.getByText("127.0.0.1:8777")).toBeInTheDocument();

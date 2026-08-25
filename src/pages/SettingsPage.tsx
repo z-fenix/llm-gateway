@@ -410,7 +410,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader
         title="设置"
-        description="应用配置、CLI 一键写入与配置导入导出"
+        description="应用配置、CLI 配置编辑与配置导入导出"
       />
 
       {error && (
@@ -763,15 +763,15 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* CLI 一键写入 */}
+      {/* CLI 配置编辑 */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <TerminalSquare className="h-4 w-4 text-muted-foreground" />
-            CLI 一键写入
+            CLI 配置
           </CardTitle>
           <CardDescription>
-            将本地网关地址与密钥写入 Claude Code / Codex 配置，让 CLI 工具直连网关
+            编辑 Claude Code / Codex 配置，让本地 CLI 工具直连网关
           </CardDescription>
         </CardHeader>
         <CardContent>

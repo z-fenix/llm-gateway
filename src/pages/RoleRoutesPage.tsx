@@ -41,7 +41,8 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 
-const PATTERN_ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
+// 角色模式可选角色与角色卡顺序共用同一份列表，避免两处维护漂移
+const PATTERN_ROLES = ROLE_ORDER;
 // "auto" 是未匹配任何角色模式时的占位角色：可绑定渠道/模型；未绑定则走普通调度。
 
 const NONE = "__none__";
@@ -156,7 +157,7 @@ export default function RoleRoutesPage() {
     }
   };
 
-  const openCreateRoute = (role: string = "sonnet") => {
+  const openCreateRoute = (role: string) => {
     setRRole(role);
     setRChannelId("");
     setRModel("");
@@ -317,6 +318,9 @@ export default function RoleRoutesPage() {
       setPending(false);
     }
   };
+
+  // 角色详情面板的路由（选中角色时非空），只计算一次供空态判断与列表共用
+  const detailRoutes = selectedRole ? routesByRole(routes, selectedRole) : [];
 
   return (
     <div>
@@ -568,7 +572,7 @@ export default function RoleRoutesPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            {routesByRole(routes, selectedRole).length === 0 ? (
+            {detailRoutes.length === 0 ? (
               <EmptyState
                 title={`暂无「${selectedRole}」路由`}
                 description="添加路由让角色请求固定走指定供应商，失败自动切换/熔断"
@@ -592,7 +596,7 @@ export default function RoleRoutesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {routesByRole(routes, selectedRole).map((r) => {
+                    {detailRoutes.map((r) => {
                       const breaker = breakerStatus[r.id];
                       return (
                         <tr
