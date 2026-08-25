@@ -57,6 +57,9 @@ vi.mock("../../lib/api", () => ({
     }),
     setRectifierConfig: vi.fn().mockResolvedValue(undefined),
     setMinimizeToTray: vi.fn().mockResolvedValue(undefined),
+    listModelPrices: vi.fn().mockResolvedValue([]),
+    upsertModelPrice: vi.fn().mockResolvedValue(null),
+    deleteModelPrice: vi.fn().mockResolvedValue(null),
   },
 }));
 
@@ -250,5 +253,91 @@ describe("SettingsPage", () => {
     await waitFor(() =>
       expect(mockedApi.setMinimizeToTray).toHaveBeenCalledWith(false)
     );
+  });
+
+  it("模型定价卡渲染列表与新增表单", async () => {
+    mockedApi.listModelPrices.mockResolvedValue([
+      {
+        model_id: "claude-sonnet-4.5",
+        display_name: "Claude Sonnet 4.5",
+        input_cost_per_million: 3,
+        output_cost_per_million: 15,
+        cache_read_cost_per_million: 0.3,
+        cache_creation_cost_per_million: 3.75,
+        updated_at: 1700000000,
+      },
+    ]);
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByText("模型定价（估算费用）")).toBeInTheDocument()
+    );
+    expect(await screen.findByText("claude-sonnet-4.5")).toBeInTheDocument();
+    expect(screen.getByText("Claude Sonnet 4.5")).toBeInTheDocument();
+    expect(screen.getByLabelText("模型名")).toBeInTheDocument();
+  });
+
+  it("保存定价前归一化模型名并调用 upsertModelPrice", async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText("模型名")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText("模型名"), {
+      target: { value: "OpenRouter/Anthropic/Claude-Sonnet-4.5:free" },
+    });
+    fireEvent.change(screen.getByLabelText("显示名（可选）"), {
+      target: { value: "Sonnet" },
+    });
+    fireEvent.change(screen.getByLabelText("输入($/M)"), {
+      target: { value: "3" },
+    });
+    fireEvent.change(screen.getByLabelText("输出($/M)"), {
+      target: { value: "15" },
+    });
+    fireEvent.change(screen.getByLabelText("缓存命中($/M)"), {
+      target: { value: "0.3" },
+    });
+    fireEvent.change(screen.getByLabelText("缓存创建($/M)"), {
+      target: { value: "3.75" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "保存定价" }));
+    await waitFor(() => expect(mockedApi.upsertModelPrice).toHaveBeenCalledTimes(1));
+    const arg = mockedApi.upsertModelPrice.mock.calls[0][0];
+    expect(arg.model_id).toBe("anthropic/claude-sonnet-4.5");
+    expect(arg.display_name).toBe("Sonnet");
+    expect(arg.input_cost_per_million).toBe(3);
+    expect(arg.cache_creation_cost_per_million).toBe(3.75);
+  });
+
+  it("Anthropic 参考按钮按 1.25x/0.1x 填充缓存价格", async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText("模型名")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText("输入($/M)"), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Anthropic 参考" }));
+    expect(screen.getByLabelText("缓存创建($/M)")).toHaveValue(3.75);
+    expect(screen.getByLabelText("缓存命中($/M)")).toHaveValue(0.3);
+  });
+
+  it("删除定价需确认并调用 deleteModelPrice", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    mockedApi.listModelPrices.mockResolvedValue([
+      {
+        model_id: "claude-sonnet-4.5",
+        display_name: "Claude Sonnet 4.5",
+        input_cost_per_million: 3,
+        output_cost_per_million: 15,
+        cache_read_cost_per_million: 0.3,
+        cache_creation_cost_per_million: 3.75,
+        updated_at: 1700000000,
+      },
+    ]);
+    render(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByText("claude-sonnet-4.5")).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    await waitFor(() =>
+      expect(mockedApi.deleteModelPrice).toHaveBeenCalledWith("claude-sonnet-4.5")
+    );
+    confirmSpy.mockRestore();
   });
 });

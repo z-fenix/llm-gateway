@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+  CircleDollarSign,
   Download,
   FileJson,
   Import,
@@ -17,8 +18,10 @@ import type {
   CliTargetInfo,
   ImportPreview,
   ImportResult,
+  ModelPrice,
   RectifierConfig,
 } from "../types";
+import { normalizeModelId } from "../lib/usage";
 import PageHeader from "../components/PageHeader";
 import { Button } from "../components/ui/button";
 import {
@@ -80,6 +83,16 @@ export default function SettingsPage() {
 
   const [minimizeToTray, setMinimizeToTray] = useState<boolean>(true);
 
+  // 模型定价（估算费用）
+  const [prices, setPrices] = useState<ModelPrice[]>([]);
+  const [priceModel, setPriceModel] = useState("");
+  const [priceDisplayName, setPriceDisplayName] = useState("");
+  const [priceInput, setPriceInput] = useState("");
+  const [priceOutput, setPriceOutput] = useState("");
+  const [priceCacheRead, setPriceCacheRead] = useState("");
+  const [priceCacheCreation, setPriceCacheCreation] = useState("");
+  const [editingPrice, setEditingPrice] = useState<ModelPrice | null>(null);
+
   const updateMinimizeToTray = (value: boolean) => {
     const prev = minimizeToTray;
     setMinimizeToTray(value);
@@ -130,6 +143,10 @@ export default function SettingsPage() {
     api
       .getRectifierConfig()
       .then(setRectifier)
+      .catch(handleError);
+    api
+      .listModelPrices()
+      .then(setPrices)
       .catch(handleError);
   }, []);
 
@@ -303,6 +320,91 @@ export default function SettingsPage() {
   };
 
   const targetInfo = cliTargets.find((t) => t.target === target);
+
+  // ---- 模型定价（估算费用） ----
+  const refreshPrices = () => {
+    api.listModelPrices().then(setPrices).catch(handleError);
+  };
+
+  const normalizedModel = normalizeModelId(priceModel);
+
+  const saveModelPrice = async () => {
+    clearError();
+    const modelId = normalizeModelId(priceModel);
+    if (!modelId) {
+      setError("模型名不能为空");
+      return;
+    }
+    const input = Number(priceInput);
+    const output = Number(priceOutput);
+    const cacheRead = Number(priceCacheRead);
+    const cacheCreation = Number(priceCacheCreation);
+    if ([input, output, cacheRead, cacheCreation].some((n) => !Number.isFinite(n) || n < 0)) {
+      setError("价格必须为非负数字");
+      return;
+    }
+    try {
+      await api.upsertModelPrice({
+        model_id: modelId,
+        display_name: priceDisplayName.trim() || modelId,
+        input_cost_per_million: input,
+        output_cost_per_million: output,
+        cache_read_cost_per_million: cacheRead,
+        cache_creation_cost_per_million: cacheCreation,
+        updated_at: Math.floor(Date.now() / 1000),
+      });
+      toast.success(`已保存定价: ${modelId}`);
+      cancelEditPrice();
+      refreshPrices();
+    } catch (err) {
+      handleError(err);
+      toast.error("保存定价失败");
+    }
+  };
+
+  const editModelPrice = (p: ModelPrice) => {
+    setEditingPrice(p);
+    setPriceModel(p.model_id);
+    setPriceDisplayName(p.display_name);
+    setPriceInput(String(p.input_cost_per_million));
+    setPriceOutput(String(p.output_cost_per_million));
+    setPriceCacheRead(String(p.cache_read_cost_per_million));
+    setPriceCacheCreation(String(p.cache_creation_cost_per_million));
+  };
+
+  const cancelEditPrice = () => {
+    setEditingPrice(null);
+    setPriceModel("");
+    setPriceDisplayName("");
+    setPriceInput("");
+    setPriceOutput("");
+    setPriceCacheRead("");
+    setPriceCacheCreation("");
+  };
+
+  const deleteModelPrice = async (p: ModelPrice) => {
+    const msg = `确定删除 ${p.model_id} 的定价？历史日志中该模型的估算费用将重算为 0。`;
+    if (!window.confirm(msg)) return;
+    try {
+      await api.deleteModelPrice(p.model_id);
+      toast.success(`已删除定价: ${p.model_id}`);
+      refreshPrices();
+    } catch (err) {
+      handleError(err);
+      toast.error("删除定价失败");
+    }
+  };
+
+  const fillAnthropicReference = () => {
+    const input = Number(priceInput);
+    if (!Number.isFinite(input) || input <= 0) {
+      toast.error("请先填写输入价格（每百万 token USD）");
+      return;
+    }
+    setPriceCacheCreation((input * 1.25).toFixed(4));
+    setPriceCacheRead((input * 0.1).toFixed(4));
+    toast.success("已按 Anthropic 参考比例填充缓存价格");
+  };
 
   return (
     <div>
@@ -502,6 +604,161 @@ export default function SettingsPage() {
               }
               aria-label="发送前剥离图片（纯文本模型）"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 模型定价（估算费用） */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+            模型定价（估算费用）
+          </CardTitle>
+          <CardDescription>
+            配置模型每百万 token 的估算单价（USD），用于请求日志与趋势的费用估算；按归一化模型名匹配（自动去掉 provider
+            前缀/后缀，如 openrouter/anthropic/claude-sonnet-4.5:free → claude-sonnet-4.5）
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {prices.length === 0 ? (
+            <p className="mb-3 text-sm text-muted-foreground">尚未配置模型定价</p>
+          ) : (
+            <div className="mb-4 overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="px-4 py-2 font-medium">模型</th>
+                    <th className="px-4 py-2 font-medium">显示名</th>
+                    <th className="px-4 py-2 font-medium">输入</th>
+                    <th className="px-4 py-2 font-medium">输出</th>
+                    <th className="px-4 py-2 font-medium">缓存命中</th>
+                    <th className="px-4 py-2 font-medium">缓存创建</th>
+                    <th className="px-4 py-2 font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prices.map((p) => (
+                    <tr key={p.model_id} className="border-b border-border last:border-0">
+                      <td className="px-4 py-2 font-mono text-xs text-foreground">{p.model_id}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{p.display_name}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{p.input_cost_per_million}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{p.output_cost_per_million}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{p.cache_read_cost_per_million}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{p.cache_creation_cost_per_million}</td>
+                      <td className="px-4 py-2">
+                        <div className="flex gap-1">
+                          <Button variant="outline" size="sm" onClick={() => editModelPrice(p)}>
+                            编辑
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => deleteModelPrice(p)}>
+                            删除
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="rounded-lg border border-border p-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">
+                {editingPrice ? `编辑定价: ${editingPrice.model_id}` : "新增定价"}
+              </p>
+              {editingPrice && (
+                <Button variant="ghost" size="sm" onClick={cancelEditPrice}>
+                  取消编辑
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="price-model">模型名</Label>
+                <Input
+                  id="price-model"
+                  placeholder="如 claude-sonnet-4.5"
+                  value={priceModel}
+                  onChange={(e) => setPriceModel(e.target.value)}
+                />
+                {normalizedModel && normalizedModel !== priceModel.trim().toLowerCase() && (
+                  <p className="text-xs text-muted-foreground">
+                    将归一化为:{" "}
+                    <span className="font-mono text-foreground">{normalizedModel}</span>
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="price-display-name">显示名（可选）</Label>
+                <Input
+                  id="price-display-name"
+                  placeholder="Claude Sonnet 4.5"
+                  value={priceDisplayName}
+                  onChange={(e) => setPriceDisplayName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="price-input">输入($/M)</Label>
+                <Input
+                  id="price-input"
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="3"
+                  value={priceInput}
+                  onChange={(e) => setPriceInput(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="price-output">输出($/M)</Label>
+                <Input
+                  id="price-output"
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="15"
+                  value={priceOutput}
+                  onChange={(e) => setPriceOutput(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="price-cache-read">缓存命中($/M)</Label>
+                <Input
+                  id="price-cache-read"
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="0.3"
+                  value={priceCacheRead}
+                  onChange={(e) => setPriceCacheRead(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="price-cache-creation">缓存创建($/M)</Label>
+                <Input
+                  id="price-cache-creation"
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="3.75"
+                  value={priceCacheCreation}
+                  onChange={(e) => setPriceCacheCreation(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button onClick={saveModelPrice} aria-label="保存定价">
+                {editingPrice ? "保存修改" : "保存"}
+              </Button>
+              <Button variant="outline" onClick={fillAnthropicReference} aria-label="Anthropic 参考">
+                Anthropic 参考
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                缓存创建 ≈ 1.25×输入，缓存命中 ≈ 0.1×输入
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
