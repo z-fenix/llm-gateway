@@ -46,6 +46,20 @@ export const api = {
   deleteChannel: (id: string) => invoke<void>("delete_channel", { id }),
   duplicateChannel: (id: string) => invoke<Channel>("duplicate_channel", { id }),
   testChannel: (id: string) => invoke<TestResult>("test_channel", { id }),
+  listChannelModels: (args: {
+    baseUrl: string;
+    upstreamProtocol: string;
+    apiKey: string;
+    timeoutSecs: number;
+    channelId?: string;
+  }) =>
+    invoke<string[]>("list_channel_models", {
+      baseUrl: args.baseUrl,
+      upstreamProtocol: args.upstreamProtocol,
+      apiKey: args.apiKey,
+      timeoutSecs: args.timeoutSecs,
+      channelId: args.channelId ?? null,
+    }),
 
   setModelMap: (channelId: string, sourceModel: string, targetModel: string) =>
     invoke<void>("set_model_map", { channelId, sourceModel, targetModel }),

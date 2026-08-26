@@ -9,6 +9,7 @@ vi.mock("../../lib/api", () => ({
     getModelMap: vi.fn(),
     setModelMap: vi.fn().mockResolvedValue(undefined),
     deleteModelMap: vi.fn().mockResolvedValue(undefined),
+    listChannelModels: vi.fn().mockResolvedValue([]),
   },
 }));
 

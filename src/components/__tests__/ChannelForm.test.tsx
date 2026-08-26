@@ -26,7 +26,7 @@ function renderForm(initial?: Partial<Channel>) {
 /** 点击「添加模型」并在新出现的输入框中输入值。 */
 function addModel(value: string) {
   fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
-  const inputs = screen.getAllByPlaceholderText(/模型 ID/);
+  const inputs = screen.getAllByPlaceholderText(/输入或选择模型/);
   fireEvent.change(inputs[inputs.length - 1], { target: { value } });
 }
 
@@ -119,7 +119,7 @@ describe("ChannelForm validation", () => {
   it("删除全部模型后提交：仍触发「至少需要一个模型」", () => {
     const { onSubmit } = renderForm(validForm()); // models: ["gpt-4o"]
     fireEvent.click(screen.getByRole("button", { name: "删除模型" }));
-    expect(screen.queryByPlaceholderText(/模型 ID/)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/输入或选择模型/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("保存"));
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByText("至少需要一个模型")).toBeInTheDocument();

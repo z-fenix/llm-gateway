@@ -261,6 +261,109 @@ fn get_model_map_with_state(
         })
 }
 
+/// 解析上游模型列表响应：
+/// - OpenAI 兼容：`{ "object":"list", "data":[ { "id": "gpt-4o" } ] }`
+/// - Gemini Native：`{ "models":[ { "name": "models/gemini-2.5-pro" } ] }`（去掉 `models/` 前缀）
+fn parse_models_response(protocol: &str, bytes: &[u8]) -> Result<Vec<String>, String> {
+    let v: serde_json::Value =
+        serde_json::from_slice(bytes).map_err(|e| format!("模型列表响应解析失败: {e}"))?;
+    let mut out: Vec<String> = vec![];
+    if protocol == "gemini-native" {
+        if let Some(arr) = v["models"].as_array() {
+            for m in arr {
+                if let Some(name) = m["name"].as_str() {
+                    out.push(name.trim_start_matches("models/").to_string());
+                }
+            }
+        }
+        return Ok(out);
+    }
+    if let Some(arr) = v["data"].as_array() {
+        for m in arr {
+            if let Some(id) = m["id"].as_str() {
+                out.push(id.to_string());
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// 拉取上游渠道的模型列表（`GET {base_url}/v1/models`）。
+/// 用于渠道表单里“列出支持模型，可选择”。失败时前端回退到内置的供应商静态清单。
+#[tauri::command]
+pub async fn list_channel_models(
+    state: State<'_, AppState>,
+    base_url: String,
+    upstream_protocol: String,
+    api_key: String,
+    timeout_secs: i64,
+    channel_id: Option<String>,
+) -> Result<Vec<String>, String> {
+    list_channel_models_with_state(
+        &state,
+        base_url,
+        upstream_protocol,
+        api_key,
+        timeout_secs,
+        channel_id,
+    )
+    .await
+}
+
+async fn list_channel_models_with_state(
+    state: &AppState,
+    base_url: String,
+    upstream_protocol: String,
+    api_key: String,
+    timeout_secs: i64,
+    channel_id: Option<String>,
+) -> Result<Vec<String>, String> {
+    let base_url = base_url.trim().to_string();
+    if base_url.is_empty() {
+        return Err("Base URL 不能为空".into());
+    }
+    // 编辑模式下表单里是打码 key（sk-***xxxx / ****），需要用渠道 id 从库里取真实 key。
+    // 新建模式下用户直接填真实 key，无需查库。
+    let api_key = if api_key.starts_with("sk-***") || api_key == "****" {
+        if let Some(id) = &channel_id {
+            state
+                .repo
+                .get_channel(id)
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| "渠道不存在".to_string())?
+                .api_key
+        } else {
+            return Err("编辑模式请先保存渠道或重新填写 API Key".into());
+        }
+    } else {
+        api_key
+    };
+    if api_key.is_empty() {
+        return Err("渠道密钥为空（解密失败），请在编辑中重新填写 API Key".into());
+    }
+    // Anthropic 无公开的“列模型”GET 接口，返回空让前端走静态清单。
+    if upstream_protocol == "anthropic-messages" {
+        return Ok(vec![]);
+    }
+    let url = crate::provider::adapter::models_url(&upstream_protocol, &base_url, &api_key);
+    let timeout = if timeout_secs < 1 { 60usize } else { timeout_secs as usize };
+    let mut req = state
+        .http
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(timeout as u64));
+    if let Some((hname, hval)) =
+        crate::provider::adapter::auth_header(&upstream_protocol, &api_key)
+    {
+        req = req.header(hname, hval);
+    }
+    let resp = req.send().await.map_err(|e| format!("请求上游失败: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("上游返回状态码 {}", resp.status()));
+    }
+    let bytes = resp.bytes().await.map_err(|e| format!("读取上游响应失败: {e}"))?;
+    parse_models_response(&upstream_protocol, &bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -425,6 +528,129 @@ mod tests {
         assert!(validate_channel(&c).is_err());
         c.timeout_secs = -5;
         assert!(validate_channel(&c).is_err());
+    }
+
+    #[test]
+    fn parse_models_response_openai_list() {
+        let body = br#"{"object":"list","data":[{"id":"gpt-4o"},{"id":"deepseek-chat"}]}"#;
+        assert_eq!(
+            parse_models_response("openai-chat", body).unwrap(),
+            vec!["gpt-4o", "deepseek-chat"]
+        );
+    }
+
+    #[test]
+    fn parse_models_response_gemini_strips_models_prefix() {
+        let body = br#"{"models":[{"name":"models/gemini-2.5-pro"},{"name":"models/gemini-2.5-flash"}]}"#;
+        assert_eq!(
+            parse_models_response("gemini-native", body).unwrap(),
+            vec!["gemini-2.5-pro", "gemini-2.5-flash"]
+        );
+    }
+
+    #[test]
+    fn parse_models_response_empty_ok() {
+        assert_eq!(
+            parse_models_response("openai-chat", br#"{"object":"list","data":[]}"#).unwrap(),
+            Vec::<String>::new()
+        );
+        assert_eq!(parse_models_response("gemini-native", br#"{"models":[]}"#).unwrap(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn parse_models_response_invalid_json_errors() {
+        assert!(parse_models_response("openai-chat", br#"not-json"#).is_err());
+    }
+
+    /// 起一个返回固定体的 mock GET /v1/models 上游，返回 base_url。
+    async fn spawn_models_mock(body: serde_json::Value) -> String {
+        let app = axum::Router::new().route(
+            "/v1/models",
+            axum::routing::get(move || {
+                let b = body.clone();
+                async move { axum::Json(b) }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{}", addr)
+    }
+
+    #[tokio::test]
+    async fn list_channel_models_fetches_upstream_models() {
+        let base = spawn_models_mock(serde_json::json!({
+            "object": "list",
+            "data": [{"id": "gpt-4o"}, {"id": "deepseek-chat"}]
+        }))
+        .await;
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let models = list_channel_models_with_state(
+            &state,
+            base,
+            "openai-chat".into(),
+            "sk-test".into(),
+            10,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(models, vec!["gpt-4o", "deepseek-chat"]);
+    }
+
+    #[tokio::test]
+    async fn list_channel_models_anthropic_returns_empty() {
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let models = list_channel_models_with_state(
+            &state,
+            "https://api.anthropic.com".into(),
+            "anthropic-messages".into(),
+            "sk-ant-test".into(),
+            10,
+            None,
+        )
+        .await
+        .unwrap();
+        assert!(models.is_empty());
+    }
+
+    #[tokio::test]
+    async fn list_channel_models_unreachable_errors() {
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let res = list_channel_models_with_state(
+            &state,
+            "http://127.0.0.1:1".into(), // 无监听端口
+            "openai-chat".into(),
+            "sk-test".into(),
+            1,
+            None,
+        )
+        .await;
+        assert!(res.is_err());
+    }
+
+    #[tokio::test]
+    async fn list_channel_models_masked_key_uses_db_key() {
+        let db = Db::new_in_memory().unwrap();
+        let state = AppState::new(db);
+        state.repo.insert_channel(&test_channel("ch1")).unwrap(); // api_key = "sk-test"
+        let base = spawn_models_mock(serde_json::json!({
+            "object": "list",
+            "data": [{"id": "gpt-4o"}]
+        }))
+        .await;
+        // 编辑表单把 key 打码后回传，应取库里的真实 key（"sk-test"）去请求
+        let models = list_channel_models_with_state(
+            &state,
+            base,
+            "openai-chat".into(),
+            "sk-***test".into(),
+            10,
+            Some("ch1".into()),
+        )
+        .await
+        .unwrap();
+        assert_eq!(models, vec!["gpt-4o"]);
     }
 
     #[test]

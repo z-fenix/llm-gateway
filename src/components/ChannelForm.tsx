@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { api } from "../lib/api";
 import type { Channel, ModelMapEntry } from "../types";
+import { STATIC_MODEL_CATALOG } from "../lib/modelCatalog";
+import { ModelCombobox } from "./ModelCombobox";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -64,6 +67,44 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   // 提交过一次后才展示错误，之后随输入实时更新
   const errors = attempted ? validateForm(f) : {};
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
+
+  // ---- 支持模型：可搜索下拉（候选来自「从上游刷新」或内置静态清单） ----
+  const [modelOptions, setModelOptions] = useState<string[]>(
+    () => STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []
+  );
+  const [modelFetching, setModelFetching] = useState(false);
+  const [modelSource, setModelSource] = useState<"static" | "upstream">("static");
+  const applyStatic = (supplier: string) => {
+    setModelOptions(STATIC_MODEL_CATALOG[supplier] ?? []);
+    setModelSource("static");
+  };
+  const changeSupplier = (v: string) => {
+    set("supplier", v);
+    applyStatic(v);
+  };
+  const refreshModels = async () => {
+    setModelFetching(true);
+    try {
+      const list = await api.listChannelModels({
+        baseUrl: (f.base_url ?? "").trim(),
+        upstreamProtocol: f.upstream_protocol ?? "openai-chat",
+        apiKey: f.api_key ?? "",
+        timeoutSecs: f.timeout_secs ?? 60,
+        channelId: channelId,
+      });
+      // 上游列表 + 内置清单合并，兼顾准确与兜底；去重去空白。
+      const merged = Array.from(
+        new Set([...list, ...(STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? [])])
+      ).filter(Boolean);
+      if (merged.length > 0) setModelSource("upstream");
+      setModelOptions(merged);
+    } catch {
+      applyStatic(f.supplier ?? "openai");
+      toast.info("无法从上游获取模型，已切回内置清单");
+    } finally {
+      setModelFetching(false);
+    }
+  };
 
   // ---- 支持模型：动态多输入框（可增删） ----
   const uid = () => crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
@@ -174,7 +215,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
 
       <div className="space-y-1.5">
         <Label>供应商</Label>
-        <Select value={f.supplier} onValueChange={(v) => set("supplier", v)}>
+        <Select value={f.supplier} onValueChange={changeSupplier}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {SUPPLIERS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
@@ -209,13 +250,27 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
       </div>
 
       <div className="space-y-2">
-        <Label>支持模型</Label>
+        <div className="flex items-center justify-between">
+          <Label>支持模型</Label>
+          <Button type="button" variant="outline" size="sm" onClick={refreshModels} disabled={modelFetching}>
+            {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            从上游刷新
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {modelSource === "upstream"
+            ? "已从上游加载模型，可直接选择或继续输入。"
+            : "内置模型清单，可点击「从上游刷新」拉取上游真实模型。"}
+        </p>
         {(f.models ?? []).map((m, i) => (
           <div key={modelKeys.current[i] ?? `m${i}`} className="flex items-center gap-2">
-            <Input value={m}
-              onChange={(e) => updateModel(i, e.target.value)}
-              placeholder="模型 ID，如 deepseek-chat"
-              className={inputCls("models")} />
+            <ModelCombobox
+              value={m}
+              onChange={(v) => updateModel(i, v)}
+              options={modelOptions}
+              loading={modelFetching}
+              error={!!errors.models}
+            />
             <Button type="button" variant="ghost" size="icon"
               aria-label="删除模型" onClick={() => removeModel(i)}>
               <Trash2 size={16} />

@@ -93,7 +93,7 @@ describe("ChannelsPage", () => {
     fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: "https://api.deepseek.com" } });
     fireEvent.change(screen.getByPlaceholderText("真实上游 API Key"), { target: { value: "sk-test" } });
     fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
-    const modelInputs = screen.getAllByPlaceholderText(/模型 ID/);
+    const modelInputs = screen.getAllByPlaceholderText(/输入或选择模型/);
     fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
     fireEvent.change(screen.getByLabelText("超时秒数"), { target: { value: "60" } });
 

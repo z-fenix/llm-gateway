@@ -68,9 +68,25 @@ pub fn auth_header(upstream_protocol: &str, api_key: &str) -> Option<(String, St
     }
 }
 
+/// 上游模型列表 URL。Anthropic 无对应 GET 接口（由调用方提前返回空）。
+/// OpenAI 兼容渠道沿用 `upstream_url` 的 /v1 约定（缺 /v1 则补上）；Gemini 走 `{base}/models?key=...`。
+pub fn models_url(upstream_protocol: &str, base_url: &str, api_key: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    match upstream_protocol {
+        "gemini-native" => format!("{}/models?key={}", base, api_key),
+        _ => {
+            if base.ends_with("/v1") {
+                format!("{}/models", base)
+            } else {
+                format!("{}/v1/models", base)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{auth_header, upstream_url};
+    use super::{auth_header, models_url, upstream_url};
 
     #[test]
     fn openai_chat_url_without_v1_gets_v1_prefix() {
@@ -209,5 +225,49 @@ mod tests {
     #[test]
     fn auth_header_gemini_native_uses_url_key() {
         assert_eq!(auth_header("gemini-native", "AIxxx"), None);
+    }
+
+    #[test]
+    fn models_url_openai_chat_without_v1_gets_models_under_v1() {
+        assert_eq!(
+            models_url("openai-chat", "https://api.deepseek.com", "sk-xxx"),
+            "https://api.deepseek.com/v1/models"
+        );
+    }
+
+    #[test]
+    fn models_url_openai_chat_with_v1_does_not_duplicate() {
+        assert_eq!(
+            models_url("openai-chat", "https://api.deepseek.com/v1", "sk-xxx"),
+            "https://api.deepseek.com/v1/models"
+        );
+    }
+
+    #[test]
+    fn models_url_openai_responses_applies_same_v1_convention() {
+        assert_eq!(
+            models_url("openai-responses", "https://api.openai.com", "sk-xxx"),
+            "https://api.openai.com/v1/models"
+        );
+    }
+
+    #[test]
+    fn models_url_gemini_native_uses_key_query() {
+        assert_eq!(
+            models_url(
+                "gemini-native",
+                "https://generativelanguage.googleapis.com/v1beta",
+                "AIxxx"
+            ),
+            "https://generativelanguage.googleapis.com/v1beta/models?key=AIxxx"
+        );
+    }
+
+    #[test]
+    fn models_url_trailing_slashes_are_normalized() {
+        assert_eq!(
+            models_url("openai-chat", "https://api.openai.com/", "sk-xxx"),
+            "https://api.openai.com/v1/models"
+        );
     }
 }
