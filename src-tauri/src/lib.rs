@@ -35,6 +35,24 @@ pub fn run() {
         .setup(|app| {
             let dir = app.path().app_data_dir().expect("app_data_dir");
             std::fs::create_dir_all(&dir).ok();
+
+            // 崩溃捕获：把 Rust panic 追加写入 panic.log，便于定位托盘等运行时问题。
+            // 先保留默认 hook（debug 下仍输出到控制台），再叠加写日志。
+            let panic_dir = dir.clone();
+            let prev_hook = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                prev_hook(info);
+                let line = format!(
+                    "{} panic: {}\n",
+                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    info
+                );
+                let _ = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(panic_dir.join("panic.log"))
+                    .map(|mut f| std::io::Write::write_all(&mut f, line.as_bytes()));
+            }));
             let db = Db::open(&dir.join("llm-gateway.db")).expect("open db");
             let mut state = AppState::new(db);
             // 密钥加密：优先系统凭据库主密钥（Windows 凭据管理器），不可用时降级进程内随机。
@@ -105,29 +123,44 @@ pub fn run() {
                 commands::mcp_server::reconnect_enabled(&mcp_state).await;
             });
 
-            // 系统托盘：显示主窗口 + 退出；点击托盘图标同样显示窗口
+            // 系统托盘：显示主窗口 + 退出；左键点击托盘图标显示窗口，右键弹出菜单。
             let show_item = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
-            let mut tray_builder = TrayIconBuilder::new()
+            let mut tray_builder = TrayIconBuilder::with_id("main")
+                // 左键只显示窗口、不弹菜单；右键才弹菜单。
+                // 否则左/右键都会在 TrackPopupMenu 模态期间 show+set_focus 冲突导致 Windows release 闪退。
+                .show_menu_on_left_click(false)
                 .menu(&menu)
                 .on_menu_event(|app, event| {
+                    log::info!("tray menu event: {}", event.id.as_ref());
                     if event.id.as_ref() == "show" {
                         show_main_window(app);
                     } else if event.id.as_ref() == "quit" {
+                        log::info!("tray quit -> app.exit(0)");
                         app.exit(0);
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click { .. } = event {
+                    // 仅响应左键(Up)显示窗口；右键只弹出菜单，不应触发窗口 show/focus，
+                    // 否则会在 TrackPopupMenu 模态期间 show+set_focus 冲突导致 Windows release 闪退。
+                    if let TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        button_state: tauri::tray::MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
                         show_main_window(tray.app_handle());
+                    } else {
+                        log::debug!("tray icon event ignored: {event:?}");
                     }
                 });
             if let Some(icon) = app.default_window_icon() {
                 tray_builder = tray_builder.icon(icon.clone());
             }
-            if let Err(e) = tray_builder.build(app) {
-                log::warn!("failed to create system tray: {}", e);
+            match tray_builder.build(app) {
+                Ok(_) => log::info!("system tray built"),
+                Err(e) => log::warn!("failed to create system tray: {}", e),
             }
 
             // 启动网关（独立 tokio runtime 线程，避免阻塞 Tauri）
@@ -260,6 +293,39 @@ pub fn run() {
             commands::cli::read_cli_config,
             commands::cli::write_cli_config_content,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { api, code, .. } = &event {
+                // 拦截用户主动退出（如托盘菜单"退出"）：移除托盘图标后强制退出。
+                // 走 std::process::exit 保证进程真正结束、且不残留死托盘图标
+                //（st_process::exit 绕过 Tauri 运行时，触发不了 TrayIcon::drop 的 NIM_DELETE）。
+                log::info!("收到退出请求 (code={code:?})，开始清理并退出");
+                api.prevent_exit();
+                let app_handle = app_handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    remove_tray_icon_before_exit(&app_handle);
+                    // 给后台异步任务一个调度窗口后强制退出（rusqlite 写是同步落盘的）
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    log::info!("清理完成，退出应用");
+                    std::process::exit(0);
+                });
+            }
+        });
+}
+
+/// 主动从系统托盘移除托盘图标。
+/// `std::process::exit` 会绕过 Tauri 运行时，触发不了 `TrayIcon::drop()`，
+/// 也就不会向 Windows Shell 发 `NIM_DELETE`，导致退出后托盘残留死图标。
+/// 通过 `set_visible(false)` 走隐藏/移除路径，在进程结束前干净摘掉图标。
+fn remove_tray_icon_before_exit(app_handle: &tauri::AppHandle) {
+    if let Some(tray) = app_handle.tray_by_id("main") {
+        if let Err(e) = tray.set_visible(false) {
+            log::warn!("退出时移除托盘图标失败: {e}");
+        } else {
+            log::info!("已显式从系统托盘移除图标");
+        }
+    } else {
+        log::warn!("退出时未找到托盘图标(main)");
+    }
 }
