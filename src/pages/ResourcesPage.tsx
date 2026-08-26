@@ -26,8 +26,9 @@ export default function ResourcesPage() {
   const [tab, setTab] = useState<TabId>("knowledge");
 
   return (
-    <div>
-      <div className="sticky top-0 z-20 mb-4 bg-background">
+    // 复刻 cc-switch：tab 置顶固定，内容在下方独立滚动，避免滚动内容穿透 tab。
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 pb-4">
         <div
           role="tablist"
           aria-orientation="horizontal"
@@ -48,15 +49,17 @@ export default function ResourcesPage() {
           ))}
         </div>
       </div>
-      {tab === "knowledge" ? (
-        <KnowledgePage />
-      ) : tab === "prompts" ? (
-        <PromptsPage />
-      ) : tab === "mcp" ? (
-        <McpServersPage />
-      ) : (
-        <SkillsPage />
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {tab === "knowledge" ? (
+          <KnowledgePage />
+        ) : tab === "prompts" ? (
+          <PromptsPage />
+        ) : tab === "mcp" ? (
+          <McpServersPage />
+        ) : (
+          <SkillsPage />
+        )}
+      </div>
     </div>
   );
 }

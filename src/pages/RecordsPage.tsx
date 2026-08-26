@@ -31,8 +31,10 @@ export default function RecordsPage() {
   };
 
   return (
-    <div>
-      <div className="sticky top-0 z-20 mb-4 bg-background">
+    // 复刻 cc-switch：tab 置顶固定，内容在下方独立滚动——内容永远被裁剪在 tab 之下，
+    // 不会因 main 的 pt-6 / mb-4 间距而被滚动内容穿透。
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 pb-4">
         <div
           role="tablist"
           aria-orientation="horizontal"
@@ -53,7 +55,9 @@ export default function RecordsPage() {
           ))}
         </div>
       </div>
-      {tab === "logs" ? <LogsPage /> : <SessionsPage />}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {tab === "logs" ? <LogsPage /> : <SessionsPage />}
+      </div>
     </div>
   );
 }
