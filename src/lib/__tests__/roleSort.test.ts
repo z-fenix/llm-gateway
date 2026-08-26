@@ -18,8 +18,8 @@ function route(id: string, role: string, priority: number, weight: number): Role
 }
 
 describe("roleSort", () => {
-  it("ROLE_ORDER 固定顺序 sonnet/opus/fable/haiku/auto", () => {
-    expect(ROLE_ORDER).toEqual(["sonnet", "opus", "fable", "haiku", "auto"]);
+  it("ROLE_ORDER 固定顺序 sonnet/opus/fable/haiku/image/auto", () => {
+    expect(ROLE_ORDER).toEqual(["sonnet", "opus", "fable", "haiku", "image", "auto"]);
   });
 
   it("按 priority 降序 → weight 降序", () => {

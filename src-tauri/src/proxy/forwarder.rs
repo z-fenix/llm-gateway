@@ -50,6 +50,14 @@ fn is_failover_status(status: u16) -> bool {
     status == 429 || status == 401 || status == 403 || status >= 500
 }
 
+/// 是否应把「模型不支持图像」错误重路由到 image 角色：仅当当前角色非 image、
+/// 该错误非 failover 状态、且错误体命中图像不支持措辞时。
+fn should_reroute_to_image(role: &Option<String>, status: u16, body: &str) -> bool {
+    role.as_deref() != Some("image")
+        && !is_failover_status(status)
+        && crate::proxy::rectifier::media::is_image_unsupported_error(body)
+}
+
 fn breaker_record_success(state: &AppState, route_id: &str) {
     if let Some(b) = state.circuit_breakers.write().get_mut(route_id) {
         b.record_success();
@@ -202,11 +210,53 @@ pub async fn forward(
                 if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, false) {
                     log::error!("failed to record channel stats: {}", e);
                 }
-                // 4xx 非 failover：直接返回，不继续
-                if let ForwardError::Upstream { status, .. } = &e {
-                    if !is_failover_status(*status) {
-                        return Err(e);
+                // 4xx 非 failover：直接返回，不继续；但「模型不支持图像」错误可改为 image 角色重试一次
+                let is_4xx_non_failover = match &e {
+                    ForwardError::Upstream { status, .. } => !is_failover_status(*status),
+                    _ => false,
+                };
+                if is_4xx_non_failover {
+                    let want_image_reroute = role.as_deref() != Some("image")
+                        && match &e {
+                            ForwardError::Upstream { body, .. } => {
+                                crate::proxy::rectifier::media::is_image_unsupported_error(body)
+                            }
+                            _ => false,
+                        };
+                    if want_image_reroute {
+                        let img_cands =
+                            build_candidates(state, &all, &Some("image".into()), &chat.model);
+                        for (ich, imodel, ifb, irid) in img_cands {
+                            let istart = std::time::Instant::now();
+                            if let Ok((status, body, usage)) =
+                                try_channel(state, &ich, &imodel, chat).await
+                            {
+                                let latency = istart.elapsed().as_millis() as i64;
+                                if let Some(rid) = &irid {
+                                    breaker_record_success(state, rid);
+                                }
+                                let _ = state.repo.record_channel_stats(
+                                    &ich.id,
+                                    (usage.input_tokens + usage.output_tokens) as i64,
+                                    latency,
+                                    true,
+                                );
+                                return Ok(ForwardResult {
+                                    outcome: Outcome {
+                                        status,
+                                        body,
+                                        usage,
+                                        channel: ich,
+                                        model: imodel,
+                                        via_fallback: ifb,
+                                        latency_ms: latency,
+                                    },
+                                    role: Some("image".into()),
+                                });
+                            }
+                        }
                     }
+                    return Err(e);
                 }
                 last_err = Some(e);
             }
@@ -289,6 +339,59 @@ pub async fn forward_stream(
                     log::error!("failed to record channel stats: {}", e);
                 }
                 let e = ForwardError::Upstream { status, body: text };
+                // 图像不支持错误：改用 image 角色流式重试一次（防御性兜底）
+                let body_ref = match &e {
+                    ForwardError::Upstream { body, .. } => body.as_str(),
+                    _ => "",
+                };
+                if should_reroute_to_image(&role, status, body_ref) {
+                    let img_cands =
+                        build_candidates(state, &all, &Some("image".into()), &chat.model);
+                    for (ich, imodel, ifb, irid) in img_cands {
+                        let istart = std::time::Instant::now();
+                        let iurl = upstream_url(
+                            &ich.upstream_protocol,
+                            &ich.base_url,
+                            &imodel,
+                            &ich.api_key,
+                            true,
+                        );
+                        let mut ibody = build_upstream_body(chat, &ich.upstream_protocol, &imodel);
+                        ibody["stream"] = serde_json::json!(true);
+                        let mut ireq = state
+                            .http
+                            .post(&iurl)
+                            .header("content-type", "application/json")
+                            .timeout(std::time::Duration::from_secs(ich.timeout_secs as u64));
+                        if let Some((hname, hval)) = auth_header(&ich.upstream_protocol, &ich.api_key)
+                        {
+                            ireq = ireq.header(hname, hval);
+                        }
+                        match ireq.json(&ibody).send().await {
+                            Ok(r) if r.status().is_success() => {
+                                let latency = istart.elapsed().as_millis() as i64;
+                                if let Some(rid) = &irid {
+                                    breaker_record_success(state, rid);
+                                }
+                                let _ = state.repo.record_channel_stats(&ich.id, 0, latency, true);
+                                let usage_protocol = match ich.upstream_protocol.as_str() {
+                                    "anthropic-messages" => crate::proxy::sse::Protocol::Anthropic,
+                                    "gemini-native" => crate::proxy::sse::Protocol::Gemini,
+                                    "openai-responses" => crate::proxy::sse::Protocol::Responses,
+                                    _ => crate::proxy::sse::Protocol::OpenAI,
+                                };
+                                return Ok(StreamHandle {
+                                    channel: ich,
+                                    model: imodel,
+                                    via_fallback: ifb,
+                                    usage_protocol,
+                                    byte_stream: Box::pin(r.bytes_stream()),
+                                });
+                            }
+                            _ => {}
+                        }
+                    }
+                }
                 if !is_failover_status(status) {
                     return Err(e);
                 }
@@ -443,6 +546,24 @@ async fn try_channel(
 mod tests {
     use super::*;
     use crate::db::models::Channel;
+
+    #[test]
+    fn should_reroute_to_image_logic() {
+        let none = None;
+        let some_img = Some("image".to_string());
+        let some_s = Some("sonnet".to_string());
+        // 非 image 角色 + 非 failover + 图像不支持措辞 → 应重路由
+        assert!(should_reroute_to_image(&some_s, 400, "model does not support images"));
+        // image 角色不再重路由（避免循环）
+        assert!(!should_reroute_to_image(&some_img, 400, "model does not support images"));
+        // failover 状态不截胡
+        assert!(!should_reroute_to_image(&some_s, 429, "image not supported"));
+        assert!(!should_reroute_to_image(&some_s, 503, "image not supported"));
+        // 无角色（等价 auto）且含图错误 → 重路由
+        assert!(should_reroute_to_image(&none, 400, "unsupported image"));
+        // 无图像措辞则不重路由
+        assert!(!should_reroute_to_image(&some_s, 400, "rate limit exceeded"));
+    }
 
     fn ch(protocol: &str) -> Channel {
         Channel {

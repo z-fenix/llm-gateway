@@ -45,6 +45,25 @@ pub fn detect_role(conn: &rusqlite::Connection, model: &str) -> Option<String> {
     None
 }
 
+/// 判断统一请求是否含图像内容（用于把角色覆盖为 `image`）。
+/// `content` 可能为纯文本字符串或数组；数组块可能是 Anthropic 的 `type=="image"`、
+/// OpenAI 的 `type=="image_url"`，或含 `image_url` 键（含工具返回 `input_image`）。
+/// 注意：Responses/Gemini 入站会把图像块丢弃，故这些协议下检测不到（已知限制）。
+pub fn is_image_request(chat: &crate::protocol::types::ChatRequest) -> bool {
+    chat.messages.iter().any(|m| {
+        let arr = match m.content.as_array() {
+            Some(a) => a,
+            None => return false,
+        };
+        arr.iter().any(|b| {
+            b.get("type")
+                .and_then(|t| t.as_str())
+                .map_or(false, |t| t == "image" || t == "image_url")
+                || b.get("image_url").filter(|v| !v.is_null()).is_some()
+        })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,5 +120,60 @@ mod tests {
                 Some("custom-sonnet".to_string())
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod image_tests {
+    use super::*;
+    use crate::protocol::types::{ChatMessage, ChatRequest};
+    use serde_json::json;
+
+    fn chat(content: serde_json::Value) -> ChatRequest {
+        ChatRequest {
+            model: "gpt-4o".into(),
+            messages: vec![ChatMessage {
+                role: "user".into(),
+                content,
+            }],
+            max_tokens: None,
+            stream: false,
+            temperature: None,
+            tools: None,
+            extra: Default::default(),
+        }
+    }
+
+    #[test]
+    fn detects_openai_image_url() {
+        let c = chat(json!([
+            { "type": "text", "text": "看这个" },
+            { "type": "image_url", "image_url": { "url": "http://a/b.png" } }
+        ]));
+        assert!(is_image_request(&c));
+    }
+
+    #[test]
+    fn detects_anthropic_image_block() {
+        let c = chat(json!([
+            { "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": "x" } }
+        ]));
+        assert!(is_image_request(&c));
+    }
+
+    #[test]
+    fn plain_text_is_not_image() {
+        assert!(!is_image_request(&chat(json!("hello"))));
+        assert!(!is_image_request(&chat(json!([{ "type": "text", "text": "only text" }]))));
+    }
+
+    #[test]
+    fn tool_result_image_part_is_detected() {
+        // 工具返回里含 input_image（OpenAI 风格）也应命中
+        let c = chat(json!([
+            { "type": "text", "text": "t" },
+            { "type": "input_image", "image_url": "data:image/png;base64,x" }
+        ]));
+        assert!(is_image_request(&c));
     }
 }

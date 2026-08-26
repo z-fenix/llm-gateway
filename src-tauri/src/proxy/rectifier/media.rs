@@ -10,6 +10,17 @@ pub fn is_text_only_model(model: &str) -> bool {
         .any(|s| m.contains(s))
 }
 
+/// 判断上游错误体是否表达「模型不支持图像」，用于把它重路由到 `image` 角色。
+/// 匹配常见措辞：Anthropic「only supported by …」、OpenAI「does not support images」等。
+pub fn is_image_unsupported_error(body: &str) -> bool {
+    let b = body.to_lowercase();
+    b.contains("image")
+        && (b.contains("not support")
+            || b.contains("unsupported")
+            || b.contains("doesn't support")
+            || b.contains("only support"))
+}
+
 /// 发送前媒体降级：heuristic 开启且模型为纯文本时，把 image block 替换为文本标记。
 /// 返回是否有修改。
 pub fn apply_media_prevention(
@@ -154,5 +165,16 @@ mod tests {
             ]
         });
         assert!(!apply_media_prevention(&mut body, "claude-3-haiku", &cfg()));
+    }
+
+    #[test]
+    fn detects_image_unsupported_error() {
+        assert!(is_image_unsupported_error("This model does not support images."));
+        assert!(is_image_unsupported_error("unsupported image type"));
+        assert!(is_image_unsupported_error("images are not supported by this model"));
+        assert!(is_image_unsupported_error("Image blocks are only supported by Claude 3 models"));
+        assert!(is_image_unsupported_error("image_url is only supported by certain models"));
+        assert!(!is_image_unsupported_error("rate limit exceeded"));
+        assert!(!is_image_unsupported_error("internal server error"));
     }
 }

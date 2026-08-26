@@ -53,6 +53,7 @@ const ROLE_COLORS: Record<string, string> = {
   opus: "bg-violet-500",
   fable: "bg-amber-500",
   haiku: "bg-emerald-500",
+  image: "bg-rose-500",
   auto: "bg-slate-400",
 };
 

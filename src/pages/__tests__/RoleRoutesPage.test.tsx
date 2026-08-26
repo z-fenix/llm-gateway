@@ -91,14 +91,14 @@ describe("RoleRoutesPage", () => {
     );
   };
 
-  it("总览展示 5 张角色卡，点击进入详情空状态与新增入口", async () => {
+  it("总览展示 6 张角色卡，点击进入详情空状态与新增入口", async () => {
     mockedApi.listRoleRoutes.mockResolvedValue([]);
     render(<RoleRoutesPage />);
     await waitFor(() => expect(mockedApi.listRoleRoutes).toHaveBeenCalled());
-    // 5 张角色汇总卡（含 auto）
+    // 6 张角色汇总卡（含 image/auto）
     expect(screen.getByRole("button", { name: "查看 sonnet 角色详情" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "查看 auto 角色详情" })).toBeInTheDocument();
-    expect(screen.getAllByText("配置 0 条")).toHaveLength(5);
+    expect(screen.getAllByText("配置 0 条")).toHaveLength(6);
     // 点击卡片 → 详情面板空状态与新增入口
     fireEvent.click(screen.getByRole("button", { name: "查看 sonnet 角色详情" }));
     expect(await screen.findByText("暂无「sonnet」路由")).toBeInTheDocument();

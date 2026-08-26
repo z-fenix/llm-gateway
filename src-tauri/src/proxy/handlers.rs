@@ -332,11 +332,20 @@ async fn handle(
         }
     };
 
-    // 4. role detection —— 未匹配任何角色模式时视为 "auto"（占位角色）
+    // 4. role detection —— 模型名命中角色优先；未命中但请求含图像则合成 "image" 角色；
+    //    都未命中视为 "auto"（占位角色）。含图请求若模型名已命中角色（如 sonnet），
+    //    仍走该角色，由错误侧「不支持图像」重路由兜底到 image 角色。
     let role = {
         let conn = state.db.conn();
         let conn = conn.lock();
         crate::router::role::detect_role(&conn, &request_model)
+            .or_else(|| {
+                if crate::router::role::is_image_request(&chat) {
+                    Some("image".to_string())
+                } else {
+                    None
+                }
+            })
             .or_else(|| Some("auto".to_string()))
     };
 
