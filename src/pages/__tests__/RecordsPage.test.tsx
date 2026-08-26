@@ -71,7 +71,7 @@ describe("RecordsPage 页签由 URL 查询驱动", () => {
     renderAt("/logs?tab=sessions");
     await waitFor(() => expect(screen.getByText("暂无会话")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "日志" }));
+    fireEvent.click(screen.getByRole("tab", { name: "日志" }));
 
     await waitFor(() => expect(screen.getByText("暂无日志")).toBeInTheDocument());
     expect(screen.queryByText("暂无会话")).not.toBeInTheDocument();

@@ -14,26 +14,39 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+const tabCls = (active: boolean) =>
+  cn(
+    "inline-flex min-w-[120px] items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+    active
+      ? "bg-blue-500 text-white shadow-sm"
+      : "text-muted-foreground opacity-60 hover:opacity-100 hover:bg-muted/50"
+  );
+
 export default function ResourcesPage() {
   const [tab, setTab] = useState<TabId>("knowledge");
 
   return (
     <div>
-      <div className="sticky top-0 z-10 mb-4 flex items-center gap-1 rounded-xl border bg-card p-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === t.id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="sticky top-0 z-10 mb-4">
+        <div
+          role="tablist"
+          aria-orientation="horizontal"
+          className="grid w-full grid-cols-4 rounded-lg bg-muted p-1 text-muted-foreground"
+        >
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              aria-controls={`tab-${t.id}`}
+              onClick={() => setTab(t.id)}
+              className={tabCls(tab === t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
       {tab === "knowledge" ? (
         <KnowledgePage />
