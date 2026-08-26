@@ -32,7 +32,7 @@ export default function RecordsPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 mb-4">
+      <div className="sticky top-0 z-20 mb-4 bg-background">
         <div
           role="tablist"
           aria-orientation="horizontal"
