@@ -24,7 +24,7 @@ export default function RecordsPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 mb-4 flex w-fit items-center gap-1 rounded-xl border bg-card p-1">
+      <div className="sticky top-0 z-10 mb-4 flex items-center gap-1 rounded-xl border bg-card p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
