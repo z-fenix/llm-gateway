@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit3, Plus, Trash2 } from "lucide-react";
 import { ModelCombobox } from "../components/ModelCombobox";
 import { api } from "../lib/api";
 import { ROLE_ORDER, routesByRole } from "../lib/roleSort";
@@ -121,6 +121,7 @@ export default function RoleRoutesPage() {
 
   const [deletingPattern, setDeletingPattern] = useState<RolePattern | null>(null);
   const [deletingRoute, setDeletingRoute] = useState<RoleRoute | null>(null);
+  const [editingRoute, setEditingRoute] = useState<RoleRoute | null>(null);
 
   const handleError = (err: unknown) => {
     console.error(err);
@@ -161,6 +162,7 @@ export default function RoleRoutesPage() {
   };
 
   const openCreateRoute = (role: string) => {
+    setEditingRoute(null);
     setRRole(role);
     setRChannelId("");
     setRModel("");
@@ -169,6 +171,19 @@ export default function RoleRoutesPage() {
     setRMaxFailures("5");
     setRCooldown("60");
     setRChannelModels([]);
+    setRouteOpen(true);
+  };
+
+  const openEditRoute = (r: RoleRoute) => {
+    setEditingRoute(r);
+    setRRole(r.role);
+    setRChannelId(r.channel_id);
+    setRModel(r.target_model);
+    setRPriority(String(r.priority));
+    setRWeight(String(r.weight));
+    setRMaxFailures(String(r.breaker_max_failures));
+    setRCooldown(String(r.breaker_cooldown_secs));
+    setRChannelModels(r.channel_id ? channels.find((c) => c.id === r.channel_id)?.models ?? [] : []);
     setRouteOpen(true);
   };
 
@@ -185,7 +200,18 @@ export default function RoleRoutesPage() {
     setPending(true);
     try {
       await api.upsertRoleRoute({
-        id: "",
+        ...(editingRoute ?? {
+          id: "",
+          role: rRole,
+          channel_id: rChannelId,
+          target_model: rModel.trim(),
+          priority: intOr(rPriority, 0),
+          weight: intOr(rWeight, 1),
+          breaker_max_failures: intOr(rMaxFailures, 5),
+          breaker_cooldown_secs: intOr(rCooldown, 60),
+          enabled: true,
+          updated_at: 0,
+        }),
         role: rRole,
         channel_id: rChannelId,
         target_model: rModel.trim(),
@@ -193,11 +219,10 @@ export default function RoleRoutesPage() {
         weight: intOr(rWeight, 1),
         breaker_max_failures: intOr(rMaxFailures, 5),
         breaker_cooldown_secs: intOr(rCooldown, 60),
-        enabled: true,
-        updated_at: 0,
       });
       setRouteOpen(false);
-      toast.success("角色路由已创建");
+      setEditingRoute(null);
+      toast.success(editingRoute ? "路由已更新" : "角色路由已创建");
       load();
     } catch (err) {
       handleError(err);
@@ -719,13 +744,23 @@ export default function RoleRoutesPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              className="inline-flex items-center gap-1 text-destructive hover:underline"
-                              aria-label="删除路由"
-                              onClick={() => setDeletingRoute(r)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                className="text-primary hover:underline"
+                                aria-label="编辑路由"
+                                title="编辑"
+                                onClick={() => openEditRoute(r)}
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </button>
+                              <button
+                                className="inline-flex items-center gap-1 text-destructive hover:underline"
+                                aria-label="删除路由"
+                                onClick={() => setDeletingRoute(r)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -746,7 +781,7 @@ export default function RoleRoutesPage() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>新增角色路由</DialogTitle>
+            <DialogTitle>{editingRoute ? "编辑角色路由" : "新增角色路由"}</DialogTitle>
             <DialogDescription>
               同一角色可配置多个供应商，请求自动路由，失败切换并熔断
             </DialogDescription>
@@ -844,7 +879,7 @@ export default function RoleRoutesPage() {
               取消
             </Button>
             <Button onClick={createRoute} disabled={pending}>
-              {pending ? "创建中..." : "创建"}
+              {pending ? "保存中..." : editingRoute ? "保存" : "创建"}
             </Button>
           </DialogFooter>
         </DialogContent>
