@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Loader2, Plus, Activity, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
 import type { Channel, ModelMapEntry } from "../types";
@@ -253,14 +253,14 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         <div className="flex items-center justify-between">
           <Label>支持模型</Label>
           <Button type="button" variant="outline" size="sm" onClick={refreshModels} disabled={modelFetching}>
-            {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            从上游刷新
+            {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+            获取模型列表
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
           {modelSource === "upstream"
             ? "已从上游加载模型，可直接选择或继续输入。"
-            : "内置模型清单，可点击「从上游刷新」拉取上游真实模型。"}
+            : "内置模型清单，可点击「获取模型列表」拉取上游真实模型。"}
         </p>
         {(f.models ?? []).map((m, i) => (
           <div key={modelKeys.current[i] ?? `m${i}`} className="flex items-center gap-2">
