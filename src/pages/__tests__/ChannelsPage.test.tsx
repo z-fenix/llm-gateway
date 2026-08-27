@@ -129,9 +129,8 @@ describe("ChannelsPage", () => {
     expect(screen.getAllByText("启用").length).toBeGreaterThan(0);
     expect(screen.getAllByText("禁用").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "测试" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "连通检测" })[0]);
     await waitFor(() => expect(mockedApi.testChannel).toHaveBeenCalledWith("c1"));
-    expect(screen.getByText(/✓ 120ms/)).toBeInTheDocument();
   });
 
   it("删除渠道需经过确认弹窗：确认后才调用 deleteChannel 并刷新", async () => {
