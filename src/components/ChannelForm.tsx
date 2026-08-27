@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Plus, Activity, Trash2 } from "lucide-react";
+import { Loader2, Plus, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
 import type { Channel, ModelMapEntry } from "../types";
@@ -253,7 +253,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         <div className="flex items-center justify-between">
           <Label>支持模型</Label>
           <Button type="button" variant="outline" size="sm" onClick={refreshModels} disabled={modelFetching}>
-            {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+            {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             获取模型列表
           </Button>
         </div>

@@ -30,7 +30,7 @@ const channel = (id: string, name: string): Channel => ({
   upstream_protocol: "openai-chat",
   base_url: "http://x",
   api_key: "k",
-  models: [],
+  models: ["deepseek-v4-flash", "opus-model"],
   priority: 0,
   weight: 1,
   enabled: true,
@@ -148,9 +148,8 @@ describe("RoleRoutesPage", () => {
     fireEvent.click(screen.getByRole("combobox", { name: "路由渠道" }));
     fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
 
-    fireEvent.change(screen.getByPlaceholderText("如 deepseek-v4-flash"), {
-      target: { value: "opus-model" },
-    });
+    fireEvent.click(screen.getByRole("combobox", { name: "上游模型" }));
+    fireEvent.click(await screen.findByRole("option", { name: "opus-model" }));
     fireEvent.change(screen.getByLabelText("优先级"), {
       target: { value: "10" },
     });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ModelCombobox } from "../components/ModelCombobox";
 import { api } from "../lib/api";
 import { ROLE_ORDER, routesByRole } from "../lib/roleSort";
 import type {
@@ -108,6 +109,7 @@ export default function RoleRoutesPage() {
   const [rWeight, setRWeight] = useState("1");
   const [rMaxFailures, setRMaxFailures] = useState("5");
   const [rCooldown, setRCooldown] = useState("60");
+  const [rChannelModels, setRChannelModels] = useState<string[]>([]);
 
   const [patternOpen, setPatternOpen] = useState(false);
   const [editingPattern, setEditingPattern] = useState<RolePattern | null>(null);
@@ -166,6 +168,7 @@ export default function RoleRoutesPage() {
     setRWeight("1");
     setRMaxFailures("5");
     setRCooldown("60");
+    setRChannelModels([]);
     setRouteOpen(true);
   };
 
@@ -201,6 +204,13 @@ export default function RoleRoutesPage() {
     } finally {
       setPending(false);
     }
+  };
+
+  const handleRouteChannelChange = (id: string) => {
+    setRChannelId(id);
+    setRModel("");
+    const ch = channels.find((c) => c.id === id);
+    setRChannelModels(ch ? ch.models : []);
   };
 
   const confirmDeleteRoute = async () => {
@@ -760,7 +770,7 @@ export default function RoleRoutesPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="route-channel">渠道</Label>
-              <Select value={rChannelId} onValueChange={setRChannelId}>
+              <Select value={rChannelId} onValueChange={handleRouteChannelChange}>
                 <SelectTrigger id="route-channel" aria-label="路由渠道">
                   <SelectValue placeholder="选择渠道" />
                 </SelectTrigger>
@@ -775,12 +785,16 @@ export default function RoleRoutesPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="route-model">上游模型</Label>
-              <Input
-                id="route-model"
-                placeholder="如 deepseek-v4-flash"
-                value={rModel}
-                onChange={(e) => setRModel(e.target.value)}
-              />
+              <Select value={rModel} onValueChange={setRModel}>
+                <SelectTrigger id="route-model" aria-label="上游模型">
+                  <SelectValue placeholder="选择模型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rChannelModels.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
