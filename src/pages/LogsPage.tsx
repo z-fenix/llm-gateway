@@ -288,7 +288,7 @@ function LogRow({
   );
 }
 
-type SessionGroup = { trace_id: string; logs: RequestLog[] };
+type SessionGroup = { key: string; logs: RequestLog[] };
 
 function shortTrace(trace: string): string {
   return trace.length > 16 ? `${trace.slice(0, 16)}…` : trace;
@@ -440,16 +440,16 @@ export default function LogsPage() {
     );
   }, [stats]);
 
-  // 按 trace_id 对当前页结果分组：一个 trace 即一次会话
+  // 按 session_id 对当前页结果分组；无 session_id 时回退到 trace_id
   const sessions = useMemo<SessionGroup[]>(() => {
     const map = new Map<string, RequestLog[]>();
     for (const log of data.items) {
-      const key = log.trace_id;
+      const key = log.session_id || log.trace_id;
       const arr = map.get(key);
       if (arr) arr.push(log);
       else map.set(key, [log]);
     }
-    return Array.from(map.entries()).map(([trace_id, logs]) => ({ trace_id, logs }));
+    return Array.from(map.entries()).map(([key, logs]) => ({ key, logs }));
   }, [data.items]);
 
   const onDeleteBefore = () => {
@@ -795,7 +795,7 @@ export default function LogsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">TraceID</th>
+                    <th className="px-4 py-3 font-medium">会话</th>
                     <th className="px-4 py-3 font-medium">请求数</th>
                     <th className="px-4 py-3 font-medium">首次时间</th>
                     <th className="px-4 py-3 font-medium">最后时间</th>
@@ -820,21 +820,29 @@ export default function LogsPage() {
                       )
                     );
                     const worst = worstRisk(s.logs);
-                    const expanded = openSession === s.trace_id;
+                    const expanded = openSession === s.key;
+                    const isSessionGroup = s.logs.some((l) => l.session_id === s.key);
                     return (
-                      <Fragment key={s.trace_id}>
+                      <Fragment key={s.key}>
                         <tr
                           className={cn(
                             "cursor-pointer border-b border-border last:border-0 hover:bg-accent/50",
                             expanded && "bg-accent/30"
                           )}
-                          onClick={() => setOpenSession(expanded ? null : s.trace_id)}
+                          onClick={() => setOpenSession(expanded ? null : s.key)}
                         >
                           <td
                             className="px-4 py-3 font-mono text-xs text-foreground"
-                            title={s.trace_id}
+                            title={s.key}
                           >
-                            {shortTrace(s.trace_id)}
+                            <div className="flex items-center gap-2">
+                              {isSessionGroup && s.logs[0]?.session_provider && (
+                                <span className={cn("w-fit rounded px-1 text-xs", sessionBadgeClass(s.logs[0].session_provider))}>
+                                  {sessionProviderLabel(s.logs[0].session_provider)}
+                                </span>
+                              )}
+                              <span>{isSessionGroup ? shortSessionId(s.key) : shortTrace(s.key)}</span>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-foreground">{s.logs.length}</td>
                           <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
