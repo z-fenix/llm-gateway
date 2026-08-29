@@ -58,9 +58,48 @@ pub fn chat_request_to_upstream(chat: &ChatRequest, model: &str) -> serde_json::
         body["temperature"] = serde_json::json!(t);
     }
     if let Some(tools) = &chat.tools {
-        body["tools"] = tools.clone();
+        body["tools"] = normalize_tools_for_openai(tools);
     }
     body
+}
+
+/// 把 Anthropic 风格的 tools（input_schema）归一化为 OpenAI 格式（parameters）。
+fn normalize_tools_for_openai(tools: &serde_json::Value) -> serde_json::Value {
+    if let Some(arr) = tools.as_array() {
+        let normalized: Vec<serde_json::Value> = arr
+            .iter()
+            .map(|t| {
+                if t.get("input_schema").is_some() && t.get("parameters").is_none() {
+                    let mut inner = serde_json::Map::new();
+                    if let Some(name) = t.get("name") {
+                        inner.insert("name".to_string(), name.clone());
+                    }
+                    if let Some(desc) = t.get("description") {
+                        inner.insert("description".to_string(), desc.clone());
+                    }
+                    inner.insert(
+                        "parameters".to_string(),
+                        t.get("input_schema").cloned().unwrap_or_default(),
+                    );
+                    let mut out = t.clone();
+                    out["function"] = serde_json::Value::Object(inner);
+                    // remove input_schema
+                    if let serde_json::Value::Object(ref mut map) = out {
+                        map.remove("input_schema");
+                    }
+                    if !matches!(t.get("type"), Some(_)) {
+                        out["type"] = serde_json::json!("function");
+                    }
+                    out
+                } else {
+                    t.clone()
+                }
+            })
+            .collect();
+        serde_json::Value::Array(normalized)
+    } else {
+        tools.clone()
+    }
 }
 
 /// 把统一消息列表归一化为 OpenAI Chat Completions 兼容格式。
@@ -518,5 +557,78 @@ mod tests {
         let up = chat_request_to_upstream(&chat, "gpt-4o");
         assert_eq!(up["messages"][0]["role"], "user");
         assert!(up["messages"][0]["content"].is_null());
+    }
+
+    #[test]
+    fn normalize_anthropic_input_schema_to_parameters() {
+        // Anthropic: {name, description, input_schema} → OpenAI: {type:function, function:{name, description, parameters}}
+        let tools = serde_json::json!([
+            {
+                "name": "get_weather",
+                "description": "查询天气",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"city": {"type": "string"}},
+                    "required": ["city"]
+                }
+            }
+        ]);
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: serde_json::json!("what's the weather in Beijing?"),
+        }];
+        let chat = ChatRequest {
+            model: "gpt-4o".into(),
+            messages,
+            max_tokens: None,
+            stream: false,
+            temperature: None,
+            tools: Some(tools),
+            extra: Default::default(),
+        };
+        let up = chat_request_to_upstream(&chat, "gpt-4o");
+        let t = &up["tools"][0];
+        assert_eq!(t["type"], "function");
+        assert_eq!(t["function"]["name"], "get_weather");
+        assert_eq!(t["function"]["description"], "查询天气");
+        assert!(t.get("input_schema").is_none());
+        assert_eq!(
+            t["function"]["parameters"],
+            serde_json::json!({
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"]
+            })
+        );
+    }
+
+    #[test]
+    fn openai_tools_already_have_parameters_unchanged() {
+        // OpenAI-style tools (with parameters) pass through unchanged
+        let tools = serde_json::json!([{
+            "type": "function",
+            "function": {
+                "name": "search",
+                "parameters": {"type": "object", "properties": {"q": {"type": "string"}}}
+            }
+        }]);
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: serde_json::json!("hello"),
+        }];
+        let chat = ChatRequest {
+            model: "gpt-4o".into(),
+            messages,
+            max_tokens: None,
+            stream: false,
+            temperature: None,
+            tools: Some(tools),
+            extra: Default::default(),
+        };
+        let up = chat_request_to_upstream(&chat, "gpt-4o");
+        let t = &up["tools"][0];
+        assert_eq!(t["function"]["name"], "search");
+        assert_eq!(t["type"], "function");
+        assert!(t.get("input_schema").is_none());
     }
 }

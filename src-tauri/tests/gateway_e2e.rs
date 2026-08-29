@@ -274,3 +274,82 @@ async fn configured_auto_route_used_for_unmatched() {
     assert_eq!(log.role.as_deref(), Some("auto"));
     assert_eq!(log.upstream_model.as_deref(), Some("deepseek-v4-flash"));
 }
+
+#[tokio::test]
+async fn openai_upstream_normalizes_anthropic_tools() {
+    let (base, mock) = common::spawn_mock(
+        200,
+        serde_json::json!({"choices":[{"message":{"content":"ok"}}]}),
+    ).await;
+
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(),
+        key: "sk-lgw-test".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
+    repo.upsert_role_route(&RoleRoute {
+        id: "r1".into(),
+        role: "sonnet".into(),
+        channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
+        enabled: true,
+        updated_at: 1,
+    })
+    .unwrap();
+
+    let state = AppState::new(db);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model": "claude-sonnet-4",
+            "stream": false,
+            "messages": [{"role": "user", "content": "hi"}],
+            "tools": [{
+                "name": "get_weather",
+                "description": "查询天气",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"city": {"type": "string"}},
+                    "required": ["city"]
+                }
+            }]
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+
+    let hits = mock.hits.lock().unwrap();
+    assert_eq!(hits.len(), 1);
+    let body = &hits[0];
+    // input_schema should be renamed to parameters inside function
+    let tool = &body["tools"][0];
+    assert!(tool.get("input_schema").is_none());
+    assert_eq!(tool["function"]["name"], "get_weather");
+    assert_eq!(
+        tool["function"]["parameters"],
+        serde_json::json!({
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"]
+        })
+    );
+}
