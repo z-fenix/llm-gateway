@@ -308,6 +308,50 @@ pub async fn forward_stream(
         match resp {
             Ok(r) if r.status().is_success() => {
                 let latency = start.elapsed().as_millis() as i64;
+                // 某些上游在流式请求失败时返回 HTTP 200 + application/json 错误 body，
+                // 直接透传会导致客户端收到空 SSE。这里通过 content-type 识别并提前报错。
+                let content_type = r
+                    .headers()
+                    .get("content-type")
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("")
+                    .to_lowercase();
+                if !content_type.contains("text/event-stream") {
+                    let status = r.status().as_u16();
+                    let text = r.text().await.unwrap_or_default();
+                    if let Some(err) = detect_upstream_error(&text) {
+                        if let Some(rid) = &route_id {
+                            breaker_record_failure(state, rid);
+                        }
+                        return Err(ForwardError::Upstream {
+                            status: if status == 200 { 400 } else { status },
+                            body: serde_json::json!({"error": err}).to_string(),
+                        });
+                    }
+                    // 非 SSE 且不是错误：当成单块流回传（上游协议违规，但比空流好）。
+                    let bytes = bytes::Bytes::from(text.into_bytes());
+                    let stream =
+                        futures::stream::once(async move { Ok::<_, reqwest::Error>(bytes) });
+                    if let Some(rid) = &route_id {
+                        breaker_record_success(state, rid);
+                    }
+                    if let Err(e) = state.repo.record_channel_stats(&ch.id, 0, latency, true) {
+                        log::error!("failed to record channel stats: {}", e);
+                    }
+                    let usage_protocol = match ch.upstream_protocol.as_str() {
+                        "anthropic-messages" => crate::proxy::sse::Protocol::Anthropic,
+                        "gemini-native" => crate::proxy::sse::Protocol::Gemini,
+                        "openai-responses" => crate::proxy::sse::Protocol::Responses,
+                        _ => crate::proxy::sse::Protocol::OpenAI,
+                    };
+                    return Ok(StreamHandle {
+                        channel: ch,
+                        model,
+                        via_fallback,
+                        usage_protocol,
+                        byte_stream: Box::pin(stream),
+                    });
+                }
                 if let Some(rid) = &route_id {
                     breaker_record_success(state, rid);
                 }
@@ -363,13 +407,59 @@ pub async fn forward_stream(
                             .post(&iurl)
                             .header("content-type", "application/json")
                             .timeout(std::time::Duration::from_secs(ich.timeout_secs as u64));
-                        if let Some((hname, hval)) = auth_header(&ich.upstream_protocol, &ich.api_key)
+                        if let Some((hname, hval)) =
+                            auth_header(&ich.upstream_protocol, &ich.api_key)
                         {
                             ireq = ireq.header(hname, hval);
                         }
                         match ireq.json(&ibody).send().await {
                             Ok(r) if r.status().is_success() => {
                                 let latency = istart.elapsed().as_millis() as i64;
+                                let content_type = r
+                                    .headers()
+                                    .get("content-type")
+                                    .and_then(|v| v.to_str().ok())
+                                    .unwrap_or("")
+                                    .to_lowercase();
+                                if !content_type.contains("text/event-stream") {
+                                    let status = r.status().as_u16();
+                                    let text = r.text().await.unwrap_or_default();
+                                    if let Some(err) = detect_upstream_error(&text) {
+                                        if let Some(rid) = &irid {
+                                            breaker_record_failure(state, rid);
+                                        }
+                                        return Err(ForwardError::Upstream {
+                                            status: if status == 200 { 400 } else { status },
+                                            body: serde_json::json!({"error": err}).to_string(),
+                                        });
+                                    }
+                                    let bytes = bytes::Bytes::from(text.into_bytes());
+                                    let stream = futures::stream::once(async move {
+                                        Ok::<_, reqwest::Error>(bytes)
+                                    });
+                                    if let Some(rid) = &irid {
+                                        breaker_record_success(state, rid);
+                                    }
+                                    let _ =
+                                        state.repo.record_channel_stats(&ich.id, 0, latency, true);
+                                    let usage_protocol = match ich.upstream_protocol.as_str() {
+                                        "anthropic-messages" => {
+                                            crate::proxy::sse::Protocol::Anthropic
+                                        }
+                                        "gemini-native" => crate::proxy::sse::Protocol::Gemini,
+                                        "openai-responses" => {
+                                            crate::proxy::sse::Protocol::Responses
+                                        }
+                                        _ => crate::proxy::sse::Protocol::OpenAI,
+                                    };
+                                    return Ok(StreamHandle {
+                                        channel: ich,
+                                        model: imodel,
+                                        via_fallback: ifb,
+                                        usage_protocol,
+                                        byte_stream: Box::pin(stream),
+                                    });
+                                }
                                 if let Some(rid) = &irid {
                                     breaker_record_success(state, rid);
                                 }
@@ -445,6 +535,21 @@ fn parse_body(text: &str) -> serde_json::Value {
     serde_json::from_str(text).unwrap_or(serde_json::json!({"raw": text}))
 }
 
+/// 检测上游响应 body 是否是一个错误对象（OpenAI/Anthropic 风格）。
+/// 某些上游会返回 HTTP 200 + error body，导致网关把它当成成功响应并生成 content 为 null 的 Message。
+fn detect_upstream_error(text: &str) -> Option<serde_json::Value> {
+    let v: serde_json::Value = serde_json::from_str(text).ok()?;
+    if let Some(err) = v.get("error") {
+        if !err.is_null() {
+            return Some(err.clone());
+        }
+    }
+    if v.get("type").and_then(|t| t.as_str()) == Some("error") {
+        return Some(v.get("error").cloned().unwrap_or_else(|| v.clone()));
+    }
+    None
+}
+
 /// 非流式：按 upstream_protocol 从响应文本提取 usage。
 fn extract_usage(ch: &Channel, text: &str) -> Usage {
     let v = parse_body(text);
@@ -515,6 +620,16 @@ async fn try_channel(
     }
 
     let (status, text) = send_once(state, ch, &url, &body).await?;
+    // 某些上游会返回 HTTP 200 + error body，必须当成错误处理，否则下游会得到 content=null 的 Message。
+    // 仅对 200 检测，避免拦截整流重试需要的 4xx 错误体。
+    if status == 200 {
+        if let Some(err) = detect_upstream_error(&text) {
+            return Err(ForwardError::Upstream {
+                status: 400,
+                body: serde_json::json!({"error": err}).to_string(),
+            });
+        }
+    }
     if status != 200 {
         // 整流重试（仅 Anthropic 上游）：signature 优先，否则 budget；合计最多一次
         if ch.upstream_protocol == "anthropic-messages" {
@@ -553,16 +668,36 @@ mod tests {
         let some_img = Some("image".to_string());
         let some_s = Some("sonnet".to_string());
         // 非 image 角色 + 非 failover + 图像不支持措辞 → 应重路由
-        assert!(should_reroute_to_image(&some_s, 400, "model does not support images"));
+        assert!(should_reroute_to_image(
+            &some_s,
+            400,
+            "model does not support images"
+        ));
         // image 角色不再重路由（避免循环）
-        assert!(!should_reroute_to_image(&some_img, 400, "model does not support images"));
+        assert!(!should_reroute_to_image(
+            &some_img,
+            400,
+            "model does not support images"
+        ));
         // failover 状态不截胡
-        assert!(!should_reroute_to_image(&some_s, 429, "image not supported"));
-        assert!(!should_reroute_to_image(&some_s, 503, "image not supported"));
+        assert!(!should_reroute_to_image(
+            &some_s,
+            429,
+            "image not supported"
+        ));
+        assert!(!should_reroute_to_image(
+            &some_s,
+            503,
+            "image not supported"
+        ));
         // 无角色（等价 auto）且含图错误 → 重路由
         assert!(should_reroute_to_image(&none, 400, "unsupported image"));
         // 无图像措辞则不重路由
-        assert!(!should_reroute_to_image(&some_s, 400, "rate limit exceeded"));
+        assert!(!should_reroute_to_image(
+            &some_s,
+            400,
+            "rate limit exceeded"
+        ));
     }
 
     fn ch(protocol: &str) -> Channel {
@@ -614,5 +749,31 @@ mod tests {
         assert_eq!(u.output_tokens, 20);
         assert_eq!(u.cache_read_tokens, 10);
         assert_eq!(u.cache_creation_tokens, 15);
+    }
+
+    #[test]
+    fn detect_upstream_error_openai_style() {
+        let text = r#"{"error":{"message":"Invalid JSON data","type":"invalid_request_error"}}"#;
+        let err = detect_upstream_error(text).unwrap();
+        assert_eq!(err["message"], "Invalid JSON data");
+    }
+
+    #[test]
+    fn detect_upstream_error_anthropic_style() {
+        let text =
+            r#"{"type":"error","error":{"type":"invalid_request_error","message":"bad request"}}"#;
+        let err = detect_upstream_error(text).unwrap();
+        assert_eq!(err["message"], "bad request");
+    }
+
+    #[test]
+    fn detect_upstream_error_ignores_success_body() {
+        let text = r#"{"choices":[{"message":{"content":"hi"}}]}"#;
+        assert!(detect_upstream_error(text).is_none());
+    }
+
+    #[test]
+    fn detect_upstream_error_ignores_non_json() {
+        assert!(detect_upstream_error("not json").is_none());
     }
 }

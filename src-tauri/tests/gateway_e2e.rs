@@ -208,7 +208,9 @@ async fn unmatched_role_requests_logged_as_auto() {
             "model":"gpt-4o",   // 不匹配任何角色模式
             "messages":[{"role":"user","content":"hi"}]
         }))
-        .send().await.unwrap();
+        .send()
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 200);
 
     let log = repo.latest_log().unwrap().unwrap();
@@ -267,7 +269,9 @@ async fn configured_auto_route_used_for_unmatched() {
             "model":"gpt-4o",   // 不匹配任何角色模式 → 命中 auto 路由
             "messages":[{"role":"user","content":"hi"}]
         }))
-        .send().await.unwrap();
+        .send()
+        .await
+        .unwrap();
     assert_eq!(resp.status(), 200);
 
     let log = repo.latest_log().unwrap().unwrap();
@@ -280,7 +284,8 @@ async fn openai_upstream_normalizes_anthropic_tools() {
     let (base, mock) = common::spawn_mock(
         200,
         serde_json::json!({"choices":[{"message":{"content":"ok"}}]}),
-    ).await;
+    )
+    .await;
 
     let db = Db::new_in_memory().unwrap();
     let repo = Repository::new(db.clone());
@@ -352,4 +357,146 @@ async fn openai_upstream_normalizes_anthropic_tools() {
             "required": ["city"]
         })
     );
+}
+
+#[tokio::test]
+async fn upstream_200_error_body_returns_error_non_stream() {
+    let (base, _mock) = common::spawn_mock(
+        200,
+        serde_json::json!({
+            "error": {
+                "message": "Invalid JSON data: missing parameters",
+                "type": "invalid_request_error"
+            }
+        }),
+    )
+    .await;
+
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(),
+        key: "sk-lgw-test".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
+    repo.upsert_role_route(&RoleRoute {
+        id: "r1".into(),
+        role: "sonnet".into(),
+        channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
+        enabled: true,
+        updated_at: 1,
+    })
+    .unwrap();
+
+    let state = AppState::new(db);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model": "claude-sonnet-4",
+            "stream": false,
+            "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 400);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(v["error"]["code"], "upstream_error");
+    assert_eq!(
+        v["error"]["message"].as_str().unwrap(),
+        "Invalid JSON data: missing parameters"
+    );
+    assert!(!v["error"]["trace_id"].as_str().unwrap().is_empty());
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(400));
+    assert_eq!(log.error.as_deref(), Some("upstream_error"));
+}
+
+#[tokio::test]
+async fn upstream_200_error_body_returns_error_stream() {
+    let (base, _mock) = common::spawn_mock(
+        200,
+        serde_json::json!({
+            "error": {
+                "message": "model not support streaming",
+                "type": "invalid_request_error"
+            }
+        }),
+    )
+    .await;
+
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(),
+        key: "sk-lgw-test".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
+    repo.upsert_role_route(&RoleRoute {
+        id: "r1".into(),
+        role: "sonnet".into(),
+        channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
+        enabled: true,
+        updated_at: 1,
+    })
+    .unwrap();
+
+    let state = AppState::new(db);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model": "claude-sonnet-4",
+            "stream": true,
+            "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 400);
+    let v: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(v["error"]["code"], "upstream_error");
+    assert_eq!(
+        v["error"]["message"].as_str().unwrap(),
+        "model not support streaming"
+    );
+    assert!(!v["error"]["trace_id"].as_str().unwrap().is_empty());
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(400));
+    assert_eq!(log.is_stream, true);
 }

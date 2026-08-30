@@ -63,6 +63,22 @@ fn err_response(status: StatusCode, code: &str, trace: &str) -> Response {
         .into_response()
 }
 
+fn upstream_err_response(status: StatusCode, code: &str, trace: &str, body: &str) -> Response {
+    let mut error_obj = json!({"code": code, "trace_id": trace});
+    if let Ok(v) = serde_json::from_str::<serde_json::Value>(body) {
+        if let Some(msg) = v
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+        {
+            error_obj["message"] = json!(msg);
+        } else if let Some(msg) = v.get("message").and_then(|m| m.as_str()) {
+            error_obj["message"] = json!(msg);
+        }
+    }
+    (status, Json(json!({"error": error_obj}))).into_response()
+}
+
 pub async fn health() -> &'static str {
     "ok"
 }
@@ -488,35 +504,58 @@ async fn handle(
                 }
             }
         }
-        Err(e) => {
-            let (status, code) = match &e {
-                ForwardError::NoChannel => {
-                    (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel")
+        Err(e) => match &e {
+            ForwardError::Upstream {
+                status,
+                body: upstream_body,
+            } => {
+                let status = StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY);
+                let code = "upstream_error";
+                if let Err(e) = write_log(
+                    &state,
+                    &trace_id,
+                    Some(&api_key),
+                    None,
+                    Some(&role),
+                    Some(&request_model),
+                    proto,
+                    Some(status.as_u16() as i64),
+                    Some(code.to_string()),
+                    latency,
+                    &body,
+                    Some(&scan),
+                ) {
+                    log::error!("failed to write request log: {}", e);
                 }
-                ForwardError::Upstream { status, .. } => (
-                    StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY),
-                    "upstream_error",
-                ),
-                ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
-            };
-            if let Err(e) = write_log(
-                &state,
-                &trace_id,
-                Some(&api_key),
-                None,
-                Some(&role),
-                Some(&request_model),
-                proto,
-                Some(status.as_u16() as i64),
-                Some(e.to_string()),
-                latency,
-                &body,
-                Some(&scan),
-            ) {
-                log::error!("failed to write request log: {}", e);
+                upstream_err_response(status, code, &trace_id, upstream_body)
             }
-            err_response(status, code, &trace_id)
-        }
+            _ => {
+                let (status, code) = match &e {
+                    ForwardError::NoChannel => {
+                        (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel")
+                    }
+                    ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
+                    _ => unreachable!(),
+                };
+                if let Err(e) = write_log(
+                    &state,
+                    &trace_id,
+                    Some(&api_key),
+                    None,
+                    Some(&role),
+                    Some(&request_model),
+                    proto,
+                    Some(status.as_u16() as i64),
+                    Some(code.to_string()),
+                    latency,
+                    &body,
+                    Some(&scan),
+                ) {
+                    log::error!("failed to write request log: {}", e);
+                }
+                err_response(status, code, &trace_id)
+            }
+        },
     }
 }
 
@@ -628,7 +667,8 @@ async fn handle_stream(
                 );
 
                 let log_id = uuid::Uuid::new_v4().to_string();
-                let (session_id, session_provider) = resolve_log_session(&state2, proto, &req_body_log);
+                let (session_id, session_provider) =
+                    resolve_log_session(&state2, proto, &req_body_log);
                 if let Err(e) = state2.repo.insert_log(&RequestLog {
                     id: log_id.clone(),
                     seq: 0,
@@ -698,74 +738,151 @@ async fn handle_stream(
                 .unwrap()
         }
         Err(e) => {
-            let (status, code) = match &e {
-                ForwardError::NoChannel => {
-                    (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel")
-                }
-                ForwardError::Upstream { status, .. } => (
-                    StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY),
-                    "upstream_error",
-                ),
-                ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
-            };
             let latency = started.elapsed().as_millis() as i64;
-            let (risk_level, risk_score, risk_summary, security_action, sanitized, blocked_reason) = (
-                serde_json::to_string(&scan.risk_level)
-                    .unwrap()
-                    .trim_matches('"')
-                    .to_string(),
-                scan.risk_score,
-                Some(scan.summary.clone()),
-                scan.action.as_str().to_string(),
-                scan.sanitized,
-                scan.blocked_reason.clone(),
-            );
-            let (session_id, session_provider) = resolve_log_session(&state, proto, req_body);
-            if let Err(e) = state.repo.insert_log(&RequestLog {
-                id: uuid::Uuid::new_v4().to_string(),
-                seq: 0,
-                trace_id: trace_id.to_string(),
-                api_key_id: Some(api_key.id.clone()),
-                key_name: Some(api_key.name.clone()),
-                channel_id: None,
-                channel_name: None,
-                role,
-                request_model: Some(request_model.to_string()),
-                upstream_model: None,
-                protocol: default_upstream_protocol(proto).to_string(),
-                status_code: Some(status.as_u16() as i64),
-                input_tokens: 0,
-                output_tokens: 0,
-                cache_read_tokens: 0,
-                cache_creation_tokens: 0,
-                input_cost_usd: 0.0,
-                output_cost_usd: 0.0,
-                cache_read_cost_usd: 0.0,
-                cache_creation_cost_usd: 0.0,
-                total_cost_usd: 0.0,
-                pricing_model: None,
-                latency_ms: latency,
-                is_stream: true,
-                error: Some(e.to_string()),
-                fallback: false,
-                tool_calls: None,
-                request_body: Some(
-                    crate::security::redact::redact_json_for_logging(req_body).to_string(),
-                ),
-                response_body: None,
-                risk_level,
-                risk_score,
-                risk_summary,
-                security_action,
-                sanitized,
-                blocked_reason,
-                session_id,
-                session_provider,
-                created_at: chrono::Utc::now().timestamp(),
-            }) {
-                log::error!("failed to insert stream request log: {}", e);
+            match &e {
+                ForwardError::Upstream { status, body } => {
+                    let status = StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY);
+                    let (
+                        risk_level,
+                        risk_score,
+                        risk_summary,
+                        security_action,
+                        sanitized,
+                        blocked_reason,
+                    ) = (
+                        serde_json::to_string(&scan.risk_level)
+                            .unwrap()
+                            .trim_matches('"')
+                            .to_string(),
+                        scan.risk_score,
+                        Some(scan.summary.clone()),
+                        scan.action.as_str().to_string(),
+                        scan.sanitized,
+                        scan.blocked_reason.clone(),
+                    );
+                    let (session_id, session_provider) =
+                        resolve_log_session(&state, proto, req_body);
+                    if let Err(e) = state.repo.insert_log(&RequestLog {
+                        id: uuid::Uuid::new_v4().to_string(),
+                        seq: 0,
+                        trace_id: trace_id.to_string(),
+                        api_key_id: Some(api_key.id.clone()),
+                        key_name: Some(api_key.name.clone()),
+                        channel_id: None,
+                        channel_name: None,
+                        role,
+                        request_model: Some(request_model.to_string()),
+                        upstream_model: None,
+                        protocol: default_upstream_protocol(proto).to_string(),
+                        status_code: Some(status.as_u16() as i64),
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        cache_read_tokens: 0,
+                        cache_creation_tokens: 0,
+                        input_cost_usd: 0.0,
+                        output_cost_usd: 0.0,
+                        cache_read_cost_usd: 0.0,
+                        cache_creation_cost_usd: 0.0,
+                        total_cost_usd: 0.0,
+                        pricing_model: None,
+                        latency_ms: latency,
+                        is_stream: true,
+                        error: Some("upstream_error".to_string()),
+                        fallback: false,
+                        tool_calls: None,
+                        request_body: Some(
+                            crate::security::redact::redact_json_for_logging(req_body).to_string(),
+                        ),
+                        response_body: Some(body.clone()),
+                        risk_level,
+                        risk_score,
+                        risk_summary,
+                        security_action,
+                        sanitized,
+                        blocked_reason,
+                        session_id,
+                        session_provider,
+                        created_at: chrono::Utc::now().timestamp(),
+                    }) {
+                        log::error!("failed to insert stream request log: {}", e);
+                    }
+                    upstream_err_response(status, "upstream_error", trace_id, body)
+                }
+                _ => {
+                    let (status, code) = match &e {
+                        ForwardError::NoChannel => {
+                            (StatusCode::SERVICE_UNAVAILABLE, "no_available_channel")
+                        }
+                        ForwardError::Http(_) => (StatusCode::BAD_GATEWAY, "upstream_unavailable"),
+                        _ => unreachable!(),
+                    };
+                    let (
+                        risk_level,
+                        risk_score,
+                        risk_summary,
+                        security_action,
+                        sanitized,
+                        blocked_reason,
+                    ) = (
+                        serde_json::to_string(&scan.risk_level)
+                            .unwrap()
+                            .trim_matches('"')
+                            .to_string(),
+                        scan.risk_score,
+                        Some(scan.summary.clone()),
+                        scan.action.as_str().to_string(),
+                        scan.sanitized,
+                        scan.blocked_reason.clone(),
+                    );
+                    let (session_id, session_provider) =
+                        resolve_log_session(&state, proto, req_body);
+                    if let Err(e) = state.repo.insert_log(&RequestLog {
+                        id: uuid::Uuid::new_v4().to_string(),
+                        seq: 0,
+                        trace_id: trace_id.to_string(),
+                        api_key_id: Some(api_key.id.clone()),
+                        key_name: Some(api_key.name.clone()),
+                        channel_id: None,
+                        channel_name: None,
+                        role,
+                        request_model: Some(request_model.to_string()),
+                        upstream_model: None,
+                        protocol: default_upstream_protocol(proto).to_string(),
+                        status_code: Some(status.as_u16() as i64),
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        cache_read_tokens: 0,
+                        cache_creation_tokens: 0,
+                        input_cost_usd: 0.0,
+                        output_cost_usd: 0.0,
+                        cache_read_cost_usd: 0.0,
+                        cache_creation_cost_usd: 0.0,
+                        total_cost_usd: 0.0,
+                        pricing_model: None,
+                        latency_ms: latency,
+                        is_stream: true,
+                        error: Some(code.to_string()),
+                        fallback: false,
+                        tool_calls: None,
+                        request_body: Some(
+                            crate::security::redact::redact_json_for_logging(req_body).to_string(),
+                        ),
+                        response_body: None,
+                        risk_level,
+                        risk_score,
+                        risk_summary,
+                        security_action,
+                        sanitized,
+                        blocked_reason,
+                        session_id,
+                        session_provider,
+                        created_at: chrono::Utc::now().timestamp(),
+                    }) {
+                        log::error!("failed to insert stream request log: {}", e);
+                    }
+                    err_response(status, code, trace_id)
+                }
             }
-            err_response(status, code, trace_id)
         }
     }
 }
