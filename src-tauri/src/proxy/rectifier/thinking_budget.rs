@@ -73,10 +73,7 @@ mod tests {
             "thinking": {"type": "enabled", "budget_tokens": 4096}
         });
         assert!(rectify_thinking_budget(&mut body));
-        assert_eq!(
-            body,
-            serde_json::json!({"thinking": {"type": "enabled"}})
-        );
+        assert_eq!(body, serde_json::json!({"thinking": {"type": "enabled"}}));
     }
 
     #[test]

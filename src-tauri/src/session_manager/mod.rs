@@ -424,7 +424,8 @@ mod tests {
             sess("codex", "codex-recent", ts + 30),
             sess("codex", "codex-old", ts - 400),
         ];
-        let body = serde_json::json!({"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]});
+        let body =
+            serde_json::json!({"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]});
         let (sid, provider) = resolve_log_session(&sessions, "openai", &body, ts);
         assert_eq!(sid.as_deref(), Some("codex-recent"));
         assert_eq!(provider.as_deref(), Some("codex"));

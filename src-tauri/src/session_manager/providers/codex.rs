@@ -58,8 +58,7 @@ fn scan_sessions_in_roots_with_titles(
 
 fn load_thread_titles(home: &Path) -> HashMap<String, String> {
     let config_dir = home.join(".codex");
-    let config_text =
-        std::fs::read_to_string(config_dir.join("config.toml")).unwrap_or_default();
+    let config_text = std::fs::read_to_string(config_dir.join("config.toml")).unwrap_or_default();
     let db_paths = codex_state_db_paths(&config_dir, &config_text);
     load_thread_titles_from_paths(&config_dir.join(CODEX_SESSION_INDEX_FILENAME), &db_paths)
 }
@@ -544,7 +543,8 @@ fn find_uuid(text: &str) -> Option<&str> {
         let mut pos = i;
         let mut ok = true;
         for (k, len) in PAT.iter().enumerate() {
-            if pos + len > bytes.len() || !bytes[pos..pos + len].iter().all(|c| c.is_ascii_hexdigit())
+            if pos + len > bytes.len()
+                || !bytes[pos..pos + len].iter().all(|c| c.is_ascii_hexdigit())
             {
                 ok = false;
                 break;
@@ -604,21 +604,33 @@ mod tests {
     #[test]
     fn parse_session_extracts_meta_and_title() {
         let dir = tempdir().unwrap();
-        let path = dir.path().join("u-11111111-2222-3333-4444-555555555555.jsonl");
-        write_session(&path, "11111111-2222-3333-4444-555555555555", "/repo/app", "Add tests");
+        let path = dir
+            .path()
+            .join("u-11111111-2222-3333-4444-555555555555.jsonl");
+        write_session(
+            &path,
+            "11111111-2222-3333-4444-555555555555",
+            "/repo/app",
+            "Add tests",
+        );
 
         let meta = parse_session(&path).unwrap();
         assert_eq!(meta.provider_id, "codex");
         assert_eq!(meta.session_id, "11111111-2222-3333-4444-555555555555");
         assert_eq!(meta.project_dir.as_deref(), Some("/repo/app"));
         assert_eq!(meta.title.as_deref(), Some("Add tests"));
-        assert_eq!(meta.resume_command.as_deref(), Some("codex resume 11111111-2222-3333-4444-555555555555"));
+        assert_eq!(
+            meta.resume_command.as_deref(),
+            Some("codex resume 11111111-2222-3333-4444-555555555555")
+        );
     }
 
     #[test]
     fn infer_session_id_from_uuid_filename_without_meta() {
         let dir = tempdir().unwrap();
-        let path = dir.path().join("11111111-2222-3333-4444-555555555555.jsonl");
+        let path = dir
+            .path()
+            .join("11111111-2222-3333-4444-555555555555.jsonl");
         write_session(&path, "other", "/repo/app", "hello");
 
         let meta = parse_session(&path).unwrap();

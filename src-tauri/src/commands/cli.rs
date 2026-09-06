@@ -184,7 +184,10 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let json = r#"{"model":"gpt-5","model_provider":"llm-gateway","model_providers":{"llm-gateway":{"name":"llm-gateway","base_url":"http://127.0.0.1:8779/v1","env_key":"LLM_GATEWAY_KEY","wire_api":"responses","requires_openai_auth":false}}}"#;
         let r = write_cli_config_content_with_home(home.path(), "codex", json).unwrap();
-        assert_eq!(r.path, codex::config_path(home.path()).display().to_string());
+        assert_eq!(
+            r.path,
+            codex::config_path(home.path()).display().to_string()
+        );
         assert!(r.backup_path.is_none()); // 首次写入无备份
 
         let written = std::fs::read_to_string(codex::config_path(home.path())).unwrap();

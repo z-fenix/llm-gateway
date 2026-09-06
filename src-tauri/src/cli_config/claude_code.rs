@@ -128,8 +128,12 @@ mod tests {
         assert!(r2[0].backup_path.is_some());
 
         let v: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap()).unwrap();
-        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], serde_json::json!("sk-lgw-b"));
+            serde_json::from_str(&std::fs::read_to_string(settings_path(home.path())).unwrap())
+                .unwrap();
+        assert_eq!(
+            v["env"]["ANTHROPIC_AUTH_TOKEN"],
+            serde_json::json!("sk-lgw-b")
+        );
 
         // .claude.json 保持原样(不新增 onboarding 注入)
         assert_eq!(std::fs::read_to_string(&dp).unwrap(), r#"{"userID":"u1"}"#);

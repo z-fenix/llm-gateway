@@ -95,8 +95,16 @@ async fn role_route_hits_bound_channel() {
     repo.insert_channel(&channel("c1", &base, "openai"))
         .unwrap();
     repo.insert_api_key(&key("k1")).unwrap();
-    repo.upsert_role_route(&role_route("rr1", "sonnet", "c1", "deepseek-v4-flash", 0, 1, 5))
-        .unwrap();
+    repo.upsert_role_route(&role_route(
+        "rr1",
+        "sonnet",
+        "c1",
+        "deepseek-v4-flash",
+        0,
+        1,
+        5,
+    ))
+    .unwrap();
     let state = AppState::new(db);
     let ak = repo.get_api_key_by_key("sk-lgw-k1").unwrap().unwrap();
     let res = forward(&state, &chat(), Some("sonnet".into()), &ak)
@@ -209,7 +217,10 @@ async fn role_breaker_trips_and_skips_route() {
         .await
         .unwrap();
     assert_eq!(r1.outcome.channel.id, "good-ch");
-    assert_eq!(state.circuit_breakers.read().get("ra").unwrap().state(), llm_gateway_lib::router::breaker::BreakerState::Open);
+    assert_eq!(
+        state.circuit_breakers.read().get("ra").unwrap().state(),
+        llm_gateway_lib::router::breaker::BreakerState::Open
+    );
 
     // 第 2 次：ra 已 open 被跳过，直接命中 rb
     let r2 = forward(&state, &chat(), Some("sonnet".into()), &ak)

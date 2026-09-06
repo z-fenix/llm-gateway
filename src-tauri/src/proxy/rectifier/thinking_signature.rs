@@ -14,11 +14,12 @@ pub fn should_rectify_thinking_signature(error_message: &str, cfg: &RectifierCon
     ]
     .iter()
     .any(|s| m.contains(s))
-        || (m.contains("invalid") && m.contains("signature") && m.contains("thinking") && m.contains("block"))
-        || m.contains("must start with a thinking block")
-        || m.contains("expected")
-            && m.contains("found tool_use")
+        || (m.contains("invalid")
+            && m.contains("signature")
             && m.contains("thinking")
+            && m.contains("block"))
+        || m.contains("must start with a thinking block")
+        || m.contains("expected") && m.contains("found tool_use") && m.contains("thinking")
 }
 
 /// 原地修改 Anthropic 请求体：删 thinking/redacted_thinking block、去 signature。

@@ -122,10 +122,7 @@ fn normalize_messages_for_openai(messages: &[ChatMessage]) -> Vec<serde_json::Va
     out
 }
 
-fn normalize_content_blocks(
-    blocks: &[serde_json::Value],
-    role: &str,
-) -> Vec<serde_json::Value> {
+fn normalize_content_blocks(blocks: &[serde_json::Value], role: &str) -> Vec<serde_json::Value> {
     if blocks.is_empty() {
         return vec![serde_json::json!({ "role": role, "content": null })];
     }
@@ -231,7 +228,10 @@ fn build_content(texts: &[String], images: &[serde_json::Value]) -> serde_json::
 fn convert_tool_use(b: &serde_json::Value) -> Option<serde_json::Value> {
     let id = b.get("id").and_then(|v| v.as_str())?;
     let name = b.get("name").and_then(|v| v.as_str())?;
-    let input = b.get("input").cloned().unwrap_or_else(|| serde_json::json!({}));
+    let input = b
+        .get("input")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
     Some(serde_json::json!({
         "id": id,
         "type": "function",
@@ -243,10 +243,7 @@ fn convert_tool_use(b: &serde_json::Value) -> Option<serde_json::Value> {
 }
 
 fn convert_tool_result(b: &serde_json::Value) -> serde_json::Value {
-    let tool_use_id = b
-        .get("tool_use_id")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    let tool_use_id = b.get("tool_use_id").and_then(|v| v.as_str()).unwrap_or("");
     let content = match b.get("content") {
         Some(serde_json::Value::String(s)) => serde_json::Value::String(s.clone()),
         Some(serde_json::Value::Array(arr)) => {
@@ -344,17 +341,15 @@ mod tests {
     #[test]
     fn normalize_anthropic_tool_use_to_tool_calls() {
         // Anthropic assistant message with tool_use block → OpenAI tool_calls
-        let messages = vec![
-            ChatMessage {
-                role: "assistant".into(),
-                content: serde_json::json!([{
-                    "type": "tool_use",
-                    "id": "toolu_01",
-                    "name": "get_weather",
-                    "input": {"city": "Beijing"}
-                }]),
-            },
-        ];
+        let messages = vec![ChatMessage {
+            role: "assistant".into(),
+            content: serde_json::json!([{
+                "type": "tool_use",
+                "id": "toolu_01",
+                "name": "get_weather",
+                "input": {"city": "Beijing"}
+            }]),
+        }];
         let chat = ChatRequest {
             model: "gpt-4o".into(),
             messages,
@@ -378,16 +373,14 @@ mod tests {
     #[test]
     fn normalize_anthropic_tool_result_to_tool_role() {
         // Anthropic user message with tool_result block → OpenAI tool role message
-        let messages = vec![
-            ChatMessage {
-                role: "user".into(),
-                content: serde_json::json!([{
-                    "type": "tool_result",
-                    "tool_use_id": "toolu_01",
-                    "content": "sunny"
-                }]),
-            },
-        ];
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: serde_json::json!([{
+                "type": "tool_result",
+                "tool_use_id": "toolu_01",
+                "content": "sunny"
+            }]),
+        }];
         let chat = ChatRequest {
             model: "gpt-4o".into(),
             messages,

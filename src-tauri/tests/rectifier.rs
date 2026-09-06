@@ -102,35 +102,33 @@ async fn signature_error_triggers_rectify_and_retry() {
     let hits = mock.hits.lock().unwrap();
     assert_eq!(hits.len(), 2, "should rectify and retry exactly once");
     // 第一次请求体含 thinking block
-    let first_has_thinking = hits[0]["messages"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|m| {
-            m["content"]
-                .as_array()
-                .map(|c| {
-                    c.iter()
-                        .any(|b| b.get("type").and_then(|t| t.as_str()) == Some("thinking"))
-                })
-                .unwrap_or(false)
-        });
-    assert!(first_has_thinking, "first request should contain a thinking block");
+    let first_has_thinking = hits[0]["messages"].as_array().unwrap().iter().any(|m| {
+        m["content"]
+            .as_array()
+            .map(|c| {
+                c.iter()
+                    .any(|b| b.get("type").and_then(|t| t.as_str()) == Some("thinking"))
+            })
+            .unwrap_or(false)
+    });
+    assert!(
+        first_has_thinking,
+        "first request should contain a thinking block"
+    );
     // 第二次(整流后)请求体不再含 thinking block
-    let second_has_thinking = hits[1]["messages"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .any(|m| {
-            m["content"]
-                .as_array()
-                .map(|c| {
-                    c.iter()
-                        .any(|b| b.get("type").and_then(|t| t.as_str()) == Some("thinking"))
-                })
-                .unwrap_or(false)
-        });
-    assert!(!second_has_thinking, "rectified request should drop thinking blocks");
+    let second_has_thinking = hits[1]["messages"].as_array().unwrap().iter().any(|m| {
+        m["content"]
+            .as_array()
+            .map(|c| {
+                c.iter()
+                    .any(|b| b.get("type").and_then(|t| t.as_str()) == Some("thinking"))
+            })
+            .unwrap_or(false)
+    });
+    assert!(
+        !second_has_thinking,
+        "rectified request should drop thinking blocks"
+    );
     drop(hits);
 
     let log = state.repo.latest_log().unwrap().unwrap();
@@ -205,7 +203,11 @@ async fn retry_failure_returns_original_error() {
         .unwrap();
 
     // 整流后重试了第二次，但重试仍失败 → 返回原始 400 而非第二次的 500
-    assert_eq!(resp.status(), 400, "should return the ORIGINAL 400, not the 500");
+    assert_eq!(
+        resp.status(),
+        400,
+        "should return the ORIGINAL 400, not the 500"
+    );
 
     let hits = mock.hits.lock().unwrap();
     assert_eq!(hits.len(), 2, "should rectify and retry exactly once");
@@ -219,8 +221,8 @@ async fn retry_failure_returns_original_error() {
 /// 纯文本模型(heuristic)的 image block 在发送前被降级为 [Unsupported Image]。
 #[tokio::test]
 async fn media_fallback_strips_images() {
-    let (mock_base, mock) = common::spawn_rectifier_mock(200, ok_anthropic_body(), 200, ok_anthropic_body())
-        .await;
+    let (mock_base, mock) =
+        common::spawn_rectifier_mock(200, ok_anthropic_body(), 200, ok_anthropic_body()).await;
     let (state, addr) = setup(&mock_base, "k3").await;
 
     let resp = reqwest::Client::new()

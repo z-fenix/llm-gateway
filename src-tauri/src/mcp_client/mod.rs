@@ -39,11 +39,9 @@ pub fn spawn_connection(
                 .to_string();
             let headers = parse_headers(config.get("headers"));
             tokio::spawn(async move {
-                let transport =
-                    StreamableHttpClientTransport::<reqwest::Client>::from_config(
-                        StreamableHttpClientTransportConfig::with_uri(url)
-                            .custom_headers(headers),
-                    );
+                let transport = StreamableHttpClientTransport::<reqwest::Client>::from_config(
+                    StreamableHttpClientTransportConfig::with_uri(url).custom_headers(headers),
+                );
                 let result = tokio::time::timeout(
                     Duration::from_secs(5),
                     rmcp::service::serve_client(ClientInfo::default(), transport),
@@ -75,7 +73,11 @@ pub fn spawn_connection(
             let args: Vec<String> = config
                 .get("args")
                 .and_then(|a| a.as_array())
-                .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default();
             let env_map = parse_env(config.get("env"));
             tokio::spawn(async move {
@@ -157,7 +159,9 @@ pub async fn test_connection(server_config: &serde_json::Value) -> Result<String
     }
 }
 
-fn parse_headers(value: Option<&serde_json::Value>) -> HashMap<http::HeaderName, http::HeaderValue> {
+fn parse_headers(
+    value: Option<&serde_json::Value>,
+) -> HashMap<http::HeaderName, http::HeaderValue> {
     let mut headers = HashMap::new();
     let Some(obj) = value.and_then(|v| v.as_object()) else {
         return headers;
@@ -167,7 +171,10 @@ fn parse_headers(value: Option<&serde_json::Value>) -> HashMap<http::HeaderName,
             log::warn!("invalid MCP http header name: {k}");
             continue;
         };
-        let value_str = v.as_str().map(String::from).unwrap_or_else(|| v.to_string());
+        let value_str = v
+            .as_str()
+            .map(String::from)
+            .unwrap_or_else(|| v.to_string());
         let Ok(value) = http::HeaderValue::from_str(&value_str) else {
             log::warn!("invalid MCP http header value: {value_str}");
             continue;

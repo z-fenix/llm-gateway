@@ -164,7 +164,9 @@ mod image_tests {
     #[test]
     fn plain_text_is_not_image() {
         assert!(!is_image_request(&chat(json!("hello"))));
-        assert!(!is_image_request(&chat(json!([{ "type": "text", "text": "only text" }]))));
+        assert!(!is_image_request(&chat(
+            json!([{ "type": "text", "text": "only text" }])
+        )));
     }
 
     #[test]

@@ -6,6 +6,8 @@ use llm_gateway_lib::db::models::{ApiKey, Channel, RoleRoute};
 use llm_gateway_lib::db::repository::Repository;
 use llm_gateway_lib::db::Db;
 use llm_gateway_lib::proxy::{server, state::AppState};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 async fn spawn_sse_upstream() -> String {
     let app = Router::new().route("/v1/chat/completions", post(|| async {
@@ -19,6 +21,32 @@ async fn spawn_sse_upstream() -> String {
             .body(axum::body::Body::from_stream(stream::iter(chunks)))
             .unwrap()
     }));
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{}", addr)
+}
+
+async fn spawn_capturing_upstream(body_capture: Arc<Mutex<Option<serde_json::Value>>>) -> String {
+    let app = Router::new().route(
+        "/v1/chat/completions",
+        post(move |axum::Json(payload): axum::Json<serde_json::Value>| {
+            let capture = body_capture.clone();
+            async move {
+                *capture.lock().await = Some(payload);
+                let chunks = vec![
+                    Ok::<_, std::convert::Infallible>(r#"data: {"choices":[{"delta":{"content":"ok"}}],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}"#.to_string() + "\n\n"),
+                    Ok("data: [DONE]".to_string() + "\n\n"),
+                ];
+                axum::response::Response::builder()
+                    .header("content-type", "text/event-stream")
+                    .body(axum::body::Body::from_stream(stream::iter(chunks)))
+                    .unwrap()
+            }
+        }),
+    );
     let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0)))
         .await
         .unwrap();
@@ -178,6 +206,40 @@ async fn stream_passthrough_and_usage_logged() {
     assert!(log.is_stream);
     let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
     assert_eq!(k.quota_used, 9);
+}
+
+#[tokio::test]
+async fn stream_openai_requests_include_usage_option() {
+    let capture = Arc::new(Mutex::new(None));
+    let base = spawn_capturing_upstream(capture.clone()).await;
+    let state = make_state(base);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/chat/completions", addr))
+        .header("authorization", "Bearer sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"claude-sonnet-4","stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let _text = resp.text().await.unwrap();
+
+    let body = capture
+        .lock()
+        .await
+        .take()
+        .expect("upstream should receive a body");
+    assert_eq!(body["stream"], true);
+    assert_eq!(body["stream_options"]["include_usage"], true);
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.input_tokens, 5);
+    assert_eq!(log.output_tokens, 1);
 }
 
 #[tokio::test]

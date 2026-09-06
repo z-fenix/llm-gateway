@@ -27,10 +27,7 @@ pub fn upsert_role_route(state: State<AppState>, mut route: RoleRoute) -> Result
 
 #[tauri::command]
 pub fn delete_role_route(state: State<AppState>, id: String) -> Result<(), String> {
-    state
-        .repo
-        .delete_role_route(&id)
-        .map_err(|e| e.to_string())
+    state.repo.delete_role_route(&id).map_err(|e| e.to_string())
 }
 
 #[derive(Serialize)]

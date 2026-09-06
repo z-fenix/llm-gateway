@@ -198,7 +198,13 @@ mod tests {
         m.to_string()
     }
 
-    fn rc(route_id: &str, channel: Channel, model: &str, priority: i64, weight: i64) -> RoleCandidate {
+    fn rc(
+        route_id: &str,
+        channel: Channel,
+        model: &str,
+        priority: i64,
+        weight: i64,
+    ) -> RoleCandidate {
         RoleCandidate {
             route_id: route_id.into(),
             channel,

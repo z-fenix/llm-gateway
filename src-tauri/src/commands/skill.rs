@@ -243,7 +243,10 @@ fn parse_frontmatter(content: &str) -> Option<serde_json::Value> {
         .map(|i| start + i)
         .unwrap_or(lines.len());
     let text = lines[start..end].join("\n");
-    let doc = yaml_rust2::YamlLoader::load_from_str(&text).ok()?.into_iter().next()?;
+    let doc = yaml_rust2::YamlLoader::load_from_str(&text)
+        .ok()?
+        .into_iter()
+        .next()?;
     Some(yaml_to_json(&doc))
 }
 
@@ -301,8 +304,10 @@ pub(crate) fn list_installed_skills_with_home(
     home: &Path,
 ) -> Result<Vec<InstalledSkill>, String> {
     let db_skills = state.repo.list_skills().map_err(|e| e.to_string())?;
-    let by_dir: std::collections::HashMap<&str, &Skill> =
-        db_skills.iter().map(|s| (s.directory.as_str(), s)).collect();
+    let by_dir: std::collections::HashMap<&str, &Skill> = db_skills
+        .iter()
+        .map(|s| (s.directory.as_str(), s))
+        .collect();
 
     let root = skills_root(home);
     let entries = match std::fs::read_dir(&root) {
@@ -339,7 +344,9 @@ pub(crate) fn list_installed_skills_with_home(
             .map(|s| s.to_string());
         let mcp_servers = fm.as_ref().map(extract_mcp_servers).unwrap_or_default();
         let db_skill = by_dir.get(directory.as_str()).copied();
-        let synced = db_skill.map(|s| content.trim() == s.content.trim()).unwrap_or(false);
+        let synced = db_skill
+            .map(|s| content.trim() == s.content.trim())
+            .unwrap_or(false);
         out.push(InstalledSkill {
             directory,
             name,
@@ -357,10 +364,7 @@ pub(crate) fn list_installed_skills_with_home(
 
 /// 把磁盘上已安装的 skill 导入到 DB 管理列表（已存在则按磁盘内容更新）。
 #[tauri::command]
-pub fn import_installed_skill(
-    state: State<AppState>,
-    directory: String,
-) -> Result<Skill, String> {
+pub fn import_installed_skill(state: State<AppState>, directory: String) -> Result<Skill, String> {
     let home = dirs::home_dir().ok_or("无法确定用户主目录")?;
     import_installed_skill_with_home(&state, &home, &directory)
 }
@@ -374,8 +378,8 @@ pub(crate) fn import_installed_skill_with_home(
         return Err("目录名仅允许字母、数字、_ 和 -".into());
     }
     let path = skill_path(home, directory);
-    let content = std::fs::read_to_string(&path)
-        .map_err(|e| format!("读取 {}: {}", path.display(), e))?;
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("读取 {}: {}", path.display(), e))?;
     let fm = parse_frontmatter(&content);
     let name = fm
         .as_ref()
@@ -769,7 +773,11 @@ mod tests {
             Some("npx")
         );
         assert_eq!(
-            decls[0].config.get("env").and_then(|v| v.get("KEY")).and_then(|v| v.as_str()),
+            decls[0]
+                .config
+                .get("env")
+                .and_then(|v| v.get("KEY"))
+                .and_then(|v| v.as_str()),
             Some("val")
         );
         // 无 frontmatter → None
@@ -795,7 +803,15 @@ mod tests {
         assert!(!my.in_db);
         assert_eq!(my.name.as_deref(), Some("my-skill"));
         assert_eq!(my.mcp_servers.len(), 1);
-        assert_eq!(listed.iter().find(|s| s.directory == "plain").unwrap().mcp_servers.len(), 0);
+        assert_eq!(
+            listed
+                .iter()
+                .find(|s| s.directory == "plain")
+                .unwrap()
+                .mcp_servers
+                .len(),
+            0
+        );
 
         // 导入后 in_db=true 且 synced
         import_installed_skill_with_home(&state, home, "my-skill").unwrap();
@@ -822,7 +838,10 @@ mod tests {
         let id = servers[0].id.clone();
         assert_eq!(servers[0].name, "fs-server");
         assert_eq!(
-            servers[0].server_config.get("command").and_then(|v| v.as_str()),
+            servers[0]
+                .server_config
+                .get("command")
+                .and_then(|v| v.as_str()),
             Some("npx")
         );
 
@@ -838,7 +857,10 @@ mod tests {
         assert_eq!(servers2.len(), 1);
         assert_eq!(servers2[0].id, id);
         assert_eq!(
-            servers2[0].server_config.get("command").and_then(|v| v.as_str()),
+            servers2[0]
+                .server_config
+                .get("command")
+                .and_then(|v| v.as_str()),
             Some("pnpm")
         );
     }

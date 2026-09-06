@@ -396,8 +396,14 @@ mod tests {
         std::fs::create_dir_all(&root).unwrap();
         let normal = root.join("abc.jsonl");
         let agent = root.join("agent-xyz.jsonl");
-        write_session_lines(&normal, &[r#"{"type":"user","message":{"role":"user","content":"q"}}"#]);
-        write_session_lines(&agent, &[r#"{"type":"user","message":{"role":"user","content":"sub"}}"#]);
+        write_session_lines(
+            &normal,
+            &[r#"{"type":"user","message":{"role":"user","content":"q"}}"#],
+        );
+        write_session_lines(
+            &agent,
+            &[r#"{"type":"user","message":{"role":"user","content":"sub"}}"#],
+        );
 
         let sessions = scan_sessions(dir.path());
         assert_eq!(sessions.len(), 1);
@@ -414,7 +420,9 @@ mod tests {
         std::fs::write(subagents.join("agent-1.jsonl"), "{}").unwrap();
         write_session_lines(
             &path,
-            &[r#"{"type":"user","sessionId":"abc-session","cwd":"/x","message":{"role":"user","content":"q"}}"#],
+            &[
+                r#"{"type":"user","sessionId":"abc-session","cwd":"/x","message":{"role":"user","content":"q"}}"#,
+            ],
         );
 
         delete_session(dir.path(), &path, "abc-session").unwrap();

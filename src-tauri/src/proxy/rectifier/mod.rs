@@ -33,16 +33,28 @@ pub fn merge_from_store(
     if let Some(v) = values.get("rectifier.enabled").and_then(|v| v.as_bool()) {
         c.enabled = v;
     }
-    if let Some(v) = values.get("rectifier.request_thinking_signature").and_then(|v| v.as_bool()) {
+    if let Some(v) = values
+        .get("rectifier.request_thinking_signature")
+        .and_then(|v| v.as_bool())
+    {
         c.request_thinking_signature = v;
     }
-    if let Some(v) = values.get("rectifier.request_thinking_budget").and_then(|v| v.as_bool()) {
+    if let Some(v) = values
+        .get("rectifier.request_thinking_budget")
+        .and_then(|v| v.as_bool())
+    {
         c.request_thinking_budget = v;
     }
-    if let Some(v) = values.get("rectifier.request_media_fallback").and_then(|v| v.as_bool()) {
+    if let Some(v) = values
+        .get("rectifier.request_media_fallback")
+        .and_then(|v| v.as_bool())
+    {
         c.request_media_fallback = v;
     }
-    if let Some(v) = values.get("rectifier.request_media_heuristic").and_then(|v| v.as_bool()) {
+    if let Some(v) = values
+        .get("rectifier.request_media_heuristic")
+        .and_then(|v| v.as_bool())
+    {
         c.request_media_heuristic = v;
     }
     c
@@ -74,9 +86,9 @@ pub fn apply_settings(state: &AppState, c: &RectifierConfig) {
     *state.rectifier.write() = c.clone();
 }
 
-pub mod thinking_signature;
-pub mod thinking_budget;
 pub mod media;
+pub mod thinking_budget;
+pub mod thinking_signature;
 
 #[cfg(test)]
 mod tests {
@@ -85,8 +97,13 @@ mod tests {
     #[test]
     fn default_all_true() {
         let c = RectifierConfig::default();
-        assert!(c.enabled && c.request_thinking_signature && c.request_thinking_budget
-            && c.request_media_fallback && c.request_media_heuristic);
+        assert!(
+            c.enabled
+                && c.request_thinking_signature
+                && c.request_thinking_budget
+                && c.request_media_fallback
+                && c.request_media_heuristic
+        );
     }
 
     #[test]

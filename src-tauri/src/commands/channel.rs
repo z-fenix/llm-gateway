@@ -346,13 +346,16 @@ async fn list_channel_models_with_state(
         return Ok(vec![]);
     }
     let url = crate::provider::adapter::models_url(&upstream_protocol, &base_url, &api_key);
-    let timeout = if timeout_secs < 1 { 60usize } else { timeout_secs as usize };
+    let timeout = if timeout_secs < 1 {
+        60usize
+    } else {
+        timeout_secs as usize
+    };
     let mut req = state
         .http
         .get(&url)
         .timeout(std::time::Duration::from_secs(timeout as u64));
-    if let Some((hname, hval)) =
-        crate::provider::adapter::auth_header(&upstream_protocol, &api_key)
+    if let Some((hname, hval)) = crate::provider::adapter::auth_header(&upstream_protocol, &api_key)
     {
         req = req.header(hname, hval);
     }
@@ -360,7 +363,10 @@ async fn list_channel_models_with_state(
     if !resp.status().is_success() {
         return Err(format!("上游返回状态码 {}", resp.status()));
     }
-    let bytes = resp.bytes().await.map_err(|e| format!("读取上游响应失败: {e}"))?;
+    let bytes = resp
+        .bytes()
+        .await
+        .map_err(|e| format!("读取上游响应失败: {e}"))?;
     parse_models_response(&upstream_protocol, &bytes)
 }
 
@@ -541,7 +547,8 @@ mod tests {
 
     #[test]
     fn parse_models_response_gemini_strips_models_prefix() {
-        let body = br#"{"models":[{"name":"models/gemini-2.5-pro"},{"name":"models/gemini-2.5-flash"}]}"#;
+        let body =
+            br#"{"models":[{"name":"models/gemini-2.5-pro"},{"name":"models/gemini-2.5-flash"}]}"#;
         assert_eq!(
             parse_models_response("gemini-native", body).unwrap(),
             vec!["gemini-2.5-pro", "gemini-2.5-flash"]
@@ -554,7 +561,10 @@ mod tests {
             parse_models_response("openai-chat", br#"{"object":"list","data":[]}"#).unwrap(),
             Vec::<String>::new()
         );
-        assert_eq!(parse_models_response("gemini-native", br#"{"models":[]}"#).unwrap(), Vec::<String>::new());
+        assert_eq!(
+            parse_models_response("gemini-native", br#"{"models":[]}"#).unwrap(),
+            Vec::<String>::new()
+        );
     }
 
     #[test]

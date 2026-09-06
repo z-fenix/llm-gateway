@@ -23,19 +23,19 @@ async fn spawn_gemini_stream_mock(chunks: Vec<String>) -> String {
                     axum::response::Response::builder()
                         .header("content-type", "text/event-stream")
                         .body(axum::body::Body::from_stream(stream::iter(
-                            chunks.to_vec().into_iter().map(|c| {
-                                Ok::<_, std::convert::Infallible>(c)
-                            }),
+                            chunks
+                                .to_vec()
+                                .into_iter()
+                                .map(|c| Ok::<_, std::convert::Infallible>(c)),
                         )))
                         .unwrap()
                 }
             }
         }),
     );
-    let listener =
-        tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0)))
-            .await
-            .unwrap();
+    let listener = tokio::net::TcpListener::bind(std::net::SocketAddr::from(([127, 0, 0, 1], 0)))
+        .await
+        .unwrap();
     let addr = listener.local_addr().unwrap();
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     format!("http://{}", addr)
