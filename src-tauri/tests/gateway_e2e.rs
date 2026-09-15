@@ -500,3 +500,82 @@ async fn upstream_200_error_body_returns_error_stream() {
     assert_eq!(log.status_code, Some(400));
     assert_eq!(log.is_stream, true);
 }
+
+#[tokio::test]
+async fn anthropic_client_receives_valid_message_from_openai_upstream() {
+    // Claude Code 非流式重试：OpenAI 上游返回正常，但响应壳必须符合 Anthropic
+    // Message schema（content 为内容块数组、stop_reason 为合法枚举）。
+    let (base, _mock) = common::spawn_mock(
+        200,
+        serde_json::json!({
+            "id":"chatcmpl-1","object":"chat.completion","model":"m",
+            "choices":[{"index":0,"message":{"role":"assistant","content":"你好"},"finish_reason":"stop"}],
+            "usage":{"prompt_tokens":10,"completion_tokens":2,"total_tokens":12}
+        }),
+    )
+    .await;
+
+    let db = Db::new_in_memory().unwrap();
+    let repo = Repository::new(db.clone());
+    repo.insert_channel(&channel("c1", &base)).unwrap();
+    repo.insert_api_key(&ApiKey {
+        id: "k1".into(),
+        key: "sk-lgw-test".into(),
+        name: "t".into(),
+        enabled: true,
+        quota_total: None,
+        quota_used: 0,
+        total_calls: 0,
+        total_tokens: 0,
+        created_at: 1,
+        last_used_at: None,
+    })
+    .unwrap();
+    repo.upsert_role_route(&RoleRoute {
+        id: "r1".into(),
+        role: "sonnet".into(),
+        channel_id: "c1".into(),
+        target_model: "deepseek-v4-flash".into(),
+        priority: 0,
+        weight: 1,
+        breaker_max_failures: 5,
+        breaker_cooldown_secs: 60,
+        enabled: true,
+        updated_at: 1,
+    })
+    .unwrap();
+
+    let state = AppState::new(db);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/messages", addr))
+        .header("x-api-key", "sk-lgw-test")
+        .json(&serde_json::json!({
+            "model": "sonnet",
+            "max_tokens": 64,
+            "stream": false,
+            "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+
+    let body: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(body["type"], "message");
+    assert_eq!(body["role"], "assistant");
+    // 字符串 content 必须包装为 text 块数组
+    assert_eq!(
+        body["content"],
+        serde_json::json!([{"type": "text", "text": "你好"}])
+    );
+    assert_eq!(body["stop_reason"], "end_turn");
+    assert!(body["stop_sequence"].is_null());
+    assert_eq!(body["usage"]["input_tokens"], 10);
+    assert_eq!(body["usage"]["output_tokens"], 2);
+
+    let log = repo.latest_log().unwrap().unwrap();
+    assert_eq!(log.status_code, Some(200));
+    assert_eq!(log.is_stream, false);
+}

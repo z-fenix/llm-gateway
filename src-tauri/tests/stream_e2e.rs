@@ -445,3 +445,51 @@ async fn stream_mid_error_emits_error_chunk() {
     let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
     assert_eq!(k.quota_used, 0);
 }
+
+#[tokio::test]
+async fn anthropic_client_receives_anthropic_sse_from_openai_upstream() {
+    // Claude Code（Anthropic 客户端）经 openai-chat 上游：SSE 必须转换成
+    // message_start/content_block_*/message_delta/message_stop 事件序列，
+    // 而不是把 OpenAI delta chunk 原样透传（否则 0 个有效事件）。
+    let base = spawn_sse_upstream().await;
+    let state = make_state(base);
+    let (_h, addr) = server::start(state.clone(), 0).await.unwrap();
+
+    let resp = reqwest::Client::new()
+        .post(format!("http://{}/v1/messages", addr))
+        .header("x-api-key", "sk-lgw-test")
+        .json(&serde_json::json!({
+            "model":"sonnet","max_tokens":64,"stream":true,
+            "messages":[{"role":"user","content":"hi"}]
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    assert_eq!(
+        resp.headers().get("content-type").unwrap(),
+        "text/event-stream"
+    );
+    let text = resp.text().await.unwrap();
+    assert!(text.contains("event: message_start"));
+    assert!(text.contains("event: content_block_start"));
+    assert!(text.contains(r#""type":"text_delta""#));
+    assert!(text.contains("llo"));
+    assert!(text.contains("event: content_block_stop"));
+    assert!(text.contains(r#""stop_reason":"end_turn""#));
+    assert!(text.contains("event: message_stop"));
+    // 不应再透传 OpenAI 原始 chunk / [DONE]
+    assert!(!text.contains("[DONE]"));
+    assert!(!text.contains(r#""choices""#));
+    // usage 三桶语义：OpenAI prompt_tokens 原样转成 Anthropic input_tokens
+    assert!(text.contains(r#""input_tokens":7"#));
+    assert!(text.contains(r#""output_tokens":2"#));
+
+    let repo = Repository::new(state.db);
+    let log = repo.latest_log().unwrap().unwrap();
+    assert!(log.is_stream);
+    assert_eq!(log.input_tokens, 7);
+    assert_eq!(log.output_tokens, 2);
+    let k = repo.get_api_key_by_key("sk-lgw-test").unwrap().unwrap();
+    assert_eq!(k.quota_used, 9);
+}

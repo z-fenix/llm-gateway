@@ -5,3 +5,4 @@ pub mod security_hook;
 pub mod server;
 pub mod sse;
 pub mod state;
+pub mod stream_convert;

@@ -84,15 +84,74 @@ pub fn chat_request_to_upstream(chat: &ChatRequest, model: &str) -> serde_json::
 }
 
 /// 统一 ChatResponse → Anthropic 响应壳。
+/// Anthropic Message 的 content 必须是内容块数组（Claude Code 按 schema 校验，
+/// 字符串 content 会被拒收为 "not a Message"），因此这里做归一化：
+/// - OpenAI 字符串 content → [text 块]；Anthropic 数组 content 原样透传；
+/// - OpenAI tool_calls → tool_use 块（非流式响应不能丢工具调用）；
+/// - OpenAI finish_reason → Anthropic stop_reason（Anthropic 原值不受影响）。
 pub fn chat_to_response(chat: &ChatResponse) -> serde_json::Value {
+    let mut content: Vec<serde_json::Value> = match &chat.content {
+        serde_json::Value::String(s) => {
+            if s.is_empty() {
+                Vec::new()
+            } else {
+                vec![serde_json::json!({"type": "text", "text": s})]
+            }
+        }
+        serde_json::Value::Array(arr) => arr.clone(),
+        serde_json::Value::Null => Vec::new(),
+        other => vec![serde_json::json!({"type": "text", "text": other.to_string()})],
+    };
+    if let Some(tcs) = chat
+        .raw
+        .get("choices")
+        .and_then(|c| c.get(0))
+        .and_then(|c| c.get("message"))
+        .and_then(|m| m.get("tool_calls"))
+        .and_then(|t| t.as_array())
+    {
+        for tc in tcs {
+            let id = tc.get("id").and_then(|x| x.as_str()).unwrap_or("");
+            let name = tc
+                .pointer("/function/name")
+                .and_then(|x| x.as_str())
+                .unwrap_or("");
+            let args_str = tc
+                .pointer("/function/arguments")
+                .and_then(|x| x.as_str())
+                .unwrap_or("{}");
+            let input: serde_json::Value =
+                serde_json::from_str(args_str).unwrap_or(serde_json::json!({}));
+            content.push(
+                serde_json::json!({"type": "tool_use", "id": id, "name": name, "input": input}),
+            );
+        }
+    }
+    let stop_reason = chat.stop_reason.as_deref().map(|r| match r {
+        "stop" | "content_filter" => "end_turn",
+        "length" => "max_tokens",
+        "tool_calls" | "function_call" => "tool_use",
+        other => other,
+    });
+    let mut usage = serde_json::json!({
+        "input_tokens": chat.input_tokens,
+        "output_tokens": chat.output_tokens,
+    });
+    if chat.cache_read_tokens > 0 {
+        usage["cache_read_input_tokens"] = serde_json::json!(chat.cache_read_tokens);
+    }
+    if chat.cache_creation_tokens > 0 {
+        usage["cache_creation_input_tokens"] = serde_json::json!(chat.cache_creation_tokens);
+    }
     serde_json::json!({
         "id": chat.id,
         "type": "message",
         "role": "assistant",
         "model": chat.model,
-        "content": chat.content,
-        "stop_reason": chat.stop_reason,
-        "usage": { "input_tokens": chat.input_tokens, "output_tokens": chat.output_tokens }
+        "content": content,
+        "stop_reason": stop_reason,
+        "stop_sequence": serde_json::Value::Null,
+        "usage": usage,
     })
 }
 
@@ -133,5 +192,76 @@ mod tests {
     fn missing_model_errors() {
         let v = serde_json::json!({"messages": []});
         assert!(request_to_chat(&v).is_err());
+    }
+
+    fn resp(
+        content: serde_json::Value,
+        stop: Option<&str>,
+        raw: serde_json::Value,
+    ) -> ChatResponse {
+        ChatResponse {
+            id: "chatcmpl-1".into(),
+            model: "deepseek-v4-flash".into(),
+            content,
+            stop_reason: stop.map(|s| s.to_string()),
+            input_tokens: 10,
+            output_tokens: 5,
+            cache_read_tokens: 3,
+            cache_creation_tokens: 2,
+            raw,
+        }
+    }
+
+    #[test]
+    fn chat_to_response_wraps_string_content_into_text_block() {
+        let chat = resp(
+            serde_json::json!("hello world"),
+            Some("stop"),
+            serde_json::json!({"choices":[]}),
+        );
+        let out = chat_to_response(&chat);
+        assert_eq!(out["type"], "message");
+        assert_eq!(out["role"], "assistant");
+        assert_eq!(
+            out["content"],
+            serde_json::json!([{"type": "text", "text": "hello world"}])
+        );
+        assert_eq!(out["stop_reason"], "end_turn");
+        assert!(out["stop_sequence"].is_null());
+        assert_eq!(out["usage"]["input_tokens"], 10);
+        assert_eq!(out["usage"]["output_tokens"], 5);
+        assert_eq!(out["usage"]["cache_read_input_tokens"], 3);
+        assert_eq!(out["usage"]["cache_creation_input_tokens"], 2);
+    }
+
+    #[test]
+    fn chat_to_response_keeps_anthropic_content_blocks() {
+        let blocks = serde_json::json!([
+            {"type": "text", "text": "hi"},
+            {"type": "tool_use", "id": "t1", "name": "f", "input": {}}
+        ]);
+        let chat = resp(blocks.clone(), Some("tool_use"), serde_json::json!({}));
+        let out = chat_to_response(&chat);
+        // Anthropic 数组 content 原样透传，stop_reason 不被 finish_reason 映射改写
+        assert_eq!(out["content"], blocks);
+        assert_eq!(out["stop_reason"], "tool_use");
+    }
+
+    #[test]
+    fn chat_to_response_converts_openai_tool_calls() {
+        let chat = resp(
+            serde_json::Value::Null,
+            Some("tool_calls"),
+            serde_json::json!({"choices": [{"message": {"tool_calls": [
+                {"id": "call_1", "type": "function",
+                 "function": {"name": "get_weather", "arguments": "{\"city\":\"SF\"}"}}
+            ]}}]}),
+        );
+        let out = chat_to_response(&chat);
+        assert_eq!(out["content"][0]["type"], "tool_use");
+        assert_eq!(out["content"][0]["id"], "call_1");
+        assert_eq!(out["content"][0]["name"], "get_weather");
+        assert_eq!(out["content"][0]["input"]["city"], "SF");
+        assert_eq!(out["stop_reason"], "tool_use");
     }
 }

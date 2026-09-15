@@ -594,6 +594,20 @@ async fn handle_stream(
             let stream_error_log = stream_error.clone();
 
             const MAX_SSE_LINE_BYTES: usize = 1024 * 1024;
+            // Anthropic 客户端 ← openai-chat 上游：字节流必须做 SSE 协议转换，
+            // 否则 Claude Code 收到 OpenAI 格式 chunk，0 个有效事件直接报错。
+            // 其余「客户端协议 ≠ 上游协议」组合仍为透传。
+            let converter = if proto == Protocol::Anthropic
+                && handle.channel.upstream_protocol == "openai-chat"
+            {
+                Some(Arc::new(Mutex::new(
+                    crate::proxy::stream_convert::OpenAiSseToAnthropic::new(),
+                )))
+            } else {
+                None
+            };
+            let conv_map = converter.clone();
+            let conv_tail = converter.clone();
             let mut buffer: Vec<u8> = Vec::new();
             let stream = handle.byte_stream.map(move |chunk| match chunk {
                 Ok(bytes) => {
@@ -612,14 +626,22 @@ async fn handle_stream(
                         let line = String::from_utf8_lossy(&line_bytes);
                         acc.lock().feed_line(&line);
                     }
-                    Ok(bytes)
+                    match &conv_map {
+                        Some(c) => Ok(bytes::Bytes::from(c.lock().push(&bytes))),
+                        None => Ok(bytes),
+                    }
                 }
                 Err(_e) => {
                     stream_error.store(true, Ordering::SeqCst);
                     log::error!("upstream stream error");
-                    let err_chunk =
-                        "data: {\"error\": {\"message\": \"upstream stream error\"}}\n\n";
-                    Ok::<_, std::io::Error>(bytes::Bytes::from(err_chunk))
+                    match &conv_map {
+                        Some(c) => Ok::<_, std::io::Error>(bytes::Bytes::from(
+                            c.lock().stream_error("upstream stream error"),
+                        )),
+                        None => Ok::<_, std::io::Error>(bytes::Bytes::from(
+                            "data: {\"error\": {\"message\": \"upstream stream error\"}}\n\n",
+                        )),
+                    }
                 }
             });
 
@@ -728,7 +750,12 @@ async fn handle_stream(
                     }
                 }
 
-                Ok(bytes::Bytes::new())
+                Ok(bytes::Bytes::from(
+                    conv_tail
+                        .as_ref()
+                        .map(|c| c.lock().finish())
+                        .unwrap_or_default(),
+                ))
             }));
 
             Response::builder()
