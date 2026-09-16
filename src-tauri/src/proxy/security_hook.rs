@@ -89,9 +89,14 @@ pub async fn inspect_request(
         SecurityAction::Block => {
             let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
             let sessions = state.cached_sessions(&home);
+            // created_at 用秒；session 匹配用毫秒（SessionMeta 时间戳为毫秒）
             let ts = chrono::Utc::now().timestamp();
-            let (session_id, session_provider) =
-                crate::session_manager::resolve_log_session(&sessions, proto_str, chat_body, ts);
+            let (session_id, session_provider) = crate::session_manager::resolve_log_session(
+                &sessions,
+                proto_str,
+                chat_body,
+                chrono::Utc::now().timestamp_millis(),
+            );
             let log = RequestLog {
                 id: uuid::Uuid::new_v4().to_string(),
                 seq: 0,

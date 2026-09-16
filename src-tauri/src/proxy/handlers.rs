@@ -51,7 +51,8 @@ fn resolve_log_session(
         &sessions,
         protocol_str(proto),
         req_body,
-        chrono::Utc::now().timestamp(),
+        // SessionMeta 时间戳为毫秒，必须用 timestamp_millis()（秒级会永远超出 ±5 分钟窗口）
+        chrono::Utc::now().timestamp_millis(),
     )
 }
 

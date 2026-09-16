@@ -180,12 +180,13 @@ pub fn find_session_by_id<'a>(
         .find(|s| s.provider_id == provider_id && s.session_id == session_id)
 }
 
-/// 按时间邻近回退匹配：取同 provider 中 last_active/created 与 ts 最接近的 session。
+/// 按时间邻近回退匹配：取同 provider 中 last_active/created 与 ts_ms 最接近的 session。
+/// 时间戳统一为毫秒（SessionMeta 与前端 `new Date(ts)` 均为毫秒），窗口为毫秒。
 pub fn match_session_by_time<'a>(
     sessions: &'a [SessionMeta],
     provider_id: &str,
-    ts: i64,
-    window_secs: i64,
+    ts_ms: i64,
+    window_ms: i64,
 ) -> Option<&'a SessionMeta> {
     let mut best: Option<&SessionMeta> = None;
     let mut best_diff = i64::MAX;
@@ -194,8 +195,8 @@ pub fn match_session_by_time<'a>(
             continue;
         }
         let s_ts = s.last_active_at.or(s.created_at).unwrap_or(0);
-        let diff = (s_ts - ts).abs();
-        if diff <= window_secs && diff < best_diff {
+        let diff = (s_ts - ts_ms).abs();
+        if diff <= window_ms && diff < best_diff {
             best = Some(s);
             best_diff = diff;
         }
@@ -204,7 +205,7 @@ pub fn match_session_by_time<'a>(
 }
 
 /// 为请求日志解析应绑定的 session：优先从请求体消息里取 sessionId 精确匹配，
-/// 未命中时按协议→provider + 最近活跃时间回退匹配。
+/// 未命中时按协议→provider + 最近活跃时间回退匹配。`ts` 为毫秒时间戳。
 pub fn resolve_log_session(
     sessions: &[SessionMeta],
     protocol: &str,
@@ -220,7 +221,7 @@ pub fn resolve_log_session(
             return (Some(s.session_id.clone()), Some(s.provider_id.clone()));
         }
     }
-    match match_session_by_time(sessions, provider, ts, 300) {
+    match match_session_by_time(sessions, provider, ts, 300_000) {
         Some(s) => (Some(s.session_id.clone()), Some(s.provider_id.clone())),
         None => (None, None),
     }
@@ -400,11 +401,24 @@ mod tests {
     }
 
     #[test]
+    fn match_session_by_time_uses_millisecond_timestamps() {
+        // 回归：SessionMeta 时间戳为毫秒，窗口也按毫秒比较。
+        // 若调用方误传秒级时间戳或误用秒级窗口，回退匹配将永远落空（日志 session_id 恒为空）。
+        let now_ms = 1_771_061_953_033_i64;
+        let sessions = vec![sess("claude", "recent", now_ms - 2_000)];
+        assert_eq!(
+            match_session_by_time(&sessions, "claude", now_ms, 300_000)
+                .map(|s| s.session_id.as_str()),
+            Some("recent")
+        );
+    }
+
+    #[test]
     fn resolve_log_session_prefers_session_id_exact_match() {
-        let ts = 1_000_000;
+        let ts = 1_771_061_953_000_i64;
         let sessions = vec![
             sess("claude", "session-abc", ts),
-            sess("claude", "other", ts + 10),
+            sess("claude", "other", ts + 30_000),
         ];
         let body = serde_json::json!({
             "model": "claude-sonnet-4",
@@ -419,10 +433,10 @@ mod tests {
 
     #[test]
     fn resolve_log_session_falls_back_to_time_proximity() {
-        let ts = 1_000_000;
+        let ts = 1_771_061_953_000_i64;
         let sessions = vec![
-            sess("codex", "codex-recent", ts + 30),
-            sess("codex", "codex-old", ts - 400),
+            sess("codex", "codex-recent", ts + 30_000),
+            sess("codex", "codex-old", ts - 400_000),
         ];
         let body =
             serde_json::json!({"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]});
@@ -433,8 +447,8 @@ mod tests {
 
     #[test]
     fn resolve_log_session_ignores_outside_time_window() {
-        let ts = 1_000_000;
-        let sessions = vec![sess("claude", "far", ts - 400)];
+        let ts = 1_771_061_953_000_i64;
+        let sessions = vec![sess("claude", "far", ts - 400_000)];
         let body = serde_json::json!({"model": "claude-opus", "messages": []});
         let (sid, provider) = resolve_log_session(&sessions, "anthropic", &body, ts);
         assert_eq!(sid, None);
@@ -443,13 +457,13 @@ mod tests {
 
     #[test]
     fn resolve_log_session_extracts_from_input_array() {
-        let ts = 1_000_000;
+        let ts = 1_771_061_953_000_i64;
         let sessions = vec![sess("codex", "resp-session", ts)];
         let body = serde_json::json!({
             "model": "gpt-4o",
             "input": [{"type": "message", "role": "user", "content": "hi", "sessionId": "resp-session"}]
         });
-        let (sid, provider) = resolve_log_session(&sessions, "responses", &body, ts + 10);
+        let (sid, provider) = resolve_log_session(&sessions, "responses", &body, ts + 10_000);
         assert_eq!(sid.as_deref(), Some("resp-session"));
         assert_eq!(provider.as_deref(), Some("codex"));
     }
