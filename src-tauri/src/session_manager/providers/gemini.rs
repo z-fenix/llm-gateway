@@ -57,6 +57,39 @@ pub fn scan_sessions(home: &Path) -> Vec<SessionMeta> {
     sessions
 }
 
+/// 提取 (首条, 末条) 用户消息文本，供请求日志内容匹配使用。
+pub fn content_bounds(path: &Path) -> Option<(Option<String>, Option<String>)> {
+    let data = std::fs::read_to_string(path).ok()?;
+    let value: Value = serde_json::from_str(&data).ok()?;
+    let msgs = value.get("messages").and_then(Value::as_array)?;
+
+    let mut first: Option<String> = None;
+    let mut last: Option<String> = None;
+    for msg in msgs {
+        if msg.get("type").and_then(Value::as_str) != Some("user") {
+            continue;
+        }
+        let text = match msg.get("content") {
+            Some(Value::String(s)) => s.clone(),
+            Some(Value::Array(items)) => items
+                .iter()
+                .filter_map(|item| item.get("text").and_then(Value::as_str))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            _ => continue,
+        };
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if first.is_none() {
+            first = Some(trimmed.to_string());
+        }
+        last = Some(trimmed.to_string());
+    }
+    Some((first, last))
+}
+
 pub fn load_messages(path: &Path) -> Result<Vec<SessionMessage>, String> {
     let data = std::fs::read_to_string(path).map_err(|e| format!("Failed to read session: {e}"))?;
     let value: Value =
@@ -256,6 +289,29 @@ mod tests {
         assert_eq!(msgs[1].role, "assistant");
         assert!(msgs[1].content.contains("Here are the results."));
         assert!(msgs[1].content.contains("[Tool: web_fetch]"));
+    }
+
+    #[test]
+    fn content_bounds_finds_first_and_last_user_texts() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("session.json");
+        std::fs::write(
+            &path,
+            r#"{
+              "sessionId": "s1",
+              "messages": [
+                {"type":"user","content":[{"text":"第一句话"}]},
+                {"type":"gemini","content":"回答"},
+                {"type":"info","content":"系统信息"},
+                {"type":"user","content":"最后一句"}
+              ]
+            }"#,
+        )
+        .unwrap();
+
+        let (first, last) = content_bounds(&path).unwrap();
+        assert_eq!(first.as_deref(), Some("第一句话"));
+        assert_eq!(last.as_deref(), Some("最后一句"));
     }
 
     #[test]

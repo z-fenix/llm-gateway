@@ -38,8 +38,9 @@ fn protocol_str(proto: Protocol) -> &'static str {
     }
 }
 
-/// 解析请求应绑定的本地 CLI session。优先从请求体消息取 sessionId 精确匹配，
-/// 否则按协议→provider + 最近活跃时间（±5 分钟）回退匹配。
+/// 解析请求应绑定的本地 CLI session。须传原始请求体（metadata.user_id /
+/// 消息级 sessionId 在归一化后会丢失）：优先精确匹配，其次首/末用户消息
+/// 内容匹配，最后按协议→provider + 最近活跃时间（±5 分钟）回退匹配。
 fn resolve_log_session(
     state: &AppState,
     proto: Protocol,
@@ -377,6 +378,7 @@ async fn handle(
             proto,
             &request_model,
             &unified,
+            &body,
             &scan,
             started,
         )
@@ -570,6 +572,7 @@ async fn handle_stream(
     proto: Protocol,
     request_model: &str,
     req_body: &serde_json::Value,
+    raw_body: &serde_json::Value,
     scan: &SecurityScanResult,
     started: std::time::Instant,
 ) -> Response {
@@ -585,7 +588,8 @@ async fn handle_stream(
             let req_model = request_model.to_string();
             let req_body_masked =
                 crate::security::redact::redact_json_for_logging(req_body).to_string();
-            let req_body_log = req_body.clone();
+            // 会话解析用原始 body（metadata.user_id 在归一化时会被丢弃）
+            let raw_body_log = raw_body.clone();
 
             let acc = Arc::new(Mutex::new(crate::proxy::sse::SseAccumulator::new(
                 usage_protocol,
@@ -691,7 +695,7 @@ async fn handle_stream(
 
                 let log_id = uuid::Uuid::new_v4().to_string();
                 let (session_id, session_provider) =
-                    resolve_log_session(&state2, proto, &req_body_log);
+                    resolve_log_session(&state2, proto, &raw_body_log);
                 if let Err(e) = state2.repo.insert_log(&RequestLog {
                     id: log_id.clone(),
                     seq: 0,
@@ -789,7 +793,7 @@ async fn handle_stream(
                         scan.blocked_reason.clone(),
                     );
                     let (session_id, session_provider) =
-                        resolve_log_session(&state, proto, req_body);
+                        resolve_log_session(&state, proto, raw_body);
                     if let Err(e) = state.repo.insert_log(&RequestLog {
                         id: uuid::Uuid::new_v4().to_string(),
                         seq: 0,
@@ -863,7 +867,7 @@ async fn handle_stream(
                         scan.blocked_reason.clone(),
                     );
                     let (session_id, session_provider) =
-                        resolve_log_session(&state, proto, req_body);
+                        resolve_log_session(&state, proto, raw_body);
                     if let Err(e) = state.repo.insert_log(&RequestLog {
                         id: uuid::Uuid::new_v4().to_string(),
                         seq: 0,

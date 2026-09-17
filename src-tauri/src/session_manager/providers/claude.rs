@@ -33,6 +33,48 @@ pub fn scan_sessions(home: &Path) -> Vec<SessionMeta> {
     sessions
 }
 
+/// 提取 (首条, 末条) 用户消息文本，供请求日志内容匹配使用。只读头尾行。
+pub fn content_bounds(path: &Path) -> Option<(Option<String>, Option<String>)> {
+    let (head, tail) = read_head_tail_lines(path, 40, 60).ok()?;
+    let first = head.iter().find_map(|line| user_text_from_line(line));
+    let last = tail.iter().rev().find_map(|line| user_text_from_line(line));
+    Some((first, last))
+}
+
+/// 单条 JSONL 记录：真实用户消息且有文本 → Some(text)。
+/// isMeta、纯 tool_result（工具输出包在 user 里）、空文本均返回 None。
+fn user_text_from_line(line: &str) -> Option<String> {
+    let value: Value = serde_json::from_str(line).ok()?;
+    if value.get("isMeta").and_then(Value::as_bool) == Some(true) {
+        return None;
+    }
+    let is_user = value.get("type").and_then(Value::as_str) == Some("user")
+        || value
+            .get("message")
+            .and_then(|m| m.get("role"))
+            .and_then(Value::as_str)
+            == Some("user");
+    if !is_user {
+        return None;
+    }
+    let message = value.get("message")?;
+    if let Some(Value::Array(items)) = message.get("content") {
+        let all_tool_results = !items.is_empty()
+            && items
+                .iter()
+                .all(|item| item.get("type").and_then(Value::as_str) == Some("tool_result"));
+        if all_tool_results {
+            return None;
+        }
+    }
+    let text = message.get("content").map(extract_text).unwrap_or_default();
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
 pub fn load_messages(path: &Path) -> Result<Vec<SessionMessage>, String> {
     let file = File::open(path).map_err(|e| format!("Failed to open session file: {e}"))?;
     let reader = BufReader::new(file);
@@ -305,6 +347,32 @@ fn remove_path_if_exists(path: &Path) -> std::io::Result<()> {
 mod tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn content_bounds_finds_first_and_last_user_texts() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("cb.jsonl");
+        write_session_lines(
+            &path,
+            &[
+                r#"{"type":"user","message":{"role":"user","content":"第一条真实输入"}}"#,
+                r#"{"isMeta":true,"type":"user","message":{"role":"user","content":"meta 不算"}}"#,
+                r#"{"type":"assistant","message":{"role":"assistant","content":"回复"}}"#,
+                r#"{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"tool 输出"}]}}"#,
+                r#"{"type":"user","message":{"role":"user","content":"最后的问题"}}"#,
+            ],
+        );
+
+        let (first, last) = content_bounds(&path).unwrap();
+        assert_eq!(first.as_deref(), Some("第一条真实输入"));
+        assert_eq!(last.as_deref(), Some("最后的问题"));
+    }
+
+    #[test]
+    fn content_bounds_returns_none_pairs_for_missing_file() {
+        let dir = tempdir().unwrap();
+        assert!(content_bounds(&dir.path().join("missing.jsonl")).is_none());
+    }
 
     fn write_session_lines(path: &Path, lines: &[&str]) {
         std::fs::write(path, lines.join("\n")).unwrap();

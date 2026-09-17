@@ -6,9 +6,22 @@ pub struct ChatMessage {
     pub content: serde_json::Value,
 }
 
-/// 从原始请求体中提取第一个消息级 sessionId（扫描 messages / input 数组）。
-/// 用于 Claude Code 等客户端在消息对象里携带 `sessionId` 的场景。
+/// 从原始请求体中提取会话 ID。优先级：
+/// 1. Claude Code 顶层 `metadata.user_id`（形如
+///    `user_<hash>_account_<uuid>_session_<uuid>`，尾段 UUID 与
+///    `~/.claude/projects/<项目>/<sessionId>.jsonl` 文件名一致）；
+/// 2. 消息级 `sessionId` 字段（扫描 messages / input 数组）。
 pub fn extract_session_id(body: &serde_json::Value) -> Option<String> {
+    if let Some(sid) = body
+        .get("metadata")
+        .and_then(|m| m.get("user_id"))
+        .and_then(|v| v.as_str())
+        .and_then(|uid| uid.rsplit_once("_session_"))
+        .map(|(_, sid)| sid.trim())
+        .filter(|sid| !sid.is_empty())
+    {
+        return Some(sid.to_string());
+    }
     let arrays = [
         body.get("messages").and_then(|m| m.as_array()),
         body.get("input").and_then(|i| i.as_array()),
@@ -23,6 +36,31 @@ pub fn extract_session_id(body: &serde_json::Value) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_session_id_parses_metadata_user_id_session_segment() {
+        let body = serde_json::json!({
+            "model": "claude-sonnet-4",
+            "metadata": {"user_id": "user_abc123def_account_11111111-2222-3333-4444-555555555555_session_99999999-aaaa-bbbb-cccc-dddddddddddd"}
+        });
+        assert_eq!(
+            extract_session_id(&body).as_deref(),
+            Some("99999999-aaaa-bbbb-cccc-dddddddddddd")
+        );
+    }
+
+    #[test]
+    fn extract_session_id_ignores_user_id_without_session_segment() {
+        let body = serde_json::json!({"metadata": {"user_id": "user_abc123"}});
+        assert_eq!(extract_session_id(&body), None);
+        let empty = serde_json::json!({});
+        assert_eq!(extract_session_id(&empty), None);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
