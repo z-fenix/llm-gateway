@@ -13,6 +13,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
+import { NEUTRAL_TAG } from "../lib/tagStyles";
 
 const PROVIDERS = [
   { id: "all", label: "全部" },
@@ -28,10 +29,6 @@ const PROVIDER_LABEL: Record<string, string> = {
   codex: "Codex",
   gemini: "Gemini",
 };
-
-/** provider / 消息角色标签：统一中性等宽样式，不再按来源/角色着色 */
-const NEUTRAL_TAG =
-  "inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] font-normal text-muted-foreground shrink-0";
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleString();

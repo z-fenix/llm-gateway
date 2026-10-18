@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Copy, KeyRound, Plus } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { ApiKey } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -16,17 +17,36 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 
 type QuotaParse = number | null | "invalid";
+
+/** 行内校验字段（名称必填、配额留空不限/须非负数字，后端为准）。 */
+type KeyField = "name" | "quota";
+
+function validateKeyForm(name: string, quota: string): Partial<Record<KeyField, string>> {
+  const errs: Partial<Record<KeyField, string>> = {};
+  if (!name.trim()) errs.name = "名称不能为空";
+  if (parseQuotaValue(quota) === "invalid") errs.quota = "请输入非负数字";
+  return errs;
+}
+
+/** 与既有 parseQuota 相同的解析规则（留空 null、非负数字、其余 invalid）。 */
+function parseQuotaValue(raw: string): QuotaParse {
+  const q = raw.trim();
+  if (!q) return null;
+  const n = Number(q);
+  if (!Number.isFinite(n) || n < 0) return "invalid";
+  return n;
+}
 
 export default function ApiKeysPage() {
   const [list, setList] = useState<ApiKey[]>([]);
@@ -41,6 +61,27 @@ export default function ApiKeysPage() {
 
   const [deleting, setDeleting] = useState<ApiKey | null>(null);
   const [pending, setPending] = useState(false);
+
+  // DSH touched 语义：pristine 不喊错——行内错误仅「字段被触碰（blur/onChange）且无效」
+  // 或「曾尝试提交」时渲染；提交按钮仍按原始校验态禁用（不受 touched 影响）。
+  // 创建卡与编辑弹框各自独立 touched。
+  const [touched, setTouched] = useState<Partial<Record<KeyField, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const errors = validateKeyForm(name, quota);
+  const formValid = Object.keys(errors).length === 0;
+  const touch = (k: KeyField) =>
+    setTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showErr = (k: KeyField) =>
+    touched[k] || submitAttempted ? errors[k] : undefined;
+
+  const [editTouched, setEditTouched] = useState<Partial<Record<KeyField, boolean>>>({});
+  const [editSubmitAttempted, setEditSubmitAttempted] = useState(false);
+  const editErrors = validateKeyForm(editName, editQuota);
+  const editFormValid = Object.keys(editErrors).length === 0;
+  const editTouch = (k: KeyField) =>
+    setEditTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showEditErr = (k: KeyField) =>
+    editTouched[k] || editSubmitAttempted ? editErrors[k] : undefined;
 
   const nameRef = useRef<HTMLInputElement>(null);
 
@@ -57,27 +98,19 @@ export default function ApiKeysPage() {
     load();
   }, []);
 
-  const parseQuota = (raw: string): QuotaParse => {
-    const q = raw.trim();
-    if (!q) return null;
-    const n = Number(q);
-    if (!Number.isFinite(n) || n < 0) return "invalid";
-    return n;
-  };
-
   const create = async () => {
+    setSubmitAttempted(true);
+    if (!formValid) return; // 生成密钥已禁用，此处双保险（行内校验为准）
     const trimmed = name.trim();
-    if (!trimmed) return;
-    const q = parseQuota(quota);
-    if (q === "invalid") {
-      setError("请输入非负数字");
-      return;
-    }
+    const q = parseQuotaValue(quota);
+    if (q === "invalid") return; // 类型收窄（应用已禁用，不可达）
     setError(null);
     try {
       await api.createApiKey(trimmed, q);
       setName("");
       setQuota("");
+      setTouched({});
+      setSubmitAttempted(false);
       toast.success("密钥已生成");
       load();
     } catch (err) {
@@ -89,22 +122,19 @@ export default function ApiKeysPage() {
     setEditing(k);
     setEditName(k.name);
     setEditQuota(k.quota_total === null ? "" : String(k.quota_total));
+    setEditTouched({});
+    setEditSubmitAttempted(false);
     setEditOpen(true);
   };
 
   const saveEdit = async () => {
     if (!editing) return;
+    setEditSubmitAttempted(true);
+    if (pending) return;
+    if (!editFormValid) return; // 应用已禁用，此处双保险（行内校验为准，行内错误在弹框内可见，不再走 toast）
     const trimmed = editName.trim();
-    if (!trimmed) {
-      // 页面级 error 横幅位于 Dialog 遮罩之下，用户在弹窗内看不到；改用 toast 在弹窗上方提示
-      toast.error("名称不能为空");
-      return;
-    }
-    const q = parseQuota(editQuota);
-    if (q === "invalid") {
-      toast.error("请输入非负数字");
-      return;
-    }
+    const q = parseQuotaValue(editQuota);
+    if (q === "invalid") return; // 类型收窄（应用已禁用，不可达）
     setError(null);
     setPending(true);
     try {
@@ -190,25 +220,35 @@ export default function ApiKeysPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[220px] space-y-1.5">
-              <Label htmlFor="key-name">名称</Label>
-              <Input
-                id="key-name"
-                placeholder="用户/应用名"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="min-w-[220px] space-y-1.5">
-              <Label htmlFor="key-quota">Token 配额</Label>
-              <Input
-                id="key-quota"
-                placeholder="Token 配额（留空不限）"
-                value={quota}
-                onChange={(e) => setQuota(e.target.value)}
-              />
-            </div>
-            <Button onClick={create} disabled={!name.trim()}>
+            <FormField label="名称" htmlFor="key-name" required error={showErr("name")}>
+              <div className="min-w-[220px]">
+                <Input
+                  id="key-name"
+                  placeholder="用户/应用名"
+                  value={name}
+                  onBlur={() => touch("name")}
+                  onChange={(e) => {
+                    touch("name");
+                    setName(e.target.value);
+                  }}
+                />
+              </div>
+            </FormField>
+            <FormField label="Token 配额" htmlFor="key-quota" error={showErr("quota")}>
+              <div className="min-w-[220px]">
+                <Input
+                  id="key-quota"
+                  placeholder="Token 配额（留空不限）"
+                  value={quota}
+                  onBlur={() => touch("quota")}
+                  onChange={(e) => {
+                    touch("quota");
+                    setQuota(e.target.value);
+                  }}
+                />
+              </div>
+            </FormField>
+            <Button onClick={create} disabled={!formValid}>
               <Plus className="h-4 w-4" />
               生成密钥
             </Button>
@@ -251,7 +291,7 @@ export default function ApiKeysPage() {
                       {k.key}
                     </span>
                     <button
-                      className="ml-2 inline-flex items-center gap-1 text-primary hover:underline"
+                      className={`ml-2 inline-flex items-center gap-1 text-primary hover:underline ${FOCUS_RING}`}
                       onClick={() => copyKey(k)}
                       title="复制密钥"
                     >
@@ -276,19 +316,19 @@ export default function ApiKeysPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(k)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => toggleEnabled(k)}
                       >
                         {k.enabled ? "禁用" : "启用"}
                       </button>
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(k)}
                       >
                         删除
@@ -317,37 +357,41 @@ export default function ApiKeysPage() {
             <DialogDescription>修改名称与 Token 配额后保存</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-name">名称</Label>
+            <FormField label="名称" htmlFor="edit-name" required error={showEditErr("name")}>
               <Input
                 id="edit-name"
                 placeholder="用户/应用名"
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                onBlur={() => editTouch("name")}
+                onChange={(e) => {
+                  editTouch("name");
+                  setEditName(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-quota">Token 配额</Label>
+            </FormField>
+            <FormField label="Token 配额" htmlFor="edit-quota" error={showEditErr("quota")}>
               <Input
                 id="edit-quota"
                 placeholder="Token 配额（留空不限）"
                 value={editQuota}
-                onChange={(e) => setEditQuota(e.target.value)}
+                onBlur={() => editTouch("quota")}
+                onChange={(e) => {
+                  editTouch("quota");
+                  setEditQuota(e.target.value);
+                }}
               />
-            </div>
+            </FormField>
           </div>
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => setEditOpen(false)}
-              disabled={pending}
-            >
-              取消
-            </Button>
-            <Button onClick={saveEdit} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={() => {
+              setEditOpen(false);
+              setEditing(null);
+            }}
+            onSubmit={saveEdit}
+            busy={pending}
+            submitDisabled={!editFormValid}
+          />
         </DialogContent>
       </Dialog>
 

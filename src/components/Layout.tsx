@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { api } from "../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../lib/events";
 import type { AppConfigInfo } from "../types";
 import { gatewayStatus } from "../lib/gatewayStatus";
 
@@ -96,8 +97,8 @@ export default function Layout() {
   useEffect(() => {
     fetchConfig();
     const handler = () => fetchConfig();
-    window.addEventListener("gateway-refresh", handler);
-    return () => window.removeEventListener("gateway-refresh", handler);
+    window.addEventListener(GATEWAY_REFRESH_EVENT, handler);
+    return () => window.removeEventListener(GATEWAY_REFRESH_EVENT, handler);
   }, [fetchConfig]);
 
   const status = gatewayStatus(config?.bound_addr);

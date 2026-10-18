@@ -21,7 +21,8 @@ const editForm = (id = "c1"): Partial<Channel> => ({
   supplier: "openai",
   upstream_protocol: "openai-chat",
   base_url: "https://api.openai.com",
-  api_key: "sk-test",
+  // 编辑态夹具用后端打码哨兵（sk-*** + 尾 4 位），前端不回填展示
+  api_key: "sk-***test",
   models: ["gpt-4o"],
   priority: 0,
   weight: 1,

@@ -105,20 +105,21 @@ describe("SkillsPage", () => {
       await screen.findByRole("heading", { name: "新增 Skill" })
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("名称"), {
+    fireEvent.change(screen.getByLabelText(/^名称/), {
       target: { value: "代码审查" },
     });
     fireEvent.change(screen.getByLabelText("描述"), {
       target: { value: "审查代码规范" },
     });
-    fireEvent.change(screen.getByLabelText("目录"), {
+    fireEvent.change(screen.getByLabelText(/^目录/), {
       target: { value: "code-review" },
     });
-    fireEvent.change(screen.getByLabelText("内容"), {
+    fireEvent.change(screen.getByLabelText(/^内容/), {
       target: { value: "# 代码审查指南" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertSkill).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -160,10 +161,11 @@ describe("SkillsPage", () => {
     expect(screen.getByDisplayValue("old-dir")).toBeInTheDocument();
     expect(screen.getByDisplayValue("# 旧内容")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("内容"), {
+    fireEvent.change(screen.getByLabelText(/^内容/), {
       target: { value: "# 新内容" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertSkill).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -240,6 +242,82 @@ describe("SkillsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "同步 MCP" }));
     await waitFor(() =>
       expect(api.syncSkillMcp).toHaveBeenCalledWith("mcp-skill")
+    );
+  });
+
+  it("新增对话框 pristine：应用禁用且无行内错误（role=alert）", async () => {
+    render(<SkillsPage />);
+    await waitFor(() => expect(api.listSkills).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增 Skill" })
+    ).toBeInTheDocument();
+
+    // DSH touched 语义：pristine 不喊错，仅应用禁用
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("必填字段失焦后出现行内错误；补全后应用恢复可用", async () => {
+    render(<SkillsPage />);
+    await waitFor(() => expect(api.listSkills).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    await screen.findByRole("heading", { name: "新增 Skill" });
+
+    fireEvent.blur(screen.getByLabelText(/^名称/));
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    fireEvent.blur(screen.getByLabelText(/^目录/));
+    expect(screen.getByText("目录不能为空")).toHaveAttribute("role", "alert");
+    fireEvent.blur(screen.getByLabelText(/^内容/));
+    expect(screen.getByText("内容不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/^名称/), {
+      target: { value: "代码审查" },
+    });
+    fireEvent.change(screen.getByLabelText(/^目录/), {
+      target: { value: "code-review" },
+    });
+    fireEvent.change(screen.getByLabelText(/^内容/), {
+      target: { value: "# 代码审查指南" },
+    });
+    expect(screen.getByRole("button", { name: "应用" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("提交中：应用显示「应用中」且取消禁用，成功后关闭弹框", async () => {
+    render(<SkillsPage />);
+    await waitFor(() => expect(api.listSkills).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    await screen.findByRole("heading", { name: "新增 Skill" });
+    fireEvent.change(screen.getByLabelText(/^名称/), {
+      target: { value: "代码审查" },
+    });
+    fireEvent.change(screen.getByLabelText(/^目录/), {
+      target: { value: "code-review" },
+    });
+    fireEvent.change(screen.getByLabelText(/^内容/), {
+      target: { value: "# 代码审查指南" },
+    });
+
+    let resolveSave!: (v: Skill) => void;
+    mockedApi.upsertSkill.mockImplementationOnce(
+      () => new Promise<Skill>((res) => { resolveSave = res; })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+
+    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+
+    resolveSave(skill("s1"));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "新增 Skill" })
+      ).not.toBeInTheDocument()
     );
   });
 });

@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SettingsPage from "../SettingsPage";
 import { api } from "../../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../../lib/events";
 vi.mock("../../lib/api", () => ({
   api: {
     getAppConfig: vi
@@ -120,6 +121,37 @@ describe("SettingsPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "立即重启" }));
     await waitFor(() => expect(mockedApi.restartGateway).toHaveBeenCalled());
+  });
+
+  it("重启成功后广播 gateway-refresh 供顶栏同步网关状态", async () => {
+    // 初次加载返回旧绑定；重启后的轮询返回新绑定，轮询首轮即退出
+    mockedApi.getAppConfig
+      .mockResolvedValueOnce({
+        preferred_port: 8777,
+        bound_addr: "127.0.0.1:8777",
+        minimize_to_tray: true,
+      })
+      .mockResolvedValue({
+        preferred_port: 8780,
+        bound_addr: "127.0.0.1:8780",
+        minimize_to_tray: true,
+      });
+    const handler = vi.fn();
+    window.addEventListener(GATEWAY_REFRESH_EVENT, handler);
+    try {
+      render(<SettingsPage />);
+      await waitFor(() =>
+        expect(screen.getByLabelText("首选端口")).toBeInTheDocument()
+      );
+      fireEvent.click(screen.getByRole("button", { name: "保存" }));
+      await waitFor(() =>
+        expect(mockedApi.setPreferredPort).toHaveBeenCalled()
+      );
+      fireEvent.click(screen.getByRole("button", { name: "立即重启" }));
+      await waitFor(() => expect(handler).toHaveBeenCalled());
+    } finally {
+      window.removeEventListener(GATEWAY_REFRESH_EVENT, handler);
+    }
   });
 
   it("整流器卡片渲染并显示子开关文案", async () => {
@@ -272,13 +304,13 @@ describe("SettingsPage", () => {
     );
     expect(await screen.findByText("claude-sonnet-4.5")).toBeInTheDocument();
     expect(screen.getByText("Claude Sonnet 4.5")).toBeInTheDocument();
-    expect(screen.getByLabelText("模型名")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^模型名/)).toBeInTheDocument();
   });
 
   it("保存定价前归一化模型名并调用 upsertModelPrice", async () => {
     render(<SettingsPage />);
-    await waitFor(() => expect(screen.getByLabelText("模型名")).toBeInTheDocument());
-    fireEvent.change(screen.getByLabelText("模型名"), {
+    await waitFor(() => expect(screen.getByLabelText(/^模型名/)).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/^模型名/), {
       target: { value: "OpenRouter/Anthropic/Claude-Sonnet-4.5:free" },
     });
     fireEvent.change(screen.getByLabelText("显示名（可选）"), {
@@ -307,13 +339,49 @@ describe("SettingsPage", () => {
 
   it("Anthropic 参考按钮按 1.25x/0.1x 填充缓存价格", async () => {
     render(<SettingsPage />);
-    await waitFor(() => expect(screen.getByLabelText("模型名")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText(/^模型名/)).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText("输入($/M)"), {
       target: { value: "3" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Anthropic 参考" }));
     expect(screen.getByLabelText("缓存创建($/M)")).toHaveValue(3.75);
     expect(screen.getByLabelText("缓存命中($/M)")).toHaveValue(0.3);
+  });
+
+  it("定价子表单 pristine：保存禁用且无行内错误（role=alert）", async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText(/^模型名/)).toBeInTheDocument());
+
+    // DSH touched 语义：pristine 不喊错，仅保存禁用
+    expect(screen.getByRole("button", { name: "保存定价" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("定价子表单：模型名/负数价格失焦出现行内错误且保存禁用，修正后恢复", async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(screen.getByLabelText(/^模型名/)).toBeInTheDocument());
+
+    fireEvent.blur(screen.getByLabelText(/^模型名/));
+    expect(screen.getByText("模型名不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "保存定价" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/^模型名/), {
+      target: { value: "test-model" },
+    });
+    expect(screen.getByRole("button", { name: "保存定价" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("输入($/M)"), {
+      target: { value: "-1" },
+    });
+    expect(screen.getByText("价格必须为非负数字")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "保存定价" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("输入($/M)"), {
+      target: { value: "3" },
+    });
+    expect(screen.getByRole("button", { name: "保存定价" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("删除定价需确认并调用 deleteModelPrice", async () => {

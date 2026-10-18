@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Plus } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { Prompt } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -9,16 +10,29 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+
+/** Prompt 弹框行内校验（前端与后端同一套规则：名称/内容必填，后端为准）。 */
+type PromptField = "name" | "description" | "content";
+
+function validatePromptForm(
+  name: string,
+  content: string
+): Partial<Record<"name" | "content", string>> {
+  const errs: Partial<Record<"name" | "content", string>> = {};
+  if (!name.trim()) errs.name = "名称不能为空";
+  if (!content.trim()) errs.content = "内容不能为空";
+  return errs;
+}
 
 export default function PromptsPage() {
   const [list, setList] = useState<Prompt[]>([]);
@@ -30,6 +44,16 @@ export default function PromptsPage() {
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [pending, setPending] = useState(false);
+  // DSH touched 语义：pristine 空表单不喊错——行内错误仅「字段被触碰（blur/onChange）且无效」
+  // 或「曾尝试提交」时渲染；应用按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [touched, setTouched] = useState<Partial<Record<PromptField, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const errors = validatePromptForm(name, content);
+  const formValid = Object.keys(errors).length === 0;
+  const touch = (k: PromptField) =>
+    setTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showErr = (k: "name" | "content") =>
+    touched[k] || submitAttempted ? errors[k] : undefined;
 
   const [deleting, setDeleting] = useState<Prompt | null>(null);
 
@@ -54,6 +78,8 @@ export default function PromptsPage() {
     setDescription("");
     setContent("");
     setEditing(null);
+    setTouched({});
+    setSubmitAttempted(false);
   };
 
   const openCreate = () => {
@@ -66,6 +92,8 @@ export default function PromptsPage() {
     setName(p.name);
     setDescription(p.description ?? "");
     setContent(p.content);
+    setTouched({});
+    setSubmitAttempted(false);
     setDialogOpen(true);
   };
 
@@ -75,23 +103,16 @@ export default function PromptsPage() {
   };
 
   const handleSave = async () => {
-    const trimmedName = name.trim();
-    const trimmedContent = content.trim();
-    if (!trimmedName) {
-      toast.error("名称不能为空");
-      return;
-    }
-    if (!trimmedContent) {
-      toast.error("内容不能为空");
-      return;
-    }
+    setSubmitAttempted(true);
+    if (pending) return;
+    if (!formValid) return; // 应用已禁用，此处双保险（行内校验为准，不再走 toast 报错）
     setError(null);
     setPending(true);
     try {
       await api.upsertPrompt(
         editing ? editing.id : null,
-        trimmedName,
-        trimmedContent,
+        name.trim(),
+        content.trim(),
         description.trim() || null
       );
       toast.success(editing ? "Prompt 已更新" : "Prompt 已创建");
@@ -159,43 +180,47 @@ export default function PromptsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="prompt-name">名称</Label>
+            <FormField label="名称" htmlFor="prompt-name" required error={showErr("name")}>
               <Input
                 id="prompt-name"
                 placeholder="例如：默认开发模板"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onBlur={() => touch("name")}
+                onChange={(e) => {
+                  touch("name");
+                  setName(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="prompt-description">描述</Label>
+            </FormField>
+            <FormField label="描述" htmlFor="prompt-description">
               <Input
                 id="prompt-description"
                 placeholder="简要说明这套 Prompt 的用途"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="prompt-content">内容</Label>
+            </FormField>
+            <FormField label="内容" htmlFor="prompt-content" required error={showErr("content")}>
               <textarea
                 id="prompt-content"
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onBlur={() => touch("content")}
+                onChange={(e) => {
+                  touch("content");
+                  setContent(e.target.value);
+                }}
                 placeholder="在此输入 CLAUDE.md 内容..."
                 className="min-h-[320px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20"
               />
-            </div>
+            </FormField>
           </div>
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={closeDialog} disabled={pending}>
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={closeDialog}
+            onSubmit={handleSave}
+            busy={pending}
+            submitDisabled={!formValid}
+          />
         </DialogContent>
       </Dialog>
 
@@ -240,13 +265,13 @@ export default function PromptsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(p)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(p)}
                       >
                         删除

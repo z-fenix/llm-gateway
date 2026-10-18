@@ -81,17 +81,18 @@ describe("PromptsPage", () => {
       await screen.findByRole("heading", { name: "新增 Prompt" })
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("名称"), {
+    fireEvent.change(screen.getByLabelText(/^名称/), {
       target: { value: "新模板" },
     });
     fireEvent.change(screen.getByLabelText("描述"), {
       target: { value: "测试描述" },
     });
-    fireEvent.change(screen.getByLabelText("内容"), {
+    fireEvent.change(screen.getByLabelText(/^内容/), {
       target: { value: "# 测试内容" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertPrompt).toHaveBeenCalledWith(
         null,
@@ -116,10 +117,11 @@ describe("PromptsPage", () => {
     expect(screen.getByDisplayValue("旧模板")).toBeInTheDocument();
     expect(screen.getByDisplayValue("# 旧内容")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("内容"), {
+    fireEvent.change(screen.getByLabelText(/^内容/), {
       target: { value: "# 新内容" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertPrompt).toHaveBeenCalledWith(
         "p1",
@@ -142,5 +144,73 @@ describe("PromptsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "确认" }));
     await waitFor(() => expect(api.deletePrompt).toHaveBeenCalledWith("p1"));
+  });
+
+  it("新增对话框 pristine：应用禁用且无行内错误（role=alert）", async () => {
+    render(<PromptsPage />);
+    await waitFor(() => expect(api.listPrompts).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增 Prompt" })
+    ).toBeInTheDocument();
+
+    // DSH touched 语义：pristine 不喊错，仅应用禁用
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("必填字段失焦后出现行内错误；补全后应用恢复可用", async () => {
+    render(<PromptsPage />);
+    await waitFor(() => expect(api.listPrompts).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    await screen.findByRole("heading", { name: "新增 Prompt" });
+
+    fireEvent.blur(screen.getByLabelText(/^名称/));
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    fireEvent.blur(screen.getByLabelText(/^内容/));
+    expect(screen.getByText("内容不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/^名称/), {
+      target: { value: "新模板" },
+    });
+    fireEvent.change(screen.getByLabelText(/^内容/), {
+      target: { value: "# 测试内容" },
+    });
+    expect(screen.getByRole("button", { name: "应用" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("提交中：应用显示「应用中」且取消禁用，成功后关闭弹框", async () => {
+    render(<PromptsPage />);
+    await waitFor(() => expect(api.listPrompts).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    await screen.findByRole("heading", { name: "新增 Prompt" });
+    fireEvent.change(screen.getByLabelText(/^名称/), {
+      target: { value: "新模板" },
+    });
+    fireEvent.change(screen.getByLabelText(/^内容/), {
+      target: { value: "# 测试内容" },
+    });
+
+    let resolveSave!: (v: Prompt) => void;
+    mockedApi.upsertPrompt.mockImplementationOnce(
+      () => new Promise<Prompt>((res) => { resolveSave = res; })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+
+    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+
+    resolveSave(prompt("p1"));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "新增 Prompt" })
+      ).not.toBeInTheDocument()
+    );
   });
 });

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
+import { NEUTRAL_TAG } from "../lib/tagStyles";
 import type { Channel } from "../types";
 import ChannelForm from "../components/ChannelForm";
 import PageHeader from "../components/PageHeader";
@@ -37,10 +38,6 @@ export const STATUS_OPTIONS = [
 function supplierInitials(supplier: string): string {
   return supplier.slice(0, 2).toUpperCase();
 }
-
-/** 协议 / 供应商标签：统一中性等宽样式，不再按角色/供应商着色 */
-const NEUTRAL_TAG =
-  "inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] font-normal text-muted-foreground shrink-0";
 
 export default function ChannelsPage() {
   const [list, setList] = useState<Channel[]>([]);

@@ -157,7 +157,8 @@ describe("RoleRoutesPage", () => {
       target: { value: "2" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "创建" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「创建」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() => expect(mockedApi.upsertRoleRoute).toHaveBeenCalled());
     const payload = mockedApi.upsertRoleRoute.mock.calls[0][0];
     expect(payload).toMatchObject({
@@ -225,7 +226,8 @@ describe("RoleRoutesPage", () => {
     fireEvent.click(screen.getByRole("combobox", { name: "规则角色" }));
     fireEvent.click(await screen.findByRole("option", { name: /auto/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() => expect(mockedApi.upsertRolePattern).toHaveBeenCalled());
     expect(mockedApi.upsertRolePattern.mock.calls[0][0]).toMatchObject({
       id: "",
@@ -253,7 +255,8 @@ describe("RoleRoutesPage", () => {
     fireEvent.change(screen.getByDisplayValue("*sonnet*"), {
       target: { value: "*sonnet2*" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() => expect(mockedApi.upsertRolePattern).toHaveBeenCalled());
     expect(mockedApi.upsertRolePattern.mock.calls[0][0]).toMatchObject({
       id: "p1",
@@ -279,6 +282,126 @@ describe("RoleRoutesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "确认" }));
     await waitFor(() =>
       expect(api.deleteRolePattern).toHaveBeenCalledWith("p1")
+    );
+  });
+
+  it("新增路由 pristine：应用禁用且无行内错误；渠道/模型失焦出现行内错误；补全后恢复可用", async () => {
+    render(<RoleRoutesPage />);
+    await openSonnetDetail();
+
+    fireEvent.click(screen.getByRole("button", { name: "新增路由" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增角色路由" })
+    ).toBeInTheDocument();
+
+    // DSH touched 语义：pristine 不喊错，仅应用禁用
+    const apply = screen.getByRole("button", { name: "应用" });
+    expect(apply).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    // 触碰渠道/模型（blur）→ 行内错误出现
+    fireEvent.blur(screen.getByRole("combobox", { name: "路由渠道" }));
+    expect(screen.getByText("请选择渠道")).toHaveAttribute("role", "alert");
+    fireEvent.blur(screen.getByRole("combobox", { name: "上游模型" }));
+    expect(screen.getByText("上游模型不能为空")).toHaveAttribute("role", "alert");
+    expect(apply).toBeDisabled();
+
+    // 补全后恢复可用
+    fireEvent.click(screen.getByRole("combobox", { name: "路由渠道" }));
+    fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "上游模型" }));
+    fireEvent.click(await screen.findByRole("option", { name: "opus-model" }));
+    await waitFor(() => expect(apply).toBeEnabled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("路由提交中：应用显示「应用中」且取消禁用", async () => {
+    render(<RoleRoutesPage />);
+    await openSonnetDetail();
+
+    fireEvent.click(screen.getByRole("button", { name: "新增路由" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增角色路由" })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: "路由渠道" }));
+    fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "上游模型" }));
+    fireEvent.click(await screen.findByRole("option", { name: "opus-model" }));
+
+    let resolveRoute!: () => void;
+    mockedApi.upsertRoleRoute.mockImplementationOnce(
+      () => new Promise<void>((res) => { resolveRoute = res; })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+
+    resolveRoute();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "应用中" })
+      ).not.toBeInTheDocument()
+    );
+  });
+
+  it("新增规则 pristine：应用禁用且无行内错误；匹配模式失焦出现行内错误；填写后恢复可用", async () => {
+    render(<RoleRoutesPage />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+      ).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "新增规则" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增规则" })
+    ).toBeInTheDocument();
+
+    const apply = screen.getByRole("button", { name: "应用" });
+    expect(apply).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.blur(screen.getByLabelText(/^匹配模式/));
+    expect(screen.getByText("匹配模式不能为空")).toHaveAttribute("role", "alert");
+
+    fireEvent.change(screen.getByLabelText(/^匹配模式/), {
+      target: { value: "*opus*" },
+    });
+    await waitFor(() => expect(apply).toBeEnabled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("规则提交中：应用显示「应用中」且取消禁用", async () => {
+    render(<RoleRoutesPage />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "查看 sonnet 角色详情" })
+      ).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "新增规则" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增规则" })
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/^匹配模式/), {
+      target: { value: "*opus*" },
+    });
+
+    let resolvePattern!: () => void;
+    mockedApi.upsertRolePattern.mockImplementationOnce(
+      () => new Promise<void>((res) => { resolvePattern = res; })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+
+    resolvePattern();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "应用中" })
+      ).not.toBeInTheDocument()
     );
   });
 });

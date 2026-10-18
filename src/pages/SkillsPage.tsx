@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Download, Plus, RefreshCw, Server, Sparkles } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { InstalledSkill, Skill, SkillView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -17,16 +18,32 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+
+/** Skills 对话框行内校验（前端与后端同一套规则：名称/目录/内容必填，后端为准）。 */
+type SkillField = "name" | "description" | "directory" | "content";
+type SkillFieldErrors = Partial<Record<"name" | "directory" | "content", string>>;
+
+function validateSkillForm(
+  name: string,
+  directory: string,
+  content: string,
+): SkillFieldErrors {
+  const errs: SkillFieldErrors = {};
+  if (!name.trim()) errs.name = "名称不能为空";
+  if (!directory.trim()) errs.directory = "目录不能为空";
+  if (!content.trim()) errs.content = "内容不能为空";
+  return errs;
+}
 
 export default function SkillsPage() {
   const [list, setList] = useState<SkillView[]>([]);
@@ -40,6 +57,16 @@ export default function SkillsPage() {
   const [directory, setDirectory] = useState("");
   const [content, setContent] = useState("");
   const [pending, setPending] = useState(false);
+  // DSH touched 语义：pristine 空表单不喊错——行内错误仅「字段被触碰（blur/onChange）且无效」
+  // 或「曾尝试提交」时渲染；应用按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [touched, setTouched] = useState<Partial<Record<SkillField, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const errors = validateSkillForm(name, directory, content);
+  const formValid = Object.keys(errors).length === 0;
+  const touch = (k: SkillField) =>
+    setTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showErr = (k: "name" | "directory" | "content") =>
+    touched[k] || submitAttempted ? errors[k] : undefined;
 
   const [deleting, setDeleting] = useState<Skill | null>(null);
 
@@ -88,6 +115,8 @@ export default function SkillsPage() {
     setDirectory("");
     setContent("");
     setEditing(null);
+    setTouched({});
+    setSubmitAttempted(false);
   };
 
   const openCreate = () => {
@@ -101,6 +130,8 @@ export default function SkillsPage() {
     setDescription(s.description ?? "");
     setDirectory(s.directory);
     setContent(s.content);
+    setTouched({});
+    setSubmitAttempted(false);
     setDialogOpen(true);
   };
 
@@ -110,30 +141,18 @@ export default function SkillsPage() {
   };
 
   const handleSave = async () => {
-    const trimmedName = name.trim();
-    const trimmedDirectory = directory.trim();
-    const trimmedContent = content.trim();
-    if (!trimmedName) {
-      toast.error("名称不能为空");
-      return;
-    }
-    if (!trimmedDirectory) {
-      toast.error("目录不能为空");
-      return;
-    }
-    if (!trimmedContent) {
-      toast.error("内容不能为空");
-      return;
-    }
+    setSubmitAttempted(true);
+    if (pending) return;
+    if (!formValid) return; // 应用已禁用，此处双保险（行内校验为准，不再走 toast 报错）
     setError(null);
     setPending(true);
     try {
       const payload: Skill = {
         id: editing ? editing.id : "",
-        name: trimmedName,
+        name: name.trim(),
         description: description.trim() || null,
-        directory: trimmedDirectory,
-        content: trimmedContent,
+        directory: directory.trim(),
+        content: content.trim(),
         enabled: editing ? editing.enabled : false,
         created_at: editing ? editing.created_at : 0,
         updated_at: editing ? editing.updated_at : 0,
@@ -262,7 +281,7 @@ export default function SkillsPage() {
                         <div className="flex items-center gap-3">
                           {!s.in_db && (
                             <button
-                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              className={`inline-flex items-center gap-1 text-primary hover:underline ${FOCUS_RING}`}
                               onClick={() => handleImport(s.directory)}
                             >
                               <Download className="h-3 w-3" />
@@ -271,7 +290,7 @@ export default function SkillsPage() {
                           )}
                           {s.mcpServers.length > 0 && (
                             <button
-                              className="text-primary hover:underline"
+                              className={`text-primary hover:underline ${FOCUS_RING}`}
                               onClick={() => handleSyncMcp(s.directory)}
                             >
                               同步 MCP
@@ -299,53 +318,60 @@ export default function SkillsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-name">名称</Label>
+            <FormField label="名称" htmlFor="skill-name" required error={showErr("name")}>
               <Input
                 id="skill-name"
                 placeholder="例如：代码审查"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onBlur={() => touch("name")}
+                onChange={(e) => {
+                  touch("name");
+                  setName(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-description">描述</Label>
+            </FormField>
+            <FormField label="描述" htmlFor="skill-description">
               <Input
                 id="skill-description"
                 placeholder="简要说明该 Skill 的用途"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-directory">目录</Label>
+            </FormField>
+            <FormField label="目录" htmlFor="skill-directory" required error={showErr("directory")}>
               <Input
                 id="skill-directory"
                 placeholder="仅允许字母、数字、_ 和 -"
                 className="font-mono"
                 value={directory}
-                onChange={(e) => setDirectory(e.target.value)}
+                onBlur={() => touch("directory")}
+                onChange={(e) => {
+                  touch("directory");
+                  setDirectory(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-content">内容</Label>
+            </FormField>
+            <FormField label="内容" htmlFor="skill-content" required error={showErr("content")}>
               <textarea
                 id="skill-content"
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onBlur={() => touch("content")}
+                onChange={(e) => {
+                  touch("content");
+                  setContent(e.target.value);
+                }}
                 placeholder="在此输入 SKILL.md 内容..."
                 className="min-h-[320px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20"
               />
-            </div>
+            </FormField>
           </div>
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={closeDialog} disabled={pending}>
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={closeDialog}
+            onSubmit={handleSave}
+            busy={pending}
+            submitDisabled={!formValid}
+          />
         </DialogContent>
       </Dialog>
 
@@ -402,13 +428,13 @@ export default function SkillsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(v.skill)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(v.skill)}
                       >
                         删除

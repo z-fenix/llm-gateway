@@ -7,13 +7,9 @@ import { STATIC_MODEL_CATALOG } from "../lib/modelCatalog";
 import { ModelCombobox } from "./ModelCombobox";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "./ui/accordion";
+import { FormField } from "./form/FormField";
+import { FormFooter } from "./form/FormFooter";
+import { SecretInput } from "./form/SecretInput";
 import {
   Select,
   SelectContent,
@@ -32,8 +28,12 @@ const UPSTREAM_PROTOCOLS = [
 
 type FieldErrors = Partial<Record<keyof Channel, string>>;
 
-/** 前端与后端同一套校验规则（后端为准）。 */
-function validateForm(f: Partial<Channel>): FieldErrors {
+/**
+ * 前端与后端同一套校验规则（后端为准）。
+ * apiKey 为实际生效值：创建态是草稿输入，编辑态留空时回退为加载时的掩码哨兵
+ * （sk-***xxxx / ****）——后端 update_channel 视作「未变更」保留原值，故视为有效。
+ */
+function validateForm(f: Partial<Channel>, apiKey: string): FieldErrors {
   const errs: FieldErrors = {};
   if (!(f.name ?? "").trim()) errs.name = "名称不能为空";
   const baseUrl = (f.base_url ?? "").trim();
@@ -48,25 +48,46 @@ function validateForm(f: Partial<Channel>): FieldErrors {
       errs.base_url = "Base URL 格式无效";
     }
   }
-  if (!(f.api_key ?? "").trim()) errs.api_key = "API Key 不能为空";
+  if (!apiKey.trim()) errs.api_key = "API Key 不能为空";
   if (!(f.models ?? []).some((m) => m.trim())) errs.models = "至少需要一个模型";
   if ((f.timeout_secs ?? 0) < 1) errs.timeout_secs = "超时时间必须大于等于 1 秒";
   return errs;
 }
 
+/** 折叠区「自定义设置」内可校验失败的字段（summary 行计数用）。 */
+const COLLAPSED_KEYS = ["upstream_protocol", "priority", "weight", "timeout_secs"] as const;
+
 export default function ChannelForm({ initial, onSubmit, onCancel }: {
   initial?: Partial<Channel>;
-  onSubmit: (c: Channel) => void;
+  onSubmit: (c: Channel) => void | Promise<void>;
   onCancel: () => void;
 }) {
-  const [f, setF] = useState<Partial<Channel>>({
-    supplier: "openai", upstream_protocol: "openai-chat", priority: 0, weight: 1, enabled: true,
-    timeout_secs: 60, models: [], ...initial,
+  // 编辑态（initial 带 id）时 initial.api_key 是后端打码哨兵（sk-***xxxx / ****），
+  // write-only：永不回填展示；留空提交时原样回传，后端视作「未变更」保留原值。
+  const isEdit = Boolean(initial?.id);
+  const [savedKeySentinel] = useState(() => initial?.api_key ?? "");
+  const [keyDraft, setKeyDraft] = useState("");
+  const [f, setF] = useState<Partial<Channel>>(() => {
+    const { api_key: _sentinel, ...rest } = initial ?? {};
+    return {
+      supplier: "openai", upstream_protocol: "openai-chat", priority: 0, weight: 1, enabled: true,
+      timeout_secs: 60, models: [], ...rest,
+    };
   });
-  const [attempted, setAttempted] = useState(false);
-  // 提交过一次后才展示错误，之后随输入实时更新
-  const errors = attempted ? validateForm(f) : {};
+  const [busy, setBusy] = useState(false);
+  // DSH touched 语义：pristine 空表单不喊错——行内错误仅「字段被触碰（blur/onChange）且无效」
+  // 或「曾尝试提交」时渲染；应用按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [touched, setTouched] = useState<Partial<Record<keyof Channel, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const effectiveKey = keyDraft || savedKeySentinel;
+  // 实时校验（DSH：校验失败禁用应用）
+  const errors = validateForm(f, effectiveKey);
+  const touch = (k: keyof Channel) =>
+    setTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showErr = (k: keyof Channel) =>
+    touched[k] || submitAttempted ? errors[k] : undefined;
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
+  const blurField = (k: keyof Channel) => () => touch(k);
 
   // ---- 支持模型：可搜索下拉（候选来自「从上游刷新」或内置静态清单） ----
   const [modelOptions, setModelOptions] = useState<string[]>(
@@ -88,7 +109,8 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
       const list = await api.listChannelModels({
         baseUrl: (f.base_url ?? "").trim(),
         upstreamProtocol: f.upstream_protocol ?? "openai-chat",
-        apiKey: f.api_key ?? "",
+        // 编辑态草稿留空时回传掩码哨兵：后端按 channelId 从库取真实 key
+        apiKey: effectiveKey,
         timeoutSecs: f.timeout_secs ?? 60,
         channelId: channelId,
       });
@@ -120,21 +142,24 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   }, []);
   const addModel = () => {
     modelKeys.current.push(uid());
+    touch("models");
     set("models", [...(f.models ?? []), ""]);
   };
   const removeModel = (i: number) => {
     modelKeys.current.splice(i, 1);
+    touch("models");
     const next = [...(f.models ?? [])];
     next.splice(i, 1);
     set("models", next);
   };
   const updateModel = (i: number, v: string) => {
+    touch("models");
     const next = [...(f.models ?? [])];
     next[i] = v;
     set("models", next);
   };
 
-  // ---- 模型映射（仅编辑已有渠道时展示） ----
+  // ---- 模型映射（仅编辑已有渠道时展示，位于折叠区） ----
   const channelId = initial?.id;
   const [maps, setMaps] = useState<ModelMapEntry[] | null>(null);
   const [mapSrc, setMapSrc] = useState("");
@@ -191,128 +216,122 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     }
   };
 
-  const inputCls = (k: keyof Channel) =>
-    errors[k] ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : undefined;
-  const errMsg = (k: keyof Channel) =>
-    errors[k] ? <p className="mt-1 text-xs text-destructive">{errors[k]}</p> : null;
-
-  const submit = () => {
-    setAttempted(true);
-    if (Object.keys(validateForm(f)).length > 0) return;
-    // 提交前 trim + 过滤空白模型，避免 "   " 之类的条目泄漏进 /v1/models 响应
+  const submit = async () => {
+    setSubmitAttempted(true);
+    if (busy) return;
+    if (Object.keys(errors).length > 0) return; // 按钮已禁用，此处双保险
+    // 提交前 trim + 过滤空白模型，避免 "   " 之类的条目泄漏进 /v1/models 响应；
+    // 编辑态 key 留空 → 回传原掩码哨兵（后端视作未变更）
     const models = (f.models ?? []).map((m) => m.trim()).filter(Boolean);
-    onSubmit({ ...f, models } as Channel);
+    const payload = { ...f, models, api_key: effectiveKey } as Channel;
+    setBusy(true);
+    try {
+      await onSubmit(payload);
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const collapsedErrorCount = COLLAPSED_KEYS.filter((k) => !!showErr(k)).length;
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="channel-name">名称</Label>
-        <Input id="channel-name" className={inputCls("name")} placeholder="名称"
-          value={f.name ?? ""} onChange={(e) => set("name", e.target.value)} />
-        {errMsg("name")}
-      </div>
+      {/* ---- 主字段直显 ---- */}
+      <FormField label="名称" htmlFor="channel-name" required error={showErr("name")}>
+        <Input id="channel-name" placeholder="名称"
+          value={f.name ?? ""}
+          onBlur={blurField("name")}
+          onChange={(e) => { touch("name"); set("name", e.target.value); }} />
+      </FormField>
 
-      <div className="space-y-1.5">
-        <Label>供应商</Label>
+      <FormField label="供应商">
         <Select value={f.supplier} onValueChange={changeSupplier}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {SUPPLIERS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
-      </div>
+      </FormField>
 
-      <div className="space-y-1.5">
-        <Label>上游协议</Label>
-        <Select value={f.upstream_protocol} onValueChange={(v) => set("upstream_protocol", v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {UPSTREAM_PROTOCOLS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="channel-base-url">Base URL</Label>
-        <Input id="channel-base-url" className={inputCls("base_url")}
+      <FormField label="Base URL" htmlFor="channel-base-url" required error={showErr("base_url")}>
+        <Input id="channel-base-url"
           placeholder="Base URL，如 https://api.deepseek.com"
-          value={f.base_url ?? ""} onChange={(e) => set("base_url", e.target.value)} />
-        {errMsg("base_url")}
-      </div>
+          value={f.base_url ?? ""}
+          onBlur={blurField("base_url")}
+          onChange={(e) => { touch("base_url"); set("base_url", e.target.value); }} />
+      </FormField>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="channel-api-key">API Key</Label>
-        <Input id="channel-api-key" className={inputCls("api_key")}
-          placeholder="真实上游 API Key"
-          value={f.api_key ?? ""} onChange={(e) => set("api_key", e.target.value)} />
-        {errMsg("api_key")}
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label>支持模型</Label>
-          <Button type="button" variant="outline" size="sm" onClick={refreshModels} disabled={modelFetching}>
-            {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            获取模型列表
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {modelSource === "upstream"
-            ? "已从上游加载模型，可直接选择或继续输入。"
-            : "内置模型清单，可点击「获取模型列表」拉取上游真实模型。"}
-        </p>
-        {(f.models ?? []).map((m, i) => (
-          <div key={modelKeys.current[i] ?? `m${i}`} className="flex items-center gap-2">
-            <ModelCombobox
-              value={m}
-              onChange={(v) => updateModel(i, v)}
-              options={modelOptions}
-              loading={modelFetching}
-              error={!!errors.models}
-            />
-            <Button type="button" variant="ghost" size="icon"
-              aria-label="删除模型" onClick={() => removeModel(i)}>
-              <Trash2 size={16} />
+      <FormField label="支持模型" required error={showErr("models")}>
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            {/* 辅助按钮保留在主字段区（对齐 DSH probe 先例） */}
+            <Button type="button" variant="outline" size="sm" onClick={refreshModels} disabled={modelFetching}>
+              {modelFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              获取模型列表
             </Button>
           </div>
-        ))}
-        <Button type="button" variant="outline" size="sm" onClick={addModel}>
-          <Plus size={16} /> 添加模型
-        </Button>
-        {errMsg("models")}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="channel-priority">优先级</Label>
-          <Input id="channel-priority" type="number" className={inputCls("priority")}
-            placeholder="优先级" value={f.priority ?? 0}
-            onChange={(e) => set("priority", Number(e.target.value))} />
-          {errMsg("priority")}
+          <p className="text-xs text-muted-foreground">
+            {modelSource === "upstream"
+              ? "已从上游加载模型，可直接选择或继续输入。"
+              : "内置模型清单，可点击「获取模型列表」拉取上游真实模型。"}
+          </p>
+          {(f.models ?? []).map((m, i) => (
+            <div key={modelKeys.current[i] ?? `m${i}`} className="flex items-center gap-2">
+              <ModelCombobox
+                value={m}
+                onChange={(v) => updateModel(i, v)}
+                options={modelOptions}
+                loading={modelFetching}
+                error={!!showErr("models")}
+              />
+              <Button type="button" variant="ghost" size="icon"
+                aria-label="删除模型" onClick={() => removeModel(i)}>
+                <Trash2 size={16} />
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addModel}>
+            <Plus size={16} /> 添加模型
+          </Button>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="channel-weight">权重</Label>
-          <Input id="channel-weight" type="number" className={inputCls("weight")}
-            placeholder="权重" value={f.weight ?? 1}
-            onChange={(e) => set("weight", Number(e.target.value))} />
-          {errMsg("weight")}
-        </div>
-      </div>
+      </FormField>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="channel-timeout">超时秒数</Label>
-        <Input id="channel-timeout" type="number" className={inputCls("timeout_secs")}
-          placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0}
-          onChange={(e) => set("timeout_secs", Number(e.target.value))} />
-        {errMsg("timeout_secs")}
-      </div>
+      <FormField label="API Key" required={!isEdit} error={showErr("api_key")}>
+        {/* write-only：编辑态不回填（占位符提示已保存），留空提交 = 保持原值 */}
+        <SecretInput
+          value={keyDraft}
+          onChange={(v) => { touch("api_key"); setKeyDraft(v); }}
+          saved={isEdit ? "已保存，留空保持不变" : undefined}
+          invalid={!!showErr("api_key")}
+          ariaLabel="API Key"
+        />
+      </FormField>
 
-      {channelId && (
-        <Accordion type="single" collapsible defaultValue="model-map" className="rounded-lg border border-border px-3">
-          <AccordionItem value="model-map" className="border-b-0">
-            <AccordionTrigger>模型映射</AccordionTrigger>
-            <AccordionContent className="space-y-3">
+      {/* ---- 折叠区：自定义设置（DSH details 模式，默认收起） ---- */}
+      <details className="rounded-lg border border-border px-3">
+        <summary className="flex cursor-pointer select-none items-center gap-2 py-2 text-sm font-medium text-foreground">
+          自定义设置
+          {/* 折叠区内字段出错：summary 行报错（对齐 DSH 卡片级 modelFailure 先例），
+              让禁用的应用可解释 */}
+          {collapsedErrorCount > 0 && (
+            <span role="alert" className="text-xs font-normal text-destructive">
+              自定义设置：{collapsedErrorCount} 项未通过
+            </span>
+          )}
+        </summary>
+        <div className="space-y-4 pb-3">
+          <FormField label="上游协议">
+            <Select value={f.upstream_protocol} onValueChange={(v) => set("upstream_protocol", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {UPSTREAM_PROTOCOLS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          {channelId && (
+            <div className="space-y-3 rounded-md border border-border p-3">
+              <p className="text-sm font-medium">模型映射</p>
               <p className="text-xs text-muted-foreground">
                 把请求中的源模型名映射为上游使用的目标模型名，保存后立即生效。
               </p>
@@ -345,15 +364,41 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
                   onChange={(e) => setMapTgt(e.target.value)} />
                 <Button type="button" size="sm" onClick={addMap}>添加</Button>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
+            </div>
+          )}
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
-        <Button type="button" onClick={submit}>保存</Button>
-      </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="优先级" htmlFor="channel-priority">
+              <Input id="channel-priority" type="number"
+                placeholder="优先级" value={f.priority ?? 0}
+                onChange={(e) => set("priority", Number(e.target.value))} />
+            </FormField>
+            <FormField label="权重" htmlFor="channel-weight">
+              <Input id="channel-weight" type="number"
+                placeholder="权重" value={f.weight ?? 1}
+                onChange={(e) => set("weight", Number(e.target.value))} />
+            </FormField>
+          </div>
+
+          <FormField label="超时秒数" htmlFor="channel-timeout" error={showErr("timeout_secs")}>
+            <Input id="channel-timeout" type="number"
+              className={showErr("timeout_secs")
+                ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20"
+                : undefined}
+              placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0}
+              onBlur={blurField("timeout_secs")}
+              onChange={(e) => { touch("timeout_secs"); set("timeout_secs", Number(e.target.value)); }} />
+          </FormField>
+        </div>
+      </details>
+
+      {/* ---- 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 ---- */}
+      <FormFooter
+        onCancel={onCancel}
+        onSubmit={submit}
+        busy={busy}
+        submitDisabled={Object.keys(errors).length > 0}
+      />
     </div>
   );
 }

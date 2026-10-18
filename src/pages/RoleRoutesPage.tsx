@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Edit3, Plus, Trash2 } from "lucide-react";
 import { ModelCombobox } from "../components/ModelCombobox";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import { ROLE_ORDER, routesByRole } from "../lib/roleSort";
 import type {
   BreakerStatus,
@@ -27,6 +28,8 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import {
   Select,
   SelectContent,
@@ -38,7 +41,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
@@ -88,6 +90,13 @@ function successRate(stat?: RoleStats): string {
   return `${Math.round((stat.success_count / stat.requests) * 100)}%`;
 }
 
+/** 路由对话框行内校验字段（渠道/上游模型必填，校验规则不变）。 */
+type RouteField = "channel" | "model";
+const ROUTE_FIELD_ERRORS: Record<RouteField, string> = {
+  channel: "请选择渠道",
+  model: "上游模型不能为空",
+};
+
 export default function RoleRoutesPage() {
   const [routes, setRoutes] = useState<RoleRoute[]>([]);
   const [patterns, setPatterns] = useState<RolePattern[]>([]);
@@ -107,6 +116,18 @@ export default function RoleRoutesPage() {
   const [rMaxFailures, setRMaxFailures] = useState("5");
   const [rCooldown, setRCooldown] = useState("60");
   const [rChannelModels, setRChannelModels] = useState<string[]>([]);
+  // DSH touched 语义（路由对话框）：pristine 不喊错——行内错误仅「字段被触碰（blur/选择）且无效」
+  // 或「曾尝试提交」时渲染；应用按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [routeTouched, setRouteTouched] = useState<Partial<Record<RouteField, boolean>>>({});
+  const [routeSubmitAttempted, setRouteSubmitAttempted] = useState(false);
+  const routeErrors: Partial<Record<RouteField, string>> = {};
+  if (!rChannelId) routeErrors.channel = ROUTE_FIELD_ERRORS.channel;
+  if (!rModel.trim()) routeErrors.model = ROUTE_FIELD_ERRORS.model;
+  const routeValid = Object.keys(routeErrors).length === 0;
+  const touchRoute = (k: RouteField) =>
+    setRouteTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showRouteErr = (k: RouteField) =>
+    routeTouched[k] || routeSubmitAttempted ? routeErrors[k] : undefined;
 
   const [patternOpen, setPatternOpen] = useState(false);
   const [editingPattern, setEditingPattern] = useState<RolePattern | null>(null);
@@ -115,6 +136,14 @@ export default function RoleRoutesPage() {
   const [pPriority, setPPriority] = useState("0");
   const [pEnabled, setPEnabled] = useState(true);
   const [pending, setPending] = useState(false);
+  // DSH touched 语义（规则对话框）：同上
+  const [patternTouched, setPatternTouched] = useState<{ pattern?: boolean }>({});
+  const [patternSubmitAttempted, setPatternSubmitAttempted] = useState(false);
+  const patternError = pPattern.trim() ? undefined : "匹配模式不能为空";
+  const touchPattern = () =>
+    setPatternTouched((p) => (p.pattern ? p : { ...p, pattern: true }));
+  const showPatternError =
+    patternTouched.pattern || patternSubmitAttempted ? patternError : undefined;
 
   const [deletingPattern, setDeletingPattern] = useState<RolePattern | null>(null);
   const [deletingRoute, setDeletingRoute] = useState<RoleRoute | null>(null);
@@ -168,6 +197,8 @@ export default function RoleRoutesPage() {
     setRMaxFailures("5");
     setRCooldown("60");
     setRChannelModels([]);
+    setRouteTouched({});
+    setRouteSubmitAttempted(false);
     setRouteOpen(true);
   };
 
@@ -181,10 +212,13 @@ export default function RoleRoutesPage() {
     setRMaxFailures(String(r.breaker_max_failures));
     setRCooldown(String(r.breaker_cooldown_secs));
     setRChannelModels(r.channel_id ? channels.find((c) => c.id === r.channel_id)?.models ?? [] : []);
+    setRouteTouched({});
+    setRouteSubmitAttempted(false);
     setRouteOpen(true);
   };
 
   const createRoute = async () => {
+    setRouteSubmitAttempted(true);
     if (!rChannelId) {
       toast.error("请选择渠道");
       return;
@@ -295,6 +329,8 @@ export default function RoleRoutesPage() {
     setPRole("sonnet");
     setPPriority("0");
     setPEnabled(true);
+    setPatternTouched({});
+    setPatternSubmitAttempted(false);
     setPatternOpen(true);
   };
 
@@ -304,10 +340,13 @@ export default function RoleRoutesPage() {
     setPRole(p.role);
     setPPriority(String(p.priority));
     setPEnabled(p.enabled);
+    setPatternTouched({});
+    setPatternSubmitAttempted(false);
     setPatternOpen(true);
   };
 
   const savePattern = async () => {
+    setPatternSubmitAttempted(true);
     const pattern = pPattern.trim();
     if (!pattern) {
       toast.error("匹配模式不能为空");
@@ -552,13 +591,13 @@ export default function RoleRoutesPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <button
-                                className="text-primary hover:underline"
+                                className={`text-primary hover:underline ${FOCUS_RING}`}
                                 onClick={() => openEditPattern(p)}
                               >
                                 编辑
                               </button>
                               <button
-                                className="inline-flex items-center gap-1 text-destructive hover:underline"
+                                className={`inline-flex items-center gap-1 text-destructive hover:underline ${FOCUS_RING}`}
                                 onClick={() => setDeletingPattern(p)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -741,7 +780,7 @@ export default function RoleRoutesPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <button
-                                className="text-primary hover:underline"
+                                className={`text-primary hover:underline ${FOCUS_RING}`}
                                 aria-label="编辑路由"
                                 title="编辑"
                                 onClick={() => openEditRoute(r)}
@@ -749,7 +788,7 @@ export default function RoleRoutesPage() {
                                 <Edit3 className="h-3 w-3" />
                               </button>
                               <button
-                                className="inline-flex items-center gap-1 text-destructive hover:underline"
+                                className={`inline-flex items-center gap-1 text-destructive hover:underline ${FOCUS_RING}`}
                                 aria-label="删除路由"
                                 onClick={() => setDeletingRoute(r)}
                               >
@@ -782,8 +821,7 @@ export default function RoleRoutesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="route-role">角色</Label>
+            <FormField label="角色" htmlFor="route-role">
               <Select value={rRole} onValueChange={setRRole}>
                 <SelectTrigger id="route-role" aria-label="路由角色">
                   <SelectValue />
@@ -797,11 +835,20 @@ export default function RoleRoutesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="route-channel">渠道</Label>
-              <Select value={rChannelId} onValueChange={handleRouteChannelChange}>
-                <SelectTrigger id="route-channel" aria-label="路由渠道">
+            </FormField>
+            <FormField label="渠道" htmlFor="route-channel" required error={showRouteErr("channel")}>
+              <Select
+                value={rChannelId}
+                onValueChange={(v) => {
+                  touchRoute("channel");
+                  handleRouteChannelChange(v);
+                }}
+              >
+                <SelectTrigger
+                  id="route-channel"
+                  aria-label="路由渠道"
+                  onBlur={() => touchRoute("channel")}
+                >
                   <SelectValue placeholder="选择渠道" />
                 </SelectTrigger>
                 <SelectContent>
@@ -812,11 +859,20 @@ export default function RoleRoutesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="route-model">上游模型</Label>
-              <Select value={rModel} onValueChange={setRModel}>
-                <SelectTrigger id="route-model" aria-label="上游模型">
+            </FormField>
+            <FormField label="上游模型" htmlFor="route-model" required error={showRouteErr("model")}>
+              <Select
+                value={rModel}
+                onValueChange={(v) => {
+                  touchRoute("model");
+                  setRModel(v);
+                }}
+              >
+                <SelectTrigger
+                  id="route-model"
+                  aria-label="上游模型"
+                  onBlur={() => touchRoute("model")}
+                >
                   <SelectValue placeholder="选择模型" />
                 </SelectTrigger>
                 <SelectContent>
@@ -825,58 +881,49 @@ export default function RoleRoutesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormField>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="route-priority">优先级</Label>
+              <FormField label="优先级" htmlFor="route-priority">
                 <Input
                   id="route-priority"
                   type="number"
                   value={rPriority}
                   onChange={(e) => setRPriority(e.target.value)}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="route-weight">权重</Label>
+              </FormField>
+              <FormField label="权重" htmlFor="route-weight">
                 <Input
                   id="route-weight"
                   type="number"
                   value={rWeight}
                   onChange={(e) => setRWeight(e.target.value)}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="route-max-failures">熔断阈值（连续失败）</Label>
+              </FormField>
+              <FormField label="熔断阈值（连续失败）" htmlFor="route-max-failures">
                 <Input
                   id="route-max-failures"
                   type="number"
                   value={rMaxFailures}
                   onChange={(e) => setRMaxFailures(e.target.value)}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="route-cooldown">冷却时间（秒）</Label>
+              </FormField>
+              <FormField label="冷却时间（秒）" htmlFor="route-cooldown">
                 <Input
                   id="route-cooldown"
                   type="number"
                   value={rCooldown}
                   onChange={(e) => setRCooldown(e.target.value)}
                 />
-              </div>
+              </FormField>
             </div>
           </div>
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => setRouteOpen(false)}
-              disabled={pending}
-            >
-              取消
-            </Button>
-            <Button onClick={createRoute} disabled={pending}>
-              {pending ? "保存中..." : editingRoute ? "保存" : "创建"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={() => setRouteOpen(false)}
+            onSubmit={createRoute}
+            busy={pending}
+            submitDisabled={!routeValid}
+          />
         </DialogContent>
       </Dialog>
 
@@ -897,17 +944,24 @@ export default function RoleRoutesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="pattern-value">匹配模式</Label>
+            <FormField
+              label="匹配模式"
+              htmlFor="pattern-value"
+              required
+              error={showPatternError}
+            >
               <Input
                 id="pattern-value"
                 placeholder="*sonnet*"
                 value={pPattern}
-                onChange={(e) => setPPattern(e.target.value)}
+                onBlur={touchPattern}
+                onChange={(e) => {
+                  touchPattern();
+                  setPPattern(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="pattern-role">角色</Label>
+            </FormField>
+            <FormField label="角色" htmlFor="pattern-role">
               <Select value={pRole} onValueChange={setPRole}>
                 <SelectTrigger id="pattern-role" aria-label="规则角色">
                   <SelectValue />
@@ -921,9 +975,8 @@ export default function RoleRoutesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="pattern-priority">优先级</Label>
+            </FormField>
+            <FormField label="优先级" htmlFor="pattern-priority">
               <Input
                 id="pattern-priority"
                 type="number"
@@ -931,7 +984,7 @@ export default function RoleRoutesPage() {
                 value={pPriority}
                 onChange={(e) => setPPriority(e.target.value)}
               />
-            </div>
+            </FormField>
             <div className="flex items-center justify-between">
               <Label htmlFor="pattern-enabled">启用</Label>
               <Switch
@@ -941,18 +994,13 @@ export default function RoleRoutesPage() {
               />
             </div>
           </div>
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => setPatternOpen(false)}
-              disabled={pending}
-            >
-              取消
-            </Button>
-            <Button onClick={savePattern} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={() => setPatternOpen(false)}
+            onSubmit={savePattern}
+            busy={pending}
+            submitDisabled={!!patternError}
+          />
         </DialogContent>
       </Dialog>
 
