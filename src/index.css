@@ -2,27 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * 设计令牌（方向 A · 青碧信号）
+ * HSL 三元组，供 hsl(var(--x)) 使用；暗色值见 docs/superpowers/specs/2026-10-18-ui-redesign-design.md。
+ * 青碧 #3ECFBB 只进 --primary/--ring；--accent 保持中性灰。
+ */
 :root {
   --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --foreground: 194 21.3% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 194 21.3% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 210 100% 56%;
+  --popover-foreground: 194 21.3% 12%;
+  --primary: 173 81.3% 27.3%; /* 加深青碧 #0D7E70，白底对比 ≈4.96:1 */
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
+  --secondary: 195 20% 96.1%;
+  --secondary-foreground: 194 21.3% 12%;
+  --muted: 195 20% 96.1%;
+  --muted-foreground: 196 10% 41.2%;
+  --accent: 195 15% 94%; /* 中性冷灰，非彩色 */
+  --accent-foreground: 194 21.3% 12%;
+  --destructive: 8 60% 48%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 210 100% 56%;
+  --border: 193 17.6% 90%;
+  --input: 193 17.6% 90%;
+  --ring: 173 81.3% 27.3%;
   --radius: 0.5rem;
+  /* 新增语义令牌（浅色） */
+  --surface: 195 20% 96.1%;
+  --success: 152 65.1% 33.7%;
+  --warning: 36 60% 40%;
+  --info: 204 65% 42%;
+  --faint: 193 14.3% 61.6%;
+  /* 数据字体 */
+  --font-mono: "Cascadia Code", Consolas, monospace;
+}
+
+.dark {
+  --background: 204 29.4% 6.7%; /* #0C1216 */
+  --foreground: 188 27.3% 82.7%; /* #C7DCDF */
+  --card: 200 30% 7.8%; /* #0E161A */
+  --card-foreground: 188 27.3% 82.7%;
+  --popover: 202 26% 9%;
+  --popover-foreground: 188 27.3% 82.7%;
+  --primary: 172 60.2% 52.7%; /* #3ECFBB 青碧强调，唯一彩色主张 */
+  --primary-foreground: 180 30% 8%;
+  --secondary: 200 18% 13%;
+  --secondary-foreground: 188 27.3% 82.7%;
+  --muted: 200 18% 12%;
+  --muted-foreground: 192 12.6% 54.7%; /* #7D949A */
+  --accent: 200 12% 14%; /* 中性灰，非彩色 */
+  --accent-foreground: 188 27.3% 82.7%;
+  --destructive: 8 65.4% 64.9%; /* #E07A6B */
+  --destructive-foreground: 0 0% 98%;
+  --border: 198 31.3% 12.5%; /* #16242A */
+  --input: 198 31.3% 12.5%;
+  --ring: 172 60.2% 52.7%;
+  /* 新增语义令牌（暗色） */
+  --surface: 203 28.6% 5.5%; /* #0A0F12，比 background 深一档（侧栏） */
+  --success: 147 51.4% 56.5%; /* #57C98B */
+  --warning: 38 67.7% 62.4%; /* #E0B05E */
+  --info: 204 72.5% 67.3%; /* #6FB7E8 */
+  --faint: 193 9.9% 36.5%; /* #4D666D */
 }
 
 body {
