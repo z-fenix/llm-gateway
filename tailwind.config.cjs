@@ -36,6 +36,8 @@ module.exports = {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        /* 语义别名：StatusBadge/Layout 等使用 text-danger / bg-danger */
+        danger: "hsl(var(--destructive))",
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",

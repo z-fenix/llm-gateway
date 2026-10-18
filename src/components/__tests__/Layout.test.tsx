@@ -4,6 +4,13 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import Layout, { NAV_GROUPS, SYSTEM_GROUP } from "../Layout";
 import { gatewayStatus } from "../../lib/gatewayStatus";
 import { api } from "../../lib/api";
+// CJS 配置文件无类型声明；仅断言所需的最小形状
+// @ts-expect-error tailwind.config.cjs has no declaration file
+import tailwindConfig from "../../../tailwind.config.cjs";
+
+const colors = (
+  tailwindConfig as { theme?: { extend?: { colors?: Record<string, unknown> } } }
+)?.theme?.extend?.colors;
 
 vi.mock("../../lib/api", () => ({
   api: {
@@ -42,6 +49,12 @@ function renderLayout(initial = "/") {
 }
 
 describe("gatewayStatus", () => {
+  it("danger 语义色在 Tailwind 配置中存在别名（text-danger/bg-danger 可生成 CSS）", () => {
+    expect(colors?.danger).toBeTruthy();
+    // destructive 保持原样（shadcn 基础组件依赖）
+    expect(colors?.destructive).toBeTruthy();
+  });
+
   it("非空地址 → success + 端口", () => {
     expect(gatewayStatus("127.0.0.1:8778")).toEqual({
       semantic: "success",
