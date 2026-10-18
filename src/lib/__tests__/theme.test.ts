@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { resolveTheme, applyTheme, subscribeSystemTheme } from "../theme";
 
 // plugin-store 句柄可控的 mock：默认不可用（load 直接拒绝），由各用例自行注入
@@ -170,5 +171,156 @@ describe("主题持久化", () => {
 
       expect(loadThemeMode()).toBeNull();
     });
+  });
+});
+
+describe("useTheme", () => {
+  // useTheme 读取模块内缓存（cachedMode/cachedStore），每个用例用全新模块实例隔离
+  let useTheme: typeof import("../theme").useTheme;
+
+  beforeEach(async () => {
+    localStorage.clear();
+    storeState.loadImpl = null;
+    vi.resetModules();
+    ({ useTheme } = await import("../theme"));
+  });
+
+  it("初始 mode 取自 localStorage，setMode('dark') 挂载 dark 类并写入 store", async () => {
+    const store = { get: vi.fn(), set: vi.fn(), save: vi.fn() };
+    storeState.loadImpl = vi.fn().mockResolvedValue(store);
+    localStorage.setItem("theme", "system");
+    ({ useTheme } = await import("../theme"));
+
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.mode).toBe("system");
+
+    await act(async () => {
+      result.current.setMode("dark");
+    });
+
+    expect(result.current.mode).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(store.set).toHaveBeenCalledWith("theme", "dark");
+    expect(store.save).toHaveBeenCalled();
+  });
+
+  it("无持久化值时初始 mode 为 system，setMode('light') 摘除 dark 类并降级 localStorage", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    ({ useTheme } = await import("../theme"));
+    document.documentElement.classList.add("dark");
+
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.mode).toBe("system");
+
+    await act(async () => {
+      result.current.setMode("light");
+    });
+
+    expect(result.current.mode).toBe("light");
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    await waitFor(() => expect(localStorage.getItem("theme")).toBe("light"));
+  });
+});
+
+describe("initTheme", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    storeState.loadImpl = null;
+    vi.resetModules();
+  });
+
+  it("应用已持久化的主题模式（localStorage: dark）", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    localStorage.setItem("theme", "dark");
+    const { initTheme } = await import("../theme");
+
+    initTheme();
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("无持久化值时按 system 应用", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    const { initTheme } = await import("../theme");
+
+    initTheme();
+
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+
+  it("store 镜像异步解析后重新应用持久化主题，修正首帧错误默认", async () => {
+    const store = { get: vi.fn().mockResolvedValue("dark"), set: vi.fn(), save: vi.fn() };
+    // load 返回手动控制的 deferred：镜像在 release 前保持未决，模拟首帧窗口
+    let release!: (store: unknown) => void;
+    storeState.loadImpl = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    );
+    // localStorage 故意留空：同步阶段 loadThemeMode 返回 null，initTheme 先按 system 应用
+    const { initTheme, ensureThemeReady } = await import("../theme");
+    initTheme();
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+
+    release(store);
+    await ensureThemeReady();
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("system 模式下系统明暗偏好变化时重新应用", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    const listeners: Array<() => void> = [];
+    let matches = false;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        get matches() {
+          return matches;
+        },
+        addEventListener: (_: string, cb: () => void) => {
+          listeners.push(cb);
+        },
+        removeEventListener: () => {},
+      }))
+    );
+    localStorage.setItem("theme", "system");
+    const { initTheme } = await import("../theme");
+
+    initTheme();
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+
+    matches = true;
+    listeners.forEach((cb) => cb());
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    matches = false;
+    listeners.forEach((cb) => cb());
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+
+  it("非 system 模式下系统偏好变化不覆盖用户选择", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    const listeners: Array<() => void> = [];
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true, // 系统为深色，但用户显式选了浅色
+        addEventListener: (_: string, cb: () => void) => {
+          listeners.push(cb);
+        },
+        removeEventListener: () => {},
+      }))
+    );
+    localStorage.setItem("theme", "light");
+    const { initTheme } = await import("../theme");
+
+    initTheme();
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+
+    listeners.forEach((cb) => cb()); // 系统偏好再次派发变化事件
+
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 });

@@ -2,7 +2,6 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SettingsPage from "../SettingsPage";
 import { api } from "../../lib/api";
-
 vi.mock("../../lib/api", () => ({
   api: {
     getAppConfig: vi
@@ -339,5 +338,44 @@ describe("SettingsPage", () => {
       expect(mockedApi.deleteModelPrice).toHaveBeenCalledWith("claude-sonnet-4.5")
     );
     confirmSpy.mockRestore();
+  });
+});
+
+describe("SettingsPage 外观分组", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.removeItem("theme");
+    document.documentElement.classList.remove("dark");
+  });
+
+  it("外观分组置顶，渲染主题三态分段控件", async () => {
+    render(<SettingsPage />);
+    expect(screen.getByRole("heading", { name: "外观" })).toBeInTheDocument();
+    const tablist = screen.getByRole("tablist", { name: "主题" });
+    expect(tablist).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "浅色" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "深色" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "跟随系统" })).toBeInTheDocument();
+    // 无持久化值时默认跟随系统
+    expect(screen.getByRole("tab", { name: "跟随系统" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    expect(screen.getByText("跟随系统时自动切换明暗")).toBeInTheDocument();
+  });
+
+  it("点击深色挂载 dark 类并持久化，回切浅色摘除", async () => {
+    render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("tab", { name: "深色" }));
+    expect(screen.getByRole("tab", { name: "深色" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    expect(document.documentElement).toHaveClass("dark");
+    await waitFor(() => expect(localStorage.getItem("theme")).toBe("dark"));
+
+    fireEvent.click(screen.getByRole("tab", { name: "浅色" }));
+    expect(document.documentElement).not.toHaveClass("dark");
+    await waitFor(() => expect(localStorage.getItem("theme")).toBe("light"));
   });
 });
