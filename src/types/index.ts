@@ -385,7 +385,7 @@ export interface InstalledSkill {
   name: string | null;
   description: string | null;
   version: string | null;
-  mcp_servers: McpDecl[];
+  mcpServers: McpDecl[];
   in_db: boolean;
   enabled: boolean;
   synced: boolean;

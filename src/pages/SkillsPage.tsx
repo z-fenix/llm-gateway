@@ -239,10 +239,10 @@ export default function SkillsPage() {
                         {s.version ?? "-"}
                       </td>
                       <td className="px-4 py-3">
-                        {s.mcp_servers.length > 0 ? (
+                        {s.mcpServers.length > 0 ? (
                           <Badge variant="secondary" className="gap-1">
                             <Server className="h-3 w-3" />
-                            {s.mcp_servers.length}
+                            {s.mcpServers.length}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">-</span>
@@ -269,7 +269,7 @@ export default function SkillsPage() {
                               导入
                             </button>
                           )}
-                          {s.mcp_servers.length > 0 && (
+                          {s.mcpServers.length > 0 && (
                             <button
                               className="text-primary hover:underline"
                               onClick={() => handleSyncMcp(s.directory)}
