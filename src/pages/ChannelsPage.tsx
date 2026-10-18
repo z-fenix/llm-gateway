@@ -18,6 +18,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Input } from "../components/ui/input";
+import { SegmentedTabs } from "../components/SegmentedTabs";
 import { cn } from "../lib/utils";
 import {
   Dialog,
@@ -27,35 +28,19 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 
-const STATUS_OPTIONS = [
+export const STATUS_OPTIONS = [
   { label: "全部", value: "all" },
   { label: "启用", value: "enabled" },
   { label: "禁用", value: "disabled" },
 ];
 
-function protocolBadgeVariant(protocol: string): string {
-  if (protocol.includes("openai"))
-    return "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300";
-  if (protocol.includes("anthropic"))
-    return "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
-  if (protocol.includes("gemini"))
-    return "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300";
-  return "bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200";
-}
-
-function supplierGradient(supplier: string): string {
-  const s = supplier.toLowerCase();
-  if (s.includes("openai")) return "from-blue-500 to-cyan-400";
-  if (s.includes("anthropic") || s.includes("claude")) return "from-purple-500 to-indigo-400";
-  if (s.includes("google") || s.includes("gemini")) return "from-teal-500 to-emerald-400";
-  if (s.includes("azure")) return "from-sky-600 to-blue-500";
-  if (s.includes("deepseek")) return "from-slate-600 to-slate-400";
-  return "from-muted to-muted-foreground";
-}
-
 function supplierInitials(supplier: string): string {
   return supplier.slice(0, 2).toUpperCase();
 }
+
+/** 协议 / 供应商标签：统一中性等宽样式，不再按角色/供应商着色 */
+const NEUTRAL_TAG =
+  "inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] font-normal text-muted-foreground shrink-0";
 
 export default function ChannelsPage() {
   const [list, setList] = useState<Channel[]>([]);
@@ -63,6 +48,8 @@ export default function ChannelsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Channel | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
+  // 最近一次连通检测的实测延迟（毫秒），按渠道 id 记录
+  const [latencies, setLatencies] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -146,6 +133,7 @@ export default function ChannelsPage() {
     try {
       const r = await api.testChannel(id);
       if (r.ok) {
+        setLatencies((prev) => ({ ...prev, [id]: r.latency_ms }));
         toast.success(`连通正常 · ${r.latency_ms}ms`);
       } else {
         toast.error(r.error ?? "连通失败");
@@ -205,7 +193,7 @@ export default function ChannelsPage() {
         </div>
       )}
 
-      {/* 状态筛选胶囊 —— 跟随 cc-switch 供应商列表顶部布局 */}
+      {/* 状态筛选 —— SegmentedTabs，跟随 cc-switch 供应商列表顶部布局 */}
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -216,22 +204,12 @@ export default function ChannelsPage() {
             onChange={(e) => setKeyword(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-1 rounded-xl border bg-card p-1">
-          {STATUS_OPTIONS.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setStatusFilter(s.value)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                statusFilter === s.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedTabs
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={STATUS_OPTIONS}
+          ariaLabel="渠道状态筛选"
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -256,6 +234,7 @@ export default function ChannelsPage() {
               <ChannelCard
                 key={c.id}
                 channel={c}
+                lastLatencyMs={latencies[c.id]}
                 onEdit={() => openEdit(c)}
                 onDuplicate={() => duplicate(c)}
                 onTest={() => test(c.id)}
@@ -309,6 +288,7 @@ export default function ChannelsPage() {
 
 function ChannelCard({
   channel,
+  lastLatencyMs,
   onEdit,
   onDuplicate,
   onTest,
@@ -316,6 +296,7 @@ function ChannelCard({
   testingId,
 }: {
   channel: Channel;
+  lastLatencyMs?: number;
   onEdit: () => void;
   onDuplicate: () => void;
   onTest: () => void;
@@ -323,53 +304,49 @@ function ChannelCard({
   testingId: string | null;
 }) {
   const isTesting = testingId === channel.id;
+  // 延迟常驻：优先最近一次实测值，其次统计口径的平均延迟
+  const latencyMs = lastLatencyMs ?? (channel.avg_latency_ms > 0 ? channel.avg_latency_ms : null);
 
   return (
     <div
       className={cn(
         "group relative overflow-hidden rounded-xl border border-border p-4 transition-all duration-300",
         "bg-card text-card-foreground",
-        "hover:border-border-active hover:shadow-sm",
-        !channel.enabled && "opacity-65"
+        "hover:border-primary/40 hover:shadow-sm",
+        !channel.enabled && "opacity-55"
       )}
     >
-      {/* 蓝色渐变左侧条，突出启用状态 */}
-      {channel.enabled && (
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      )}
-
       <div className="relative flex items-center gap-4">
-        {/* 左侧图标 */}
-        <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br text-xs font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-105",
-            supplierGradient(channel.supplier)
-          )}
-        >
+        {/* 左侧图标：中性底色，不再按供应商着色 */}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-xs font-bold text-muted-foreground">
           {supplierInitials(channel.supplier)}
         </div>
 
         {/* 中间信息区 */}
         <div className="min-w-0 flex-1 space-y-1">
-          {/* 第一行：名称 + 状态 + 协议 + 模型 */}
+          {/* 第一行：名称 + 状态点/已停用 + 协议 + 供应商 + 模型 */}
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="truncate font-semibold text-foreground">
               {channel.name}
             </h3>
-            <Badge variant={channel.enabled ? "default" : "secondary"} className="shrink-0">
-              {channel.enabled ? "启用" : "禁用"}
-            </Badge>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold shrink-0",
-                protocolBadgeVariant(channel.upstream_protocol)
-              )}
-            >
-              {channel.upstream_protocol}
-            </span>
-            <span className="inline-flex items-center rounded-md bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-700/60 dark:text-slate-200 shrink-0">
-              {channel.supplier}
-            </span>
+            {channel.enabled ? (
+              <span
+                className="inline-flex items-center gap-1.5 shrink-0"
+                title="启用"
+                aria-label="启用"
+              >
+                <span className="h-2 w-2 rounded-full bg-success" />
+                {latencyMs != null && (
+                  <span className="font-mono text-xs text-success tabular-nums">
+                    {latencyMs}ms
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="shrink-0 text-xs text-muted-foreground">已停用</span>
+            )}
+            <span className={NEUTRAL_TAG}>{channel.upstream_protocol}</span>
+            <span className={NEUTRAL_TAG}>{channel.supplier}</span>
             {channel.models.map((m) => (
               <Badge
                 key={m}
@@ -387,7 +364,7 @@ function ChannelCard({
               {channel.base_url}
             </span>
             <div className="text-right text-[11px] text-muted-foreground tabular-nums shrink-0 ml-3 flex-shrink-0">
-              调用 {channel.total_calls} · Token {channel.total_tokens.toLocaleString()} · 成功率 {(channel.success_rate * 100).toFixed(1)}% · 延迟 {channel.avg_latency_ms}ms
+              调用 {channel.total_calls} · Token {channel.total_tokens.toLocaleString()} · 成功率 {(channel.success_rate * 100).toFixed(1)}%
             </div>
           </div>
         </div>
@@ -421,7 +398,7 @@ function ChannelCard({
             disabled={isTesting}
             aria-label="连通检测"
             title="连通检测"
-            className={cn("h-8 w-8 p-1", !isTesting && "hover:text-emerald-600 dark:hover:text-emerald-400")}
+            className={cn("h-8 w-8 p-1", !isTesting && "hover:text-success")}
           >
             {isTesting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
