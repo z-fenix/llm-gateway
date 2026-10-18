@@ -10,7 +10,6 @@ import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
@@ -30,16 +29,9 @@ const PROVIDER_LABEL: Record<string, string> = {
   gemini: "Gemini",
 };
 
-function providerBadgeVariant(provider: string): "default" | "secondary" | "outline" {
-  switch (provider) {
-    case "claude":
-      return "default";
-    case "codex":
-      return "secondary";
-    default:
-      return "outline";
-  }
-}
+/** provider / 消息角色标签：统一中性等宽样式，不再按来源/角色着色 */
+const NEUTRAL_TAG =
+  "inline-flex items-center rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] font-normal text-muted-foreground shrink-0";
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleString();
@@ -59,19 +51,6 @@ function relativeTime(ts?: number | null): string {
 
 function shortId(id: string): string {
   return id.length > 16 ? `${id.slice(0, 16)}…` : id;
-}
-
-function roleBadgeVariant(role: string): "default" | "secondary" | "outline" {
-  switch (role) {
-    case "user":
-      return "default";
-    case "assistant":
-      return "secondary";
-    case "tool":
-      return "outline";
-    default:
-      return "outline";
-  }
 }
 
 function messageRoleLabel(role: string): string {
@@ -268,9 +247,9 @@ export default function SessionsPage() {
                       className="flex min-w-0 flex-1 items-center gap-3 p-4 text-left transition-colors hover:bg-muted/40"
                       onClick={() => toggleExpand(s)}
                     >
-                      <Badge variant={providerBadgeVariant(s.providerId)}>
+                      <span className={NEUTRAL_TAG}>
                         {PROVIDER_LABEL[s.providerId] ?? s.providerId}
-                      </Badge>
+                      </span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-medium">
                           {s.title || "（无标题）"}
@@ -324,9 +303,9 @@ export default function SessionsPage() {
                           {messages.map((m, i) => (
                             <div key={i} className="text-sm">
                               <div className="mb-1 flex items-center gap-2">
-                                <Badge variant={roleBadgeVariant(m.role)}>
+                                <span className={NEUTRAL_TAG}>
                                   {messageRoleLabel(m.role)}
-                                </Badge>
+                                </span>
                                 {m.ts ? (
                                   <span className="text-xs text-muted-foreground">
                                     {formatTime(m.ts)}

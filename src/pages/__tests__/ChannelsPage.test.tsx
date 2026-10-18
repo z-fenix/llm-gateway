@@ -238,9 +238,9 @@ describe("ChannelsPage 渠道页改版（Task 8）", () => {
     expect(card.querySelector(".bg-success")).toBeNull();
   });
 
-  it("页面源码不含 border-border-active 死类与 bg-gradient-to-b 渐变类", () => {
+  it("页面源码不含 border-border-active 死类与 bg-gradient-to-* 渐变类", () => {
     expect(channelsPageSource).not.toContain("border-border-active");
-    expect(channelsPageSource).not.toContain("bg-gradient-to-b");
+    expect(channelsPageSource).not.toMatch(/bg-gradient-to-/);
   });
 
   it("状态筛选使用 SegmentedTabs：tablist 选项数与 STATUS_OPTIONS 一致，all 语义往返", async () => {

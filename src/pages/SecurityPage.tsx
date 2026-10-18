@@ -6,7 +6,8 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { StatusBadge } from "../components/StatusBadge";
+import { riskSemantic } from "../lib/semantics";
 import {
   Card,
   CardContent,
@@ -210,7 +211,7 @@ export default function SecurityPage() {
               ))}
             </div>
             {settings.mode === "redact" && (
-              <p className="mt-2 text-xs text-amber-600">
+              <p className="mt-2 text-xs text-warning">
                 提示：脱敏模式需同时开启「自动脱敏密钥」才会生效。
               </p>
             )}
@@ -311,7 +312,9 @@ export default function SecurityPage() {
                       {rule.category}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant="secondary">{rule.severity}</Badge>
+                      <StatusBadge semantic={riskSemantic(rule.severity)}>
+                        {rule.severity}
+                      </StatusBadge>
                     </td>
                     <td className="px-4 py-3 text-foreground">{rule.title}</td>
                     <td className="px-4 py-3">
@@ -492,7 +495,9 @@ export default function SecurityPage() {
                         {rule.pattern}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="secondary">{rule.severity}</Badge>
+                        <StatusBadge semantic={riskSemantic(rule.severity)}>
+                          {rule.severity}
+                        </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {rule.action}

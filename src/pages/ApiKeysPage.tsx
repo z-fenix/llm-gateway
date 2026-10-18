@@ -7,7 +7,7 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { StatusBadge } from "../components/StatusBadge";
 import {
   Card,
   CardContent,
@@ -269,9 +269,9 @@ export default function ApiKeysPage() {
                     {k.total_tokens}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant={k.enabled ? "default" : "secondary"}>
+                    <StatusBadge semantic={k.enabled ? "success" : "neutral"}>
                       {k.enabled ? "启用" : "禁用"}
-                    </Badge>
+                    </StatusBadge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">

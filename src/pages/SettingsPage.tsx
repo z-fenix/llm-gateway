@@ -5,7 +5,6 @@ import {
   Database,
   Download,
   FileJson,
-  Import,
   Minimize2,
   Palette,
   RefreshCw,
@@ -537,11 +536,7 @@ export default function SettingsPage() {
                 />
                 <Button onClick={savePreferredPort}>保存</Button>
                 {portSaved && (
-                  <Button
-                    className="bg-emerald-600 text-white hover:bg-emerald-600/90"
-                    onClick={restartGateway}
-                    disabled={restarting}
-                  >
+                  <Button onClick={restartGateway} disabled={restarting}>
                     <RefreshCw
                       className={`h-4 w-4 ${restarting ? "animate-spin" : ""}`}
                     />
@@ -551,12 +546,12 @@ export default function SettingsPage() {
               </div>
             </div>
             {portSaved && !restarted && (
-              <p className="mt-2 text-sm text-emerald-600">
+              <p className="mt-2 text-sm text-success">
                 已保存，点击“立即重启”使新端口生效。
               </p>
             )}
             {restarted && (
-              <p className="text-sm text-emerald-600">网关已重启。</p>
+              <p className="text-sm text-success">网关已重启。</p>
             )}
           </SettingsBlock>
         </SettingsPanel>
@@ -935,7 +930,7 @@ export default function SettingsPage() {
                   spellCheck={false}
                 />
                 {cliJsonInvalid && (
-                  <p className="text-xs text-red-500">JSON 格式错误</p>
+                  <p className="text-xs text-destructive">JSON 格式错误</p>
                 )}
               </div>
             )}
@@ -965,13 +960,13 @@ export default function SettingsPage() {
             </Button>
           </SettingsRow>
           <SettingsBlock>
-            <p className="flex items-start gap-1.5 text-xs text-amber-600">
+            <p className="flex items-start gap-1.5 text-xs text-warning">
               <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
               已脱敏，导入后需重新补填。
             </p>
             {exportBytes !== null && (
-              <p className="mt-2 text-sm text-emerald-600">
+              <p className="mt-2 text-sm text-success">
                 导出成功：{exportBytes} 字节
               </p>
             )}
@@ -1030,10 +1025,7 @@ export default function SettingsPage() {
                     <Button onClick={() => doImport("skip")}>
                       跳过已存在
                     </Button>
-                    <Button
-                      className="bg-amber-600 text-white hover:bg-amber-600/90"
-                      onClick={() => doImport("overwrite")}
-                    >
+                    <Button variant="destructive" onClick={() => doImport("overwrite")}>
                       覆盖已存在
                     </Button>
                   </div>
@@ -1048,7 +1040,7 @@ export default function SettingsPage() {
             )}
 
             {importResult && (
-              <div className="rounded-lg border border-emerald-600/30 bg-emerald-600/5 p-3 text-sm text-emerald-700">
+              <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
                 <p className="font-medium">导入完成</p>
                 <p>已导入: {importResult.imported}</p>
                 <p>已跳过: {importResult.skipped}</p>

@@ -529,14 +529,14 @@ export default function McpServersPage() {
                     <span
                       className={cn(
                         "inline-flex items-center gap-1.5 text-xs",
-                        v.connected ? "text-emerald-600" : "text-muted-foreground"
+                        v.connected ? "text-success" : "text-muted-foreground"
                       )}
                     >
                       <span
                         className={cn(
                           "h-1.5 w-1.5 rounded-full",
                           v.connected
-                            ? "bg-emerald-500"
+                            ? "bg-success"
                             : "bg-muted-foreground/50"
                         )}
                       />
@@ -559,7 +559,7 @@ export default function McpServersPage() {
                         编辑
                       </button>
                       <button
-                        className="text-emerald-600 hover:underline"
+                        className="text-primary hover:underline"
                         onClick={() => handleTest(v)}
                       >
                         测试

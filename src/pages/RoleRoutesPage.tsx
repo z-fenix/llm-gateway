@@ -16,6 +16,7 @@ import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { StatusBadge } from "../components/StatusBadge";
 import {
   Card,
   CardContent,
@@ -48,15 +49,8 @@ const PATTERN_ROLES = ROLE_ORDER;
 
 const NONE = "__none__";
 
-// 角色卡色标（字面类名，Tailwind 内容扫描可见）
-const ROLE_COLORS: Record<string, string> = {
-  sonnet: "bg-sky-500",
-  opus: "bg-violet-500",
-  fable: "bg-amber-500",
-  haiku: "bg-emerald-500",
-  image: "bg-rose-500",
-  auto: "bg-slate-400",
-};
+// 角色卡色标改为中性令牌点：角色不再按名称着色（统一由令牌驱动外观）
+const ROLE_DOT = "bg-faint";
 
 const BREAKER_LABEL: Record<string, string> = {
   closed: "正常",
@@ -64,14 +58,17 @@ const BREAKER_LABEL: Record<string, string> = {
   half_open: "半开",
 };
 
-function breakerBadgeVariant(state?: string): "default" | "destructive" | "secondary" {
+/** 熔断状态 → 语义色：正常 success、已熔断 danger、半开 warning、未知 neutral */
+function breakerSemantic(state?: string): "success" | "danger" | "warning" | "neutral" {
   switch (state) {
     case "open":
-      return "destructive";
+      return "danger";
     case "half_open":
-      return "secondary";
+      return "warning";
+    case "closed":
+      return "success";
     default:
-      return "default";
+      return "neutral";
   }
 }
 
@@ -400,9 +397,7 @@ export default function RoleRoutesPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`h-3 w-3 shrink-0 rounded-full ${
-                            ROLE_COLORS[role] ?? "bg-slate-400"
-                          }`}
+                          className={`h-3 w-3 shrink-0 rounded-full ${ROLE_DOT}`}
                         />
                         <CardTitle className="text-base">{role}</CardTitle>
                       </div>
@@ -550,9 +545,9 @@ export default function RoleRoutesPage() {
                             {p.priority}
                           </td>
                           <td className="px-4 py-3">
-                            <Badge variant={p.enabled ? "default" : "secondary"}>
+                            <StatusBadge semantic={p.enabled ? "success" : "neutral"}>
                               {p.enabled ? "启用" : "禁用"}
-                            </Badge>
+                            </StatusBadge>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
@@ -728,9 +723,9 @@ export default function RoleRoutesPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Badge variant={breakerBadgeVariant(breaker?.state)}>
+                              <StatusBadge semantic={breakerSemantic(breaker?.state)}>
                                 {BREAKER_LABEL[breaker?.state ?? "closed"]}
-                              </Badge>
+                              </StatusBadge>
                               {breaker && breaker.failures > 0 && (
                                 <span className="text-xs text-muted-foreground">
                                   连续失败 {breaker.failures}
