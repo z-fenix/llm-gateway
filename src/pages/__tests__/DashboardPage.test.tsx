@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import DashboardPage from "../DashboardPage";
 import { api } from "../../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../../lib/events";
 
 vi.mock("../../components/LogTrendChart", () => ({
   default: function LogTrendChartMock(props: { dimension: string; bucketSecs: number }) {
@@ -207,14 +208,14 @@ describe("DashboardPage", () => {
 
   it("手动刷新时 dispatch gateway-refresh 供顶栏同步网关状态", async () => {
     const handler = vi.fn();
-    window.addEventListener("gateway-refresh", handler);
+    window.addEventListener(GATEWAY_REFRESH_EVENT, handler);
     try {
       render(<DashboardPage />);
       await waitFor(() => expect(screen.getByText("今日请求")).toBeInTheDocument());
       fireEvent.click(screen.getByRole("button", { name: "刷新" }));
       expect(handler).toHaveBeenCalled();
     } finally {
-      window.removeEventListener("gateway-refresh", handler);
+      window.removeEventListener(GATEWAY_REFRESH_EVENT, handler);
     }
   });
 });

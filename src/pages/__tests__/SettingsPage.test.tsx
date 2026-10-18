@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SettingsPage from "../SettingsPage";
 import { api } from "../../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../../lib/events";
 vi.mock("../../lib/api", () => ({
   api: {
     getAppConfig: vi
@@ -120,6 +121,37 @@ describe("SettingsPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "立即重启" }));
     await waitFor(() => expect(mockedApi.restartGateway).toHaveBeenCalled());
+  });
+
+  it("重启成功后广播 gateway-refresh 供顶栏同步网关状态", async () => {
+    // 初次加载返回旧绑定；重启后的轮询返回新绑定，轮询首轮即退出
+    mockedApi.getAppConfig
+      .mockResolvedValueOnce({
+        preferred_port: 8777,
+        bound_addr: "127.0.0.1:8777",
+        minimize_to_tray: true,
+      })
+      .mockResolvedValue({
+        preferred_port: 8780,
+        bound_addr: "127.0.0.1:8780",
+        minimize_to_tray: true,
+      });
+    const handler = vi.fn();
+    window.addEventListener(GATEWAY_REFRESH_EVENT, handler);
+    try {
+      render(<SettingsPage />);
+      await waitFor(() =>
+        expect(screen.getByLabelText("首选端口")).toBeInTheDocument()
+      );
+      fireEvent.click(screen.getByRole("button", { name: "保存" }));
+      await waitFor(() =>
+        expect(mockedApi.setPreferredPort).toHaveBeenCalled()
+      );
+      fireEvent.click(screen.getByRole("button", { name: "立即重启" }));
+      await waitFor(() => expect(handler).toHaveBeenCalled());
+    } finally {
+      window.removeEventListener(GATEWAY_REFRESH_EVENT, handler);
+    }
   });
 
   it("整流器卡片渲染并显示子开关文案", async () => {

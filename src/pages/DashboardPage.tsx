@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../lib/events";
 import type { LogStats, Stats, TimeBucket, UsageRangeSelection } from "../types";
 import { getUsageRangePresetLabel, resolveUsageRange } from "../lib/usageRange";
 import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
@@ -39,7 +40,7 @@ export default function DashboardPage() {
   // 手动/自动刷新：拉取数据的同时通知顶栏同步网关状态
   const refresh = useCallback(() => {
     setNonce((n) => n + 1);
-    window.dispatchEvent(new CustomEvent("gateway-refresh"));
+    window.dispatchEvent(new CustomEvent(GATEWAY_REFRESH_EVENT));
   }, []);
 
   useEffect(() => {

@@ -6,6 +6,7 @@ import type { McpServer, McpServerView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { StatusBadge } from "../components/StatusBadge";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
@@ -27,7 +28,6 @@ import {
 } from "../components/ui/dialog";
 import { FormField } from "../components/form/FormField";
 import { FormFooter } from "../components/form/FormFooter";
-import { cn } from "../lib/utils";
 
 type ServerType = "stdio" | "http";
 
@@ -564,22 +564,9 @@ export default function McpServersPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 text-xs",
-                        v.connected ? "text-success" : "text-muted-foreground"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          v.connected
-                            ? "bg-success"
-                            : "bg-muted-foreground/50"
-                        )}
-                      />
+                    <StatusBadge semantic={v.connected ? "success" : "neutral"}>
                       {v.connected ? "已连接" : "未连接"}
-                    </span>
+                    </StatusBadge>
                   </td>
                   <td className="px-4 py-3">
                     <Switch

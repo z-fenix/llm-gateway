@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { api } from "../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../lib/events";
 import { useTheme, type ThemeMode } from "../lib/theme";
 import type {
   ApiKey,
@@ -266,6 +267,8 @@ export default function SettingsPage() {
         }
         await new Promise((r) => setTimeout(r, 100));
       }
+      // 重启成功（绑定已确认）：广播刷新事件，让顶栏同步网关状态
+      window.dispatchEvent(new CustomEvent(GATEWAY_REFRESH_EVENT));
       setRestarted(true);
     } catch (err) {
       handleError(err);

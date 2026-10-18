@@ -80,6 +80,9 @@ describe("McpServersPage", () => {
     expect(screen.getByText("http")).toBeInTheDocument();
     expect(screen.getByText("已连接")).toBeInTheDocument();
     expect(screen.getByText("未连接")).toBeInTheDocument();
+    // 状态点 → StatusBadge：success/neutral 语义徽章
+    expect(screen.getByText("已连接")).toHaveClass("bg-success/10");
+    expect(screen.getByText("未连接")).toHaveClass("bg-faint/10");
   });
 
   it("点击启用开关调用 toggleMcpServerEnabled 并刷新列表", async () => {

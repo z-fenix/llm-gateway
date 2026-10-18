@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import Layout, { NAV_GROUPS, SYSTEM_GROUP } from "../Layout";
 import { gatewayStatus } from "../../lib/gatewayStatus";
+import { GATEWAY_REFRESH_EVENT } from "../../lib/events";
 import { api } from "../../lib/api";
 // CJS 配置文件无类型声明；仅断言所需的最小形状
 // @ts-expect-error tailwind.config.cjs has no declaration file
@@ -144,7 +145,7 @@ describe("Layout 渲染", () => {
     await screen.findByText("网关运行中");
     mockedApi.getAppConfig.mockClear();
     act(() => {
-      window.dispatchEvent(new CustomEvent("gateway-refresh"));
+      window.dispatchEvent(new CustomEvent(GATEWAY_REFRESH_EVENT));
     });
     await waitFor(() => expect(mockedApi.getAppConfig).toHaveBeenCalledTimes(1));
   });
