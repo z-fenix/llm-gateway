@@ -214,7 +214,8 @@ describe("KnowledgePage", () => {
     fireEvent.change(screen.getByDisplayValue("文档库"), {
       target: { value: "新名字" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(mockedApi.renameKb).toHaveBeenCalledWith("kb1", "新名字")
     );
@@ -236,7 +237,8 @@ describe("KnowledgePage", () => {
     fireEvent.change(screen.getByDisplayValue("text-embedding-3-small"), {
       target: { value: "text-embedding-3-large" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(mockedApi.updateKbEmbeddingChannel).toHaveBeenCalledWith(
         "kb1",
@@ -291,5 +293,87 @@ describe("KnowledgePage", () => {
       expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb2")
     );
     expect(screen.getByText("上传文档到「第二库」")).toBeInTheDocument();
+  });
+
+  it("新建卡片 pristine：新建禁用且无行内错误（role=alert）", async () => {
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("知识库名称")).toBeInTheDocument()
+    );
+
+    // DSH touched 语义：pristine 不喊错，仅新建禁用
+    expect(screen.getByRole("button", { name: "新建" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("新建卡片名称失焦出现行内错误；补全后新建恢复可用", async () => {
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("知识库名称")).toBeInTheDocument()
+    );
+
+    fireEvent.blur(screen.getByPlaceholderText("知识库名称"));
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "新建" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("知识库名称"), {
+      target: { value: "新库" },
+    });
+    expect(screen.getByRole("button", { name: "新建" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("编辑对话框清空名称出现行内错误且应用禁用，补全后恢复可保存", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb()]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    await screen.findByRole("heading", { name: "编辑知识库" });
+
+    // 预填名称合法：应用可用
+    expect(screen.getByRole("button", { name: "应用" })).toBeEnabled();
+
+    const nameInput = screen.getByDisplayValue("文档库");
+    fireEvent.change(nameInput, { target: { value: "" } });
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+
+    fireEvent.change(nameInput, { target: { value: "新名字" } });
+    expect(screen.getByRole("button", { name: "应用" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    await waitFor(() =>
+      expect(mockedApi.renameKb).toHaveBeenCalledWith("kb1", "新名字")
+    );
+  });
+
+  it("编辑提交中：应用显示「应用中」且取消禁用，成功后关闭弹框", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb()]);
+    render(<KnowledgePage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    await screen.findByRole("heading", { name: "编辑知识库" });
+
+    let resolveUpdate!: () => void;
+    mockedApi.updateKbEmbeddingChannel.mockImplementationOnce(
+      () => new Promise<void>((res) => { resolveUpdate = res; })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+
+    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+
+    resolveUpdate();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "编辑知识库" })
+      ).not.toBeInTheDocument()
+    );
   });
 });

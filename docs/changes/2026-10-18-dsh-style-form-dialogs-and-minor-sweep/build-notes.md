@@ -1,6 +1,6 @@
 # Build Notes · DSH 式表单弹框交互 + minor 清零
 
-**Change**: `2026-10-18-dsh-style-form-dialogs-and-minor-sweep` · **Branch**: `feature/dsh-form-dialogs` (master..ccc8365) · **Date**: 2026-10-19
+**Change**: `2026-10-18-dsh-style-form-dialogs-and-minor-sweep` · **Branch**: `feature/dsh-form-dialogs` (master..HEAD 提交至 e60b349) · **Date**: 2026-10-19
 
 ## 全量门禁输出（Task 7 Step 1）
 

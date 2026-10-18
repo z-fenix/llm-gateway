@@ -24,6 +24,8 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import {
   Select,
   SelectContent,
@@ -36,13 +38,17 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
 
 /** radix Select 不允许空字符串 item 值，用哨兵值表示“不指定”。 */
 const NONE = "__none__";
+
+/** 知识库表单行内校验（前端与后端同一套规则：名称必填，后端为准）。 */
+function validateKbName(name: string): string | undefined {
+  return name.trim() ? undefined : "名称不能为空";
+}
 
 /** 文件大小人类可读：B / KB / MB / GB。 */
 export function formatBytes(bytes: number): string {
@@ -83,6 +89,25 @@ export default function KnowledgePage() {
   const [editName, setEditName] = useState("");
   const [editChannelId, setEditChannelId] = useState("");
   const [editModel, setEditModel] = useState("");
+  // DSH touched 语义（新建卡片）：pristine 空表单不喊错——行内错误仅「字段被触碰且无效」
+  // 或「曾尝试提交」时渲染；新建按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [createTouched, setCreateTouched] = useState<{ name?: boolean }>({});
+  const [createAttempted, setCreateAttempted] = useState(false);
+  const createNameError = validateKbName(form.name);
+  const createValid = !createNameError;
+  const touchCreateName = () =>
+    setCreateTouched((p) => (p.name ? p : { ...p, name: true }));
+  const showCreateNameErr = () =>
+    createTouched.name || createAttempted ? createNameError : undefined;
+  // DSH touched 语义（编辑弹框）：同上；应用按钮按原始校验态禁用。
+  const [editTouched, setEditTouched] = useState<{ name?: boolean }>({});
+  const [editAttempted, setEditAttempted] = useState(false);
+  const editNameError = validateKbName(editName);
+  const editValid = !editNameError;
+  const touchEditName = () =>
+    setEditTouched((p) => (p.name ? p : { ...p, name: true }));
+  const showEditNameErr = () =>
+    editTouched.name || editAttempted ? editNameError : undefined;
 
   const [deletingKb, setDeletingKb] = useState<KnowledgeBase | null>(null);
   const [deletingDoc, setDeletingDoc] = useState<KbDocument | null>(null);
@@ -126,11 +151,9 @@ export default function KnowledgePage() {
   }, [selectedKbId]);
 
   const createKb = () => {
+    setCreateAttempted(true);
+    if (!createValid) return; // 新建已禁用，此处双保险（行内校验为准，不再走页面横幅报错）
     const name = form.name.trim();
-    if (!name) {
-      setError("请输入知识库名称");
-      return;
-    }
     setError(null);
     api
       .createKb(
@@ -146,6 +169,8 @@ export default function KnowledgePage() {
           embedding_channel_id: "",
           embedding_model: "",
         });
+        setCreateTouched({});
+        setCreateAttempted(false);
         toast.success("知识库已创建");
         loadKbs();
       })
@@ -157,17 +182,17 @@ export default function KnowledgePage() {
     setEditName(kb.name);
     setEditChannelId(kb.embedding_channel_id ?? "");
     setEditModel(kb.embedding_model);
+    setEditTouched({});
+    setEditAttempted(false);
     setEditOpen(true);
   };
 
   const saveEdit = async () => {
     if (!editing) return;
+    setEditAttempted(true);
+    if (pending) return;
+    if (!editValid) return; // 应用已禁用，此处双保险（行内校验为准，不再走 toast 报错）
     const name = editName.trim();
-    if (!name) {
-      // 页面级 error 横幅位于 Dialog 遮罩之下，用户在弹窗内看不到；改用 toast 在弹窗上方提示
-      toast.error("名称不能为空");
-      return;
-    }
     setError(null);
     setPending(true);
     try {
@@ -319,17 +344,19 @@ export default function KnowledgePage() {
         </CardHeader>
         <CardContent>
           <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted/40 p-4 sm:grid-cols-2 lg:grid-cols-6">
-            <div className="space-y-1.5">
-              <Label htmlFor="kb-name">名称</Label>
+            <FormField label="名称" htmlFor="kb-name" required error={showCreateNameErr()}>
               <Input
                 id="kb-name"
                 placeholder="知识库名称"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onBlur={touchCreateName}
+                onChange={(e) => {
+                  touchCreateName();
+                  setForm({ ...form, name: e.target.value });
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="kb-desc">描述</Label>
+            </FormField>
+            <FormField label="描述" htmlFor="kb-desc">
               <Input
                 id="kb-desc"
                 placeholder="描述（可选）"
@@ -338,9 +365,8 @@ export default function KnowledgePage() {
                   setForm({ ...form, description: e.target.value })
                 }
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Embedding 渠道</Label>
+            </FormField>
+            <FormField label="Embedding 渠道">
               <Select
                 value={form.embedding_channel_id || NONE}
                 onValueChange={(v) =>
@@ -362,9 +388,8 @@ export default function KnowledgePage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="kb-model">Embedding 模型</Label>
+            </FormField>
+            <FormField label="Embedding 模型" htmlFor="kb-model">
               <Input
                 id="kb-model"
                 placeholder="Embedding 模型"
@@ -373,9 +398,10 @@ export default function KnowledgePage() {
                   setForm({ ...form, embedding_model: e.target.value })
                 }
               />
-            </div>
+            </FormField>
             <div className="flex items-end">
-              <Button className="w-full" onClick={createKb}>
+              {/* 行内校验不过禁用新建（保持卡片按钮语义，不走 FormFooter 弹框页脚） */}
+              <Button className="w-full" onClick={createKb} disabled={!createValid}>
                 新建
               </Button>
             </div>
@@ -724,17 +750,19 @@ export default function KnowledgePage() {
             <DialogDescription>修改名称与 Embedding 配置后保存</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-kb-name">名称</Label>
+            <FormField label="名称" htmlFor="edit-kb-name" required error={showEditNameErr()}>
               <Input
                 id="edit-kb-name"
                 placeholder="知识库名称"
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                onBlur={touchEditName}
+                onChange={(e) => {
+                  touchEditName();
+                  setEditName(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Embedding 渠道</Label>
+            </FormField>
+            <FormField label="Embedding 渠道">
               <Select
                 value={editChannelId || NONE}
                 onValueChange={(v) =>
@@ -753,29 +781,23 @@ export default function KnowledgePage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-kb-model">Embedding 模型</Label>
+            </FormField>
+            <FormField label="Embedding 模型" htmlFor="edit-kb-model">
               <Input
                 id="edit-kb-model"
                 placeholder="Embedding 模型"
                 value={editModel}
                 onChange={(e) => setEditModel(e.target.value)}
               />
-            </div>
+            </FormField>
           </div>
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => setEditOpen(false)}
-              disabled={pending}
-            >
-              取消
-            </Button>
-            <Button onClick={saveEdit} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={() => setEditOpen(false)}
+            onSubmit={saveEdit}
+            busy={pending}
+            submitDisabled={!editValid}
+          />
         </DialogContent>
       </Dialog>
 
