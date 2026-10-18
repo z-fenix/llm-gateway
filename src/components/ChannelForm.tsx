@@ -75,10 +75,19 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     };
   });
   const [busy, setBusy] = useState(false);
+  // DSH touched 语义：pristine 空表单不喊错——行内错误仅「字段被触碰（blur/onChange）且无效」
+  // 或「曾尝试提交」时渲染；应用按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [touched, setTouched] = useState<Partial<Record<keyof Channel, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const effectiveKey = keyDraft || savedKeySentinel;
-  // DSH：实时校验——行内错误即时可见，校验不过禁用应用（按钮层面防进入）
+  // 实时校验（DSH：校验失败禁用应用）
   const errors = validateForm(f, effectiveKey);
+  const touch = (k: keyof Channel) =>
+    setTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showErr = (k: keyof Channel) =>
+    touched[k] || submitAttempted ? errors[k] : undefined;
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
+  const blurField = (k: keyof Channel) => () => touch(k);
 
   // ---- 支持模型：可搜索下拉（候选来自「从上游刷新」或内置静态清单） ----
   const [modelOptions, setModelOptions] = useState<string[]>(
@@ -133,15 +142,18 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   }, []);
   const addModel = () => {
     modelKeys.current.push(uid());
+    touch("models");
     set("models", [...(f.models ?? []), ""]);
   };
   const removeModel = (i: number) => {
     modelKeys.current.splice(i, 1);
+    touch("models");
     const next = [...(f.models ?? [])];
     next.splice(i, 1);
     set("models", next);
   };
   const updateModel = (i: number, v: string) => {
+    touch("models");
     const next = [...(f.models ?? [])];
     next[i] = v;
     set("models", next);
@@ -205,6 +217,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   };
 
   const submit = async () => {
+    setSubmitAttempted(true);
     if (busy) return;
     if (Object.keys(errors).length > 0) return; // 按钮已禁用，此处双保险
     // 提交前 trim + 过滤空白模型，避免 "   " 之类的条目泄漏进 /v1/models 响应；
@@ -219,14 +232,16 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     }
   };
 
-  const collapsedErrorCount = COLLAPSED_KEYS.filter((k) => errors[k]).length;
+  const collapsedErrorCount = COLLAPSED_KEYS.filter((k) => !!showErr(k)).length;
 
   return (
     <div className="space-y-4">
       {/* ---- 主字段直显 ---- */}
-      <FormField label="名称" htmlFor="channel-name" required error={errors.name}>
+      <FormField label="名称" htmlFor="channel-name" required error={showErr("name")}>
         <Input id="channel-name" placeholder="名称"
-          value={f.name ?? ""} onChange={(e) => set("name", e.target.value)} />
+          value={f.name ?? ""}
+          onBlur={blurField("name")}
+          onChange={(e) => { touch("name"); set("name", e.target.value); }} />
       </FormField>
 
       <FormField label="供应商">
@@ -238,13 +253,15 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         </Select>
       </FormField>
 
-      <FormField label="Base URL" htmlFor="channel-base-url" required error={errors.base_url}>
+      <FormField label="Base URL" htmlFor="channel-base-url" required error={showErr("base_url")}>
         <Input id="channel-base-url"
           placeholder="Base URL，如 https://api.deepseek.com"
-          value={f.base_url ?? ""} onChange={(e) => set("base_url", e.target.value)} />
+          value={f.base_url ?? ""}
+          onBlur={blurField("base_url")}
+          onChange={(e) => { touch("base_url"); set("base_url", e.target.value); }} />
       </FormField>
 
-      <FormField label="支持模型" required error={errors.models}>
+      <FormField label="支持模型" required error={showErr("models")}>
         <div className="space-y-2">
           <div className="flex justify-end">
             {/* 辅助按钮保留在主字段区（对齐 DSH probe 先例） */}
@@ -265,7 +282,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
                 onChange={(v) => updateModel(i, v)}
                 options={modelOptions}
                 loading={modelFetching}
-                error={!!errors.models}
+                error={!!showErr("models")}
               />
               <Button type="button" variant="ghost" size="icon"
                 aria-label="删除模型" onClick={() => removeModel(i)}>
@@ -279,13 +296,13 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         </div>
       </FormField>
 
-      <FormField label="API Key" required={!isEdit} error={errors.api_key}>
+      <FormField label="API Key" required={!isEdit} error={showErr("api_key")}>
         {/* write-only：编辑态不回填（占位符提示已保存），留空提交 = 保持原值 */}
         <SecretInput
           value={keyDraft}
-          onChange={setKeyDraft}
+          onChange={(v) => { touch("api_key"); setKeyDraft(v); }}
           saved={isEdit ? "已保存，留空保持不变" : undefined}
-          invalid={!!errors.api_key}
+          invalid={!!showErr("api_key")}
           ariaLabel="API Key"
         />
       </FormField>
@@ -363,13 +380,14 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
             </FormField>
           </div>
 
-          <FormField label="超时秒数" htmlFor="channel-timeout" error={errors.timeout_secs}>
+          <FormField label="超时秒数" htmlFor="channel-timeout" error={showErr("timeout_secs")}>
             <Input id="channel-timeout" type="number"
-              className={errors.timeout_secs
+              className={showErr("timeout_secs")
                 ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20"
                 : undefined}
               placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0}
-              onChange={(e) => set("timeout_secs", Number(e.target.value))} />
+              onBlur={blurField("timeout_secs")}
+              onChange={(e) => { touch("timeout_secs"); set("timeout_secs", Number(e.target.value)); }} />
           </FormField>
         </div>
       </details>

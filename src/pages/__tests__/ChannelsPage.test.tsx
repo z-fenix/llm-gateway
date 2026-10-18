@@ -337,15 +337,19 @@ describe("ChannelsPage 渠道表单 DSH 改造（Task 2）", () => {
     expect(screen.getByLabelText("超时秒数")).toBeInTheDocument();
   });
 
-  it("必填缺失：行内错误 role=alert 出现且应用禁用；补全后恢复可用", async () => {
+  it("必填缺失：pristine 无行内错误但应用禁用；触碰名称后行内错误出现；补全后恢复可用", async () => {
     await openCreateDialog();
 
-    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
-    expect(screen.getByText("Base URL 不能为空")).toBeInTheDocument();
-    expect(screen.getByText("API Key 不能为空")).toBeInTheDocument();
+    // pristine：不喊错（无 role=alert），仅应用禁用
     const apply = screen.getByRole("button", { name: "应用" });
     expect(apply).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
+    // 触碰名称（blur）→ 行内错误出现
+    fireEvent.blur(screen.getByPlaceholderText("名称"));
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+
+    // 补全全部必填后恢复可用
     fillCreateForm();
     await waitFor(() => expect(apply).toBeEnabled());
   });

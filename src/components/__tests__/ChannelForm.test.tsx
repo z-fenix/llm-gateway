@@ -46,16 +46,26 @@ function fillValidInputs() {
 }
 
 describe("ChannelForm validation", () => {
-  it("空表单：行内错误即时展示（role=alert）且应用禁用，不触发 onSubmit", () => {
+  it("空表单 pristine：无行内错误（不喊错）但应用禁用，点击不触发 onSubmit", () => {
     const { onSubmit } = renderForm();
-    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
-    expect(screen.getByText("Base URL 不能为空")).toBeInTheDocument();
-    expect(screen.getByText("API Key 不能为空")).toBeInTheDocument();
-    expect(screen.getByText("至少需要一个模型")).toBeInTheDocument();
+    // DSH touched 语义：pristine 不渲染行内错误，仅禁用应用
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("名称不能为空")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
-    // 禁用态点击不触发提交
     fireEvent.click(screen.getByRole("button", { name: "应用" }));
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("触碰名称（blur）后行内错误出现；输入有效值后错误消失", () => {
+    renderForm();
+    const nameInput = screen.getByPlaceholderText("名称");
+    fireEvent.blur(nameInput);
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+
+    // touched 持续，值变有效后错误清除
+    fireEvent.change(nameInput, { target: { value: "测试渠道" } });
+    expect(screen.queryByText("名称不能为空")).not.toBeInTheDocument();
   });
 
   it("无效 Base URL 展示格式错误且应用禁用", () => {
