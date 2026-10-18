@@ -13,7 +13,7 @@ const statusBadgeVariants = cva(
         warning: "text-warning bg-warning/10",
         danger: "text-danger bg-danger/10",
         info: "text-info bg-info/10",
-        neutral: "text-faint bg-faint/10",
+        neutral: "text-muted-foreground bg-faint/10",
       },
     },
     defaultVariants: {

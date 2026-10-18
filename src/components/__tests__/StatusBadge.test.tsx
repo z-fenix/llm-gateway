@@ -8,7 +8,7 @@ const SEMANTIC_TEXT_CLASS: Record<Semantic, string> = {
   warning: "text-warning",
   danger: "text-danger",
   info: "text-info",
-  neutral: "text-faint",
+  neutral: "text-muted-foreground",
 };
 
 const SEMANTIC_BG_CLASS: Record<Semantic, string> = {

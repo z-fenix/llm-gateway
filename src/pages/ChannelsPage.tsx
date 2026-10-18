@@ -360,7 +360,7 @@ function ChannelCard({
 
           {/* 第二行：URL + 统计（统计右浮动） */}
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground truncate" title={channel.base_url}>
+            <span className="font-mono text-muted-foreground truncate" title={channel.base_url}>
               {channel.base_url}
             </span>
             <div className="text-right text-[11px] text-muted-foreground tabular-nums shrink-0 ml-3 flex-shrink-0">

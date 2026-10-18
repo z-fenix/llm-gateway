@@ -186,7 +186,7 @@ function LogRow({
         onClick={onToggle}
       >
         <td className="px-3 py-2 text-muted-foreground">{log.seq}</td>
-        <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+        <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
           {new Date(log.created_at * 1000).toLocaleString()}
         </td>
         <td className="px-3 py-2 text-muted-foreground">{log.key_name ?? "-"}</td>
@@ -729,10 +729,10 @@ export default function LogsPage() {
                             </div>
                           </td>
                           <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">{s.logs.length}</td>
-                          <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                          <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
                             {new Date(first.created_at * 1000).toLocaleString()}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                          <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
                             {new Date(last.created_at * 1000).toLocaleString()}
                           </td>
                           <td className="px-3 py-2 text-muted-foreground">
