@@ -26,6 +26,7 @@ import type {
 import { normalizeModelId } from "../lib/usage";
 import PageHeader from "../components/PageHeader";
 import { SegmentedTabs, type SegmentedTabsOption } from "../components/SegmentedTabs";
+import { FormField } from "../components/form/FormField";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -39,6 +40,17 @@ import {
 } from "../components/ui/select";
 
 const CLI_TARGETS = ["claude_code", "codex"];
+
+/** 模型定价子表单行内校验字段。 */
+type PriceField = "model" | "input" | "output" | "cacheRead" | "cacheCreation";
+
+/** 价格字段校验：留空按 0（既有语义），非空须为非负数字。 */
+function priceFieldError(raw: string): string | undefined {
+  if (raw.trim() === "") return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return "价格必须为非负数字";
+  return undefined;
+}
 
 const CLI_TARGET_LABELS: Record<string, string> = {
   claude_code: "Claude Code",
@@ -158,6 +170,11 @@ export default function SettingsPage() {
   const [priceCacheRead, setPriceCacheRead] = useState("");
   const [priceCacheCreation, setPriceCacheCreation] = useState("");
   const [editingPrice, setEditingPrice] = useState<ModelPrice | null>(null);
+  // DSH touched 语义（内联段原样套用，不改造结构）：pristine 不喊错，
+  // 行内错误仅「字段被触碰且无效」或「曾尝试提交」时渲染；保存按钮按原始校验态禁用。
+  const [priceTouched, setPriceTouched] = useState<Partial<Record<PriceField, boolean>>>({});
+  const [priceSubmitAttempted, setPriceSubmitAttempted] = useState(false);
+  const [priceSaving, setPriceSaving] = useState(false);
 
   const updateMinimizeToTray = (value: boolean) => {
     const prev = minimizeToTray;
@@ -394,22 +411,35 @@ export default function SettingsPage() {
 
   const normalizedModel = normalizeModelId(priceModel);
 
+  // 实时校验（DSH：校验失败禁用保存；规则不变——模型名必填、价格为非负数字、留空按 0）
+  const priceErrors: Partial<Record<PriceField, string>> = {};
+  if (!normalizedModel) priceErrors.model = "模型名不能为空";
+  const inputErr = priceFieldError(priceInput);
+  const outputErr = priceFieldError(priceOutput);
+  const cacheReadErr = priceFieldError(priceCacheRead);
+  const cacheCreationErr = priceFieldError(priceCacheCreation);
+  if (inputErr) priceErrors.input = inputErr;
+  if (outputErr) priceErrors.output = outputErr;
+  if (cacheReadErr) priceErrors.cacheRead = cacheReadErr;
+  if (cacheCreationErr) priceErrors.cacheCreation = cacheCreationErr;
+  const priceFormValid = Object.keys(priceErrors).length === 0;
+  const touchPrice = (k: PriceField) =>
+    setPriceTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showPriceErr = (k: PriceField) =>
+    priceTouched[k] || priceSubmitAttempted ? priceErrors[k] : undefined;
+
   const saveModelPrice = async () => {
+    setPriceSubmitAttempted(true);
+    if (priceSaving) return;
+    if (!priceFormValid) return; // 保存已禁用，此处双保险（行内校验为准，不再走页面横幅报错）
     clearError();
-    const modelId = normalizeModelId(priceModel);
-    if (!modelId) {
-      setError("模型名不能为空");
-      return;
-    }
-    const input = Number(priceInput);
-    const output = Number(priceOutput);
-    const cacheRead = Number(priceCacheRead);
-    const cacheCreation = Number(priceCacheCreation);
-    if ([input, output, cacheRead, cacheCreation].some((n) => !Number.isFinite(n) || n < 0)) {
-      setError("价格必须为非负数字");
-      return;
-    }
+    setPriceSaving(true);
     try {
+      const modelId = normalizedModel;
+      const input = Number(priceInput);
+      const output = Number(priceOutput);
+      const cacheRead = Number(priceCacheRead);
+      const cacheCreation = Number(priceCacheCreation);
       await api.upsertModelPrice({
         model_id: modelId,
         display_name: priceDisplayName.trim() || modelId,
@@ -425,6 +455,8 @@ export default function SettingsPage() {
     } catch (err) {
       handleError(err);
       toast.error("保存定价失败");
+    } finally {
+      setPriceSaving(false);
     }
   };
 
@@ -446,6 +478,8 @@ export default function SettingsPage() {
     setPriceOutput("");
     setPriceCacheRead("");
     setPriceCacheCreation("");
+    setPriceTouched({});
+    setPriceSubmitAttempted(false);
   };
 
   const deleteModelPrice = async (p: ModelPrice) => {
@@ -703,19 +737,27 @@ export default function SettingsPage() {
                   {editingPrice ? `编辑定价: ${editingPrice.model_id}` : "新增定价"}
                 </p>
                 {editingPrice && (
-                  <Button variant="ghost" size="sm" onClick={cancelEditPrice}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEditPrice}
+                    disabled={priceSaving}
+                  >
                     取消编辑
                   </Button>
                 )}
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="price-model">模型名</Label>
+                <FormField label="模型名" htmlFor="price-model" required error={showPriceErr("model")}>
                   <Input
                     id="price-model"
                     placeholder="如 claude-sonnet-4.5"
                     value={priceModel}
-                    onChange={(e) => setPriceModel(e.target.value)}
+                    onBlur={() => touchPrice("model")}
+                    onChange={(e) => {
+                      touchPrice("model");
+                      setPriceModel(e.target.value);
+                    }}
                   />
                   {normalizedModel && normalizedModel !== priceModel.trim().toLowerCase() && (
                     <p className="text-xs text-muted-foreground">
@@ -723,18 +765,16 @@ export default function SettingsPage() {
                       <span className="font-mono text-foreground">{normalizedModel}</span>
                     </p>
                   )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price-display-name">显示名（可选）</Label>
+                </FormField>
+                <FormField label="显示名（可选）" htmlFor="price-display-name">
                   <Input
                     id="price-display-name"
                     placeholder="Claude Sonnet 4.5"
                     value={priceDisplayName}
                     onChange={(e) => setPriceDisplayName(e.target.value)}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price-input">输入($/M)</Label>
+                </FormField>
+                <FormField label="输入($/M)" htmlFor="price-input" error={showPriceErr("input")}>
                   <Input
                     id="price-input"
                     type="number"
@@ -742,11 +782,14 @@ export default function SettingsPage() {
                     step="any"
                     placeholder="3"
                     value={priceInput}
-                    onChange={(e) => setPriceInput(e.target.value)}
+                    onBlur={() => touchPrice("input")}
+                    onChange={(e) => {
+                      touchPrice("input");
+                      setPriceInput(e.target.value);
+                    }}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price-output">输出($/M)</Label>
+                </FormField>
+                <FormField label="输出($/M)" htmlFor="price-output" error={showPriceErr("output")}>
                   <Input
                     id="price-output"
                     type="number"
@@ -754,11 +797,18 @@ export default function SettingsPage() {
                     step="any"
                     placeholder="15"
                     value={priceOutput}
-                    onChange={(e) => setPriceOutput(e.target.value)}
+                    onBlur={() => touchPrice("output")}
+                    onChange={(e) => {
+                      touchPrice("output");
+                      setPriceOutput(e.target.value);
+                    }}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price-cache-read">缓存命中($/M)</Label>
+                </FormField>
+                <FormField
+                  label="缓存命中($/M)"
+                  htmlFor="price-cache-read"
+                  error={showPriceErr("cacheRead")}
+                >
                   <Input
                     id="price-cache-read"
                     type="number"
@@ -766,11 +816,18 @@ export default function SettingsPage() {
                     step="any"
                     placeholder="0.3"
                     value={priceCacheRead}
-                    onChange={(e) => setPriceCacheRead(e.target.value)}
+                    onBlur={() => touchPrice("cacheRead")}
+                    onChange={(e) => {
+                      touchPrice("cacheRead");
+                      setPriceCacheRead(e.target.value);
+                    }}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price-cache-creation">缓存创建($/M)</Label>
+                </FormField>
+                <FormField
+                  label="缓存创建($/M)"
+                  htmlFor="price-cache-creation"
+                  error={showPriceErr("cacheCreation")}
+                >
                   <Input
                     id="price-cache-creation"
                     type="number"
@@ -778,13 +835,21 @@ export default function SettingsPage() {
                     step="any"
                     placeholder="3.75"
                     value={priceCacheCreation}
-                    onChange={(e) => setPriceCacheCreation(e.target.value)}
+                    onBlur={() => touchPrice("cacheCreation")}
+                    onChange={(e) => {
+                      touchPrice("cacheCreation");
+                      setPriceCacheCreation(e.target.value);
+                    }}
                   />
-                </div>
+                </FormField>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button onClick={saveModelPrice} aria-label="保存定价">
-                  {editingPrice ? "保存修改" : "保存"}
+                <Button
+                  onClick={saveModelPrice}
+                  aria-label="保存定价"
+                  disabled={priceSaving || !priceFormValid}
+                >
+                  {priceSaving ? "保存中" : editingPrice ? "保存修改" : "保存"}
                 </Button>
                 <Button variant="outline" onClick={fillAnthropicReference} aria-label="Anthropic 参考">
                   Anthropic 参考

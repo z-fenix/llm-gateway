@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import ApiKeysPage from "../ApiKeysPage";
 import { api } from "../../lib/api";
@@ -123,7 +123,8 @@ describe("ApiKeysPage 生成密钥", () => {
     fireEvent.change(screen.getByDisplayValue("100"), {
       target: { value: "200" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.updateApiKey).toHaveBeenCalledWith("k1", "alice2", 200)
     );
@@ -142,5 +143,56 @@ describe("ApiKeysPage 生成密钥", () => {
     await waitFor(() =>
       expect(api.deleteApiKey).toHaveBeenCalledWith("k1")
     );
+  });
+
+  it("创建卡 pristine 生成密钥禁用无行内错误；配额非法失焦出现行内错误仍禁用，修正后恢复", async () => {
+    render(<ApiKeysPage />);
+    await waitFor(() => expect(api.listApiKeys).toHaveBeenCalled());
+
+    // DSH touched 语义：pristine 不喊错，仅按钮禁用（名称为空即无效）
+    expect(screen.getByRole("button", { name: "生成密钥" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("用户/应用名"), {
+      target: { value: "my-app" },
+    });
+    expect(screen.getByRole("button", { name: "生成密钥" })).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText("Token 配额"), {
+      target: { value: "-1" },
+    });
+    expect(screen.getByText("请输入非负数字")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "生成密钥" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Token 配额"), {
+      target: { value: "100" },
+    });
+    expect(screen.getByRole("button", { name: "生成密钥" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("编辑对话框：清空名称失焦出现行内错误且应用禁用，补全后恢复", async () => {
+    mockedApi.listApiKeys.mockResolvedValue([
+      key("k1", { name: "alice", quota_total: 100 }),
+    ]);
+    render(<ApiKeysPage />);
+    await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    expect(
+      await screen.findByRole("heading", { name: "编辑密钥" })
+    ).toBeInTheDocument();
+
+    // 卡片与弹框各有「名称」字段，用 within(dialog) 限定弹框内查询
+    const dialog = within(screen.getByRole("dialog"));
+    const nameInput = dialog.getByDisplayValue("alice");
+    fireEvent.change(nameInput, { target: { value: "" } });
+    fireEvent.blur(nameInput);
+    expect(dialog.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    expect(dialog.getByRole("button", { name: "应用" })).toBeDisabled();
+
+    fireEvent.change(nameInput, { target: { value: "alice2" } });
+    expect(dialog.getByRole("button", { name: "应用" })).toBeEnabled();
+    expect(dialog.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

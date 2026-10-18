@@ -105,10 +105,10 @@ describe("McpServersPage", () => {
       await screen.findByRole("heading", { name: "新增 MCP 服务器" })
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("名称"), {
+    fireEvent.change(screen.getByLabelText(/^名称/), {
       target: { value: "Python 服务" },
     });
-    fireEvent.change(screen.getByLabelText("命令"), {
+    fireEvent.change(screen.getByLabelText(/^命令/), {
       target: { value: "python" },
     });
 
@@ -125,7 +125,8 @@ describe("McpServersPage", () => {
       target: { value: "8080" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertMcpServer).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -155,12 +156,12 @@ describe("McpServersPage", () => {
     fireEvent.click(await screen.findByRole("option", { name: "http" }));
 
     // stdio 条件字段应被清空隐藏
-    expect(screen.queryByLabelText("命令")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^命令/)).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("名称"), {
+    fireEvent.change(screen.getByLabelText(/^名称/), {
       target: { value: "远程服务" },
     });
-    fireEvent.change(screen.getByLabelText("URL"), {
+    fireEvent.change(screen.getByLabelText(/^URL/), {
       target: { value: "https://example.com/mcp" },
     });
 
@@ -172,7 +173,8 @@ describe("McpServersPage", () => {
       target: { value: "Bearer x" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertMcpServer).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -209,10 +211,11 @@ describe("McpServersPage", () => {
     expect(screen.getByDisplayValue("旧服务")).toBeInTheDocument();
     expect(screen.getByDisplayValue("old-cmd")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("名称"), {
+    fireEvent.change(screen.getByLabelText(/^名称/), {
       target: { value: "新服务" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言「保存」属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
     await waitFor(() =>
       expect(api.upsertMcpServer).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,5 +278,42 @@ describe("McpServersPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "确认" }));
     await waitFor(() => expect(api.deleteMcpServer).toHaveBeenCalledWith("s1"));
+  });
+
+  it("新增对话框 pristine：应用禁用且无行内错误（role=alert）", async () => {
+    render(<McpServersPage />);
+    await waitFor(() => expect(api.listMcpServers).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    expect(
+      await screen.findByRole("heading", { name: "新增 MCP 服务器" })
+    ).toBeInTheDocument();
+
+    // DSH touched 语义：pristine 不喊错，仅应用禁用
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("必填字段失焦后出现行内错误；补全后应用恢复可用", async () => {
+    render(<McpServersPage />);
+    await waitFor(() => expect(api.listMcpServers).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    await screen.findByRole("heading", { name: "新增 MCP 服务器" });
+
+    fireEvent.blur(screen.getByLabelText(/^名称/));
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    fireEvent.blur(screen.getByLabelText(/^命令/));
+    expect(screen.getByText("命令不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/^名称/), {
+      target: { value: "Python 服务" },
+    });
+    fireEvent.change(screen.getByLabelText(/^命令/), {
+      target: { value: "python" },
+    });
+    expect(screen.getByRole("button", { name: "应用" })).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

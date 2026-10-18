@@ -10,7 +10,6 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import {
   Select,
@@ -23,13 +22,31 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import { cn } from "../lib/utils";
 
 type ServerType = "stdio" | "http";
+
+/** 对话框行内校验字段（名称必填；stdio 必填命令 / http 必填 URL，后端为准）。 */
+type McpField = "name" | "command" | "url";
+type McpFieldErrors = Partial<Record<McpField, string>>;
+
+function validateMcpForm(
+  name: string,
+  serverType: ServerType,
+  command: string,
+  url: string
+): McpFieldErrors {
+  const errs: McpFieldErrors = {};
+  if (!name.trim()) errs.name = "名称不能为空";
+  if (serverType === "http" && !url.trim()) errs.url = "URL 不能为空";
+  if (serverType === "stdio" && !command.trim()) errs.command = "命令不能为空";
+  return errs;
+}
 
 interface ArgItem {
   id: string;
@@ -78,6 +95,16 @@ export default function McpServersPage() {
   const [url, setUrl] = useState("");
   const [headerPairs, setHeaderPairs] = useState<Pair[]>([]);
   const [pending, setPending] = useState(false);
+  // DSH touched 语义：pristine 空表单不喊错——行内错误仅「字段被触碰（blur/onChange）且无效」
+  // 或「曾尝试提交」时渲染；应用按钮仍按原始校验态禁用（不受 touched 影响）。
+  const [touched, setTouched] = useState<Partial<Record<McpField, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const errors = validateMcpForm(name, serverType, command, url);
+  const formValid = Object.keys(errors).length === 0;
+  const touch = (k: McpField) =>
+    setTouched((p) => (p[k] ? p : { ...p, [k]: true }));
+  const showErr = (k: McpField) =>
+    touched[k] || submitAttempted ? errors[k] : undefined;
 
   const [deleting, setDeleting] = useState<McpServer | null>(null);
 
@@ -107,6 +134,8 @@ export default function McpServersPage() {
     setUrl("");
     setHeaderPairs([]);
     setEditing(null);
+    setTouched({});
+    setSubmitAttempted(false);
   };
 
   const openCreate = () => {
@@ -169,22 +198,13 @@ export default function McpServersPage() {
   };
 
   const handleSave = async () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      toast.error("名称不能为空");
-      return;
-    }
-    if (serverType === "http" && !url.trim()) {
-      toast.error("URL 不能为空");
-      return;
-    }
-    if (serverType === "stdio" && !command.trim()) {
-      toast.error("命令不能为空");
-      return;
-    }
+    setSubmitAttempted(true);
+    if (pending) return;
+    if (!formValid) return; // 应用已禁用，此处双保险（行内校验为准，不再走 toast 报错）
     setError(null);
     setPending(true);
     try {
+      const trimmedName = name.trim();
       const payload: McpServer = {
         id: editing ? editing.id : "",
         name: trimmedName,
@@ -322,26 +342,27 @@ export default function McpServersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="mcp-name">名称</Label>
+            <FormField label="名称" htmlFor="mcp-name" required error={showErr("name")}>
               <Input
                 id="mcp-name"
                 placeholder="例如：本地 Python 服务"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onBlur={() => touch("name")}
+                onChange={(e) => {
+                  touch("name");
+                  setName(e.target.value);
+                }}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="mcp-description">描述</Label>
+            </FormField>
+            <FormField label="描述" htmlFor="mcp-description">
               <Input
                 id="mcp-description"
                 placeholder="简要说明该服务器的用途"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label>类型</Label>
+            </FormField>
+            <FormField label="类型">
               <Select
                 value={serverType}
                 onValueChange={(v) => switchType(v as ServerType)}
@@ -354,136 +375,153 @@ export default function McpServersPage() {
                   <SelectItem value="http">http</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </FormField>
 
             {serverType === "stdio" ? (
               <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="mcp-command">命令</Label>
+                <FormField label="命令" htmlFor="mcp-command" required error={showErr("command")}>
                   <Input
                     id="mcp-command"
                     placeholder="如 python（或可执行文件路径）"
                     value={command}
-                    onChange={(e) => setCommand(e.target.value)}
+                    onBlur={() => touch("command")}
+                    onChange={(e) => {
+                      touch("command");
+                      setCommand(e.target.value);
+                    }}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>参数</Label>
-                  {args.map((a, i) => (
-                    <div key={a.id} className="flex items-center gap-2">
-                      <Input
-                        value={a.value}
-                        placeholder="参数"
-                        className="font-mono"
-                        onChange={(e) =>
-                          setArgs((prev) =>
-                            prev.map((x, j) =>
-                              j === i ? { ...x, value: e.target.value } : x
-                            )
-                          )
-                        }
-                      />
+                </FormField>
+                {/* 折叠区：自定义设置（DSH details 模式，默认收起）——高级项按现有字段划分 */}
+                <details className="rounded-lg border border-border px-3">
+                  <summary className="flex cursor-pointer select-none items-center gap-2 py-2 text-sm font-medium text-foreground">
+                    自定义设置
+                  </summary>
+                  <div className="space-y-4 pb-3">
+                    <FormField label="参数">
+                      {args.map((a, i) => (
+                        <div key={a.id} className="flex items-center gap-2">
+                          <Input
+                            value={a.value}
+                            placeholder="参数"
+                            className="font-mono"
+                            onChange={(e) =>
+                              setArgs((prev) =>
+                                prev.map((x, j) =>
+                                  j === i ? { ...x, value: e.target.value } : x
+                                )
+                              )
+                            }
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="删除参数"
+                            onClick={() =>
+                              setArgs((prev) => prev.filter((_, j) => j !== i))
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      ))}
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="删除参数"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setArgs((prev) => [...prev, { id: uid(), value: "" }])}
+                      >
+                        <Plus size={16} /> 添加参数
+                      </Button>
+                    </FormField>
+                    <FormField label="环境变量">
+                      {pairsRow(
+                        envPairs,
+                        (i, v) =>
+                          setEnvPairs((prev) =>
+                            prev.map((p, j) => (j === i ? { ...p, key: v } : p))
+                          ),
+                        (i, v) =>
+                          setEnvPairs((prev) =>
+                            prev.map((p, j) => (j === i ? { ...p, value: v } : p))
+                          ),
+                        (i) => setEnvPairs((prev) => prev.filter((_, j) => j !== i)),
+                        "删除环境变量"
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={() =>
-                          setArgs((prev) => prev.filter((_, j) => j !== i))
+                          setEnvPairs((prev) => [...prev, { id: uid(), key: "", value: "" }])
                         }
                       >
-                        <Trash2 size={16} />
+                        <Plus size={16} /> 添加环境变量
                       </Button>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setArgs((prev) => [...prev, { id: uid(), value: "" }])}
-                  >
-                    <Plus size={16} /> 添加参数
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label>环境变量</Label>
-                  {pairsRow(
-                    envPairs,
-                    (i, v) =>
-                      setEnvPairs((prev) =>
-                        prev.map((p, j) => (j === i ? { ...p, key: v } : p))
-                      ),
-                    (i, v) =>
-                      setEnvPairs((prev) =>
-                        prev.map((p, j) => (j === i ? { ...p, value: v } : p))
-                      ),
-                    (i) => setEnvPairs((prev) => prev.filter((_, j) => j !== i)),
-                    "删除环境变量"
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setEnvPairs((prev) => [...prev, { id: uid(), key: "", value: "" }])
-                    }
-                  >
-                    <Plus size={16} /> 添加环境变量
-                  </Button>
-                </div>
+                    </FormField>
+                  </div>
+                </details>
               </>
             ) : (
               <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="mcp-url">URL</Label>
+                <FormField label="URL" htmlFor="mcp-url" required error={showErr("url")}>
                   <Input
                     id="mcp-url"
                     placeholder="如 https://example.com/mcp"
                     value={url}
-                    onChange={(e) => setUrl(e.target.value)}
+                    onBlur={() => touch("url")}
+                    onChange={(e) => {
+                      touch("url");
+                      setUrl(e.target.value);
+                    }}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>请求头</Label>
-                  {pairsRow(
-                    headerPairs,
-                    (i, v) =>
-                      setHeaderPairs((prev) =>
-                        prev.map((p, j) => (j === i ? { ...p, key: v } : p))
-                      ),
-                    (i, v) =>
-                      setHeaderPairs((prev) =>
-                        prev.map((p, j) => (j === i ? { ...p, value: v } : p))
-                      ),
-                    (i) =>
-                      setHeaderPairs((prev) => prev.filter((_, j) => j !== i)),
-                    "删除请求头"
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setHeaderPairs((prev) => [
-                        ...prev,
-                        { id: uid(), key: "", value: "" },
-                      ])
-                    }
-                  >
-                    <Plus size={16} /> 添加请求头
-                  </Button>
-                </div>
+                </FormField>
+                <details className="rounded-lg border border-border px-3">
+                  <summary className="flex cursor-pointer select-none items-center gap-2 py-2 text-sm font-medium text-foreground">
+                    自定义设置
+                  </summary>
+                  <div className="space-y-4 pb-3">
+                    <FormField label="请求头">
+                      {pairsRow(
+                        headerPairs,
+                        (i, v) =>
+                          setHeaderPairs((prev) =>
+                            prev.map((p, j) => (j === i ? { ...p, key: v } : p))
+                          ),
+                        (i, v) =>
+                          setHeaderPairs((prev) =>
+                            prev.map((p, j) => (j === i ? { ...p, value: v } : p))
+                          ),
+                        (i) =>
+                          setHeaderPairs((prev) => prev.filter((_, j) => j !== i)),
+                        "删除请求头"
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setHeaderPairs((prev) => [
+                            ...prev,
+                            { id: uid(), key: "", value: "" },
+                          ])
+                        }
+                      >
+                        <Plus size={16} /> 添加请求头
+                      </Button>
+                    </FormField>
+                  </div>
+                </details>
               </>
             )}
           </div>
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={closeDialog} disabled={pending}>
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          {/* 页脚：左取消右应用；busy 文案「应用中」；校验不过禁用应用 */}
+          <FormFooter
+            onCancel={closeDialog}
+            onSubmit={handleSave}
+            busy={pending}
+            submitDisabled={!formValid}
+          />
         </DialogContent>
       </Dialog>
 
