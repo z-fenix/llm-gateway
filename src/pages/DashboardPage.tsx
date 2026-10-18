@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
-import type { Stats, TimeBucket, UsageRangeSelection } from "../types";
+import type { LogStats, Stats, TimeBucket, UsageRangeSelection } from "../types";
 import { getUsageRangePresetLabel, resolveUsageRange } from "../lib/usageRange";
 import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
@@ -9,7 +9,10 @@ import { UsageDateRangePicker } from "../components/UsageDateRangePicker";
 import PageHeader from "../components/PageHeader";
 import LoadingState from "../components/LoadingState";
 import EmptyState from "../components/EmptyState";
-import LogTrendChart, { type Dimension } from "../components/LogTrendChart";
+import LogTrendChart from "../components/LogTrendChart";
+import type { Dimension } from "../lib/chartColors";
+import { StatCard } from "../components/StatCard";
+import { SegmentedTabs } from "../components/SegmentedTabs";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { cacheHitRatePercent, formatUsd, realTokens } from "../lib/usage";
 
@@ -24,6 +27,8 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
 
 export default function DashboardPage() {
   const [s, setS] = useState<Stats | null>(null);
+  // Top 渠道/Top 密钥数据源：get_log_stats（后端 get_stats 不含榜单字段，Rust 侧零改动）
+  const [topStats, setTopStats] = useState<LogStats | null>(null);
   const [buckets, setBuckets] = useState<TimeBucket[] | null>(null);
   const [bucketSecs, setBucketSecs] = useState(3600);
   const [dimension, setDimension] = useState<Dimension>("calls");
@@ -31,8 +36,15 @@ export default function DashboardPage() {
   const [nonce, setNonce] = useState(0);
   const [secs, setSecs] = useRefreshInterval("dashboard-refresh");
 
+  // 手动/自动刷新：拉取数据的同时通知顶栏同步网关状态
+  const refresh = useCallback(() => {
+    setNonce((n) => n + 1);
+    window.dispatchEvent(new CustomEvent("gateway-refresh"));
+  }, []);
+
   useEffect(() => {
     api.getStats().then(setS).catch(console.error);
+    api.getLogStats({}).then(setTopStats).catch(console.error);
   }, [nonce]);
 
   useEffect(() => {
@@ -48,19 +60,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!secs) return;
-    const t = setInterval(() => setNonce((n) => n + 1), secs * 1000);
+    const t = setInterval(refresh, secs * 1000);
     return () => clearInterval(t);
-  }, [secs]);
+  }, [secs, refresh]);
 
   if (!s) return <LoadingState />;
 
   const cards = [
-    { label: "今日请求", value: s.today_requests },
-    { label: "今日 Token", value: s.today_tokens },
-    { label: "累计请求", value: s.total_requests },
-    { label: "累计 Token", value: s.total_tokens },
-    { label: "活跃渠道", value: s.active_channels },
-    { label: "平均延迟(ms)", value: s.avg_latency_ms },
+    { label: "今日请求", value: String(s.today_requests) },
+    { label: "今日 Token", value: String(s.today_tokens) },
+    { label: "累计请求", value: String(s.total_requests) },
+    { label: "累计 Token", value: String(s.total_tokens) },
+    { label: "活跃渠道", value: String(s.active_channels) },
+    { label: "平均延迟(ms)", value: String(s.avg_latency_ms) },
   ];
 
   // 缓存/成本维度：真实消耗 = fresh_input + output + cache_creation + cache_read
@@ -83,6 +95,9 @@ export default function DashboardPage() {
     { label: "累计估算费用", value: formatUsd(totalCost) },
   ];
 
+  const topChannels: [string, number][] = topStats?.top_channels ?? [];
+  const topApiKeys: [string, number][] = topStats?.top_api_keys ?? [];
+
   const rangeLabel = getUsageRangePresetLabel(rangeSel.preset);
 
   return (
@@ -94,7 +109,7 @@ export default function DashboardPage() {
           <RefreshControls
             secs={secs}
             onSecsChange={setSecs}
-            onRefresh={() => setNonce((n) => n + 1)}
+            onRefresh={refresh}
           />
         }
       />
@@ -102,8 +117,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <Card key={c.label} className="p-4">
-            <div className="text-sm text-muted-foreground">{c.label}</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{c.value}</div>
+            <StatCard label={c.label} value={c.value} />
           </Card>
         ))}
       </div>
@@ -111,21 +125,15 @@ export default function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {usageCards.map((c) => (
           <Card key={c.label} className="p-4">
-            <div className="text-sm text-muted-foreground">{c.label}</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{c.value}</div>
+            <StatCard label={c.label} value={c.value} />
           </Card>
         ))}
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">今日缓存命中率</div>
-          <div className="mt-1 text-2xl font-bold text-foreground">
-            {todayHitRate.toFixed(1)}%
-          </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-purple-500"
-              style={{ width: `${Math.min(100, todayHitRate)}%` }}
-            />
-          </div>
+          <StatCard
+            label="今日缓存命中率"
+            value={`${todayHitRate.toFixed(1)}%`}
+            progress={todayHitRate}
+          />
         </Card>
       </div>
 
@@ -138,19 +146,12 @@ export default function DashboardPage() {
               onApply={setRangeSel}
               triggerLabel={rangeLabel}
             />
-            <div className="flex gap-1 text-sm" role="tablist" aria-label="趋势维度">
-              {DIMENSION_TABS.map((tab) => (
-                <button key={tab.value} role="tab" aria-selected={dimension === tab.value}
-                  onClick={() => setDimension(tab.value)}
-                  className={`rounded-md px-2 py-1 transition-colors ${
-                    dimension === tab.value
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedTabs
+              value={dimension}
+              onChange={setDimension}
+              options={DIMENSION_TABS}
+              ariaLabel="趋势维度"
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -163,6 +164,29 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card className="p-4">
+          <div className="mb-1 text-xs font-medium text-muted-foreground">Top 渠道</div>
+          {topChannels.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
+            <ul className="space-y-0.5">
+              {topChannels.map(([name, count]) => (
+                <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card className="p-4">
+          <div className="mb-1 text-xs font-medium text-muted-foreground">Top 密钥</div>
+          {topApiKeys.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
+            <ul className="space-y-0.5">
+              {topApiKeys.map(([name, count]) => (
+                <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

@@ -10,8 +10,9 @@ import {
 } from "recharts";
 import type { TimeBucket } from "../types";
 import { formatUsd, formatUsdAxis } from "../lib/usage";
+import { seriesColor, type Dimension } from "../lib/chartColors";
 
-export type Dimension = "calls" | "tokens" | "success" | "risk" | "cache" | "cost";
+export type { Dimension };
 
 export function niceCeil(n: number): number {
   if (n <= 0) return 1;
@@ -62,15 +63,6 @@ export function stackSums(b: TimeBucket): number {
 
 const RISK_ORDER = ["clean", "info", "low", "medium", "high", "critical"];
 
-const RISK_COLORS: Record<string, string> = {
-  clean: "#9ca3af",
-  info: "#3b82f6",
-  low: "#22c55e",
-  medium: "#eab308",
-  high: "#f97316",
-  critical: "#ef4444",
-};
-
 const RISK_LABELS: Record<string, string> = {
   clean: "无风险",
   info: "信息",
@@ -113,7 +105,7 @@ function CustomTooltip({
     .map((p) => ({
       name: p.name ?? String(p.dataKey),
       value: p.value,
-      color: p.color ?? p.stroke ?? p.fill ?? "#6b7280",
+      color: p.color ?? p.stroke ?? p.fill ?? seriesColor(dimension, String(p.dataKey ?? "")),
     }));
 
   return (
@@ -171,7 +163,7 @@ export default function LogTrendChart({
 
   if (buckets.length === 0) {
     return (
-      <div className="flex h-[180px] w-full items-center justify-center rounded border border-dashed border-gray-300 bg-muted text-sm text-muted-foreground">
+      <div className="flex h-[180px] w-full items-center justify-center rounded border border-dashed border-border bg-muted text-sm text-muted-foreground">
         暂无数据
       </div>
     );
@@ -183,28 +175,28 @@ export default function LogTrendChart({
         <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+              <stop offset="0%" stopColor={seriesColor("calls", "calls")} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={seriesColor("calls", "calls")} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorInput" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+              <stop offset="0%" stopColor={seriesColor("tokens", "input")} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={seriesColor("tokens", "input")} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorOutput" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+              <stop offset="0%" stopColor={seriesColor("tokens", "output")} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={seriesColor("tokens", "output")} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorCacheCreation" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f97316" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
+              <stop offset="0%" stopColor={seriesColor("cache", "cache_creation")} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={seriesColor("cache", "cache_creation")} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorCacheRead" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+              <stop offset="0%" stopColor={seriesColor("cache", "cache_read")} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={seriesColor("cache", "cache_read")} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+              <stop offset="0%" stopColor={seriesColor("cost", "cost")} stopOpacity={0.2} />
+              <stop offset="100%" stopColor={seriesColor("cost", "cost")} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -241,7 +233,7 @@ export default function LogTrendChart({
               type="monotone"
               dataKey="calls"
               name="调用量"
-              stroke="#3b82f6"
+              stroke={seriesColor("calls", "calls")}
               strokeWidth={2}
               fill="url(#colorCalls)"
             />
@@ -252,7 +244,7 @@ export default function LogTrendChart({
                 type="monotone"
                 dataKey="input"
                 name="输入 Tokens"
-                stroke="#3b82f6"
+                stroke={seriesColor("tokens", "input")}
                 strokeWidth={2}
                 fill="url(#colorInput)"
               />
@@ -260,7 +252,7 @@ export default function LogTrendChart({
                 type="monotone"
                 dataKey="output"
                 name="输出 Tokens"
-                stroke="#22c55e"
+                stroke={seriesColor("tokens", "output")}
                 strokeWidth={2}
                 fill="url(#colorOutput)"
               />
@@ -272,7 +264,7 @@ export default function LogTrendChart({
                 type="monotone"
                 dataKey="cache_creation"
                 name="缓存创建"
-                stroke="#f97316"
+                stroke={seriesColor("cache", "cache_creation")}
                 strokeWidth={2}
                 fill="url(#colorCacheCreation)"
               />
@@ -280,7 +272,7 @@ export default function LogTrendChart({
                 type="monotone"
                 dataKey="cache_read"
                 name="缓存命中"
-                stroke="#a855f7"
+                stroke={seriesColor("cache", "cache_read")}
                 strokeWidth={2}
                 fill="url(#colorCacheRead)"
               />
@@ -291,7 +283,7 @@ export default function LogTrendChart({
               type="monotone"
               dataKey="cost"
               name="费用"
-              stroke="#ef4444"
+              stroke={seriesColor("cost", "cost")}
               strokeWidth={2}
               strokeDasharray="5 3"
               fill="url(#colorCost)"
@@ -302,7 +294,7 @@ export default function LogTrendChart({
               type="monotone"
               dataKey="success"
               name="成功率"
-              stroke="#22c55e"
+              stroke={seriesColor("success", "success")}
               strokeWidth={2}
               fill="none"
             />
@@ -315,8 +307,8 @@ export default function LogTrendChart({
                 dataKey={l}
                 name={RISK_LABELS[l] || l}
                 stackId="risk"
-                stroke={RISK_COLORS[l]}
-                fill={RISK_COLORS[l]}
+                stroke={seriesColor("risk", l)}
+                fill={seriesColor("risk", l)}
                 fillOpacity={0.6}
                 strokeWidth={1}
               />
