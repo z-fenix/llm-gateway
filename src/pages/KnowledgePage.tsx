@@ -409,6 +409,9 @@ export default function KnowledgePage() {
                       }`}
                       onClick={() => setSelectedKbId(kb.id)}
                       onKeyDown={(e) => {
+                        // 仅行自身接收 Enter/Space：行内按钮/开关冒泡上来的键事件
+                        // 不处理，否则 preventDefault 会吞掉子元素的键盘激活
+                        if (e.target !== e.currentTarget) return;
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
                           setSelectedKbId(kb.id);

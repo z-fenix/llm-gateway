@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within, createEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import KnowledgePage, { formatBytes } from "../KnowledgePage";
 import { api } from "../../lib/api";
@@ -261,5 +261,35 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(mockedApi.deleteKb).toHaveBeenCalledWith("kb1")
     );
+  });
+
+  it("行内子元素上的 Enter 不触发行选中，行自身的 Enter 仍选中", async () => {
+    mockedApi.listKbs.mockResolvedValue([
+      kb(),
+      kb({ id: "kb2", name: "第二库" }),
+    ]);
+    render(<KnowledgePage />);
+    // 首库在列表加载后自动选中
+    await waitFor(() =>
+      expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb1")
+    );
+
+    const row2 = screen.getByText("第二库").closest("tr") as HTMLTableRowElement;
+    const editBtn = within(row2).getByRole("button", { name: "编辑" });
+
+    // 编辑按钮上的 Enter：行处理器不得接管（否则 preventDefault 吞掉按钮的键盘激活）
+    const ev = createEvent.keyDown(editBtn, { key: "Enter" });
+    const preventDefault = vi.spyOn(ev, "preventDefault");
+    fireEvent(editBtn, ev);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(mockedApi.listDocuments).not.toHaveBeenCalledWith("kb2");
+    expect(screen.queryByText("上传文档到「第二库」")).not.toBeInTheDocument();
+
+    // 正向对照：行自身接收 Enter 仍触发选中
+    fireEvent.keyDown(row2, { key: "Enter" });
+    await waitFor(() =>
+      expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb2")
+    );
+    expect(screen.getByText("上传文档到「第二库」")).toBeInTheDocument();
   });
 });
