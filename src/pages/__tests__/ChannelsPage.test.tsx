@@ -1,6 +1,9 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import ChannelsPage from "../ChannelsPage";
+// Vite ?raw 导入：编译期把页面源码读成字符串，等价于 Task 10 的 node:fs 源码守卫
+// （项目未装 @types/node，故不用 node:fs）
+import channelsPageSource from "../ChannelsPage.tsx?raw";
+import ChannelsPage, { STATUS_OPTIONS } from "../ChannelsPage";
 import { api } from "../../lib/api";
 import type { Channel } from "../../types";
 
@@ -119,15 +122,21 @@ describe("ChannelsPage", () => {
     expect(screen.getByText("claude-sonnet-4-5")).toBeInTheDocument();
   });
 
-  it("列表渲染状态徽标与测试按钮", async () => {
+  it("列表渲染状态点与已停用标签（Task 8 改版语义）", async () => {
     mockedApi.listChannels.mockResolvedValue([
-      channel("c1", { enabled: true }),
+      channel("c1", { enabled: true, avg_latency_ms: 87 }),
       channel("c2", { enabled: false, name: "禁用渠道" }),
     ]);
     render(<ChannelsPage />);
     await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
-    expect(screen.getAllByText("启用").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("禁用").length).toBeGreaterThan(0);
+
+    const enabledCard = screen.getByText("渠道c1").closest(".group") as HTMLElement;
+    expect(enabledCard.querySelector(".bg-success")).not.toBeNull();
+    expect(enabledCard.textContent).toContain("87ms");
+
+    const disabledCard = screen.getByText("禁用渠道").closest(".group") as HTMLElement;
+    expect(disabledCard.textContent).toContain("已停用");
+    expect(disabledCard.className).toContain("opacity-55");
 
     fireEvent.click(screen.getAllByRole("button", { name: "连通检测" })[0]);
     await waitFor(() => expect(mockedApi.testChannel).toHaveBeenCalledWith("c1"));
@@ -171,5 +180,96 @@ describe("ChannelsPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "新建渠道" })[0]);
     expect(await screen.findByRole("heading", { name: "新建渠道" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "编辑渠道" })).not.toBeInTheDocument();
+  });
+});
+
+describe("ChannelsPage 渠道页改版（Task 8）", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockedApi.listChannels.mockResolvedValue([]);
+    mockedApi.testChannel.mockResolvedValue({ ok: true, latency_ms: 120, error: null });
+  });
+
+  it("启用卡渲染 success 状态点与 text-success 等宽延迟（avg_latency_ms 常驻）", async () => {
+    mockedApi.listChannels.mockResolvedValue([
+      channel("c1", { enabled: true, avg_latency_ms: 87 }),
+    ]);
+    const { container } = render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
+
+    const card = screen.getByText("渠道c1").closest(".group") as HTMLElement;
+    const dot = card.querySelector(".bg-success");
+    expect(dot).not.toBeNull();
+    const latency = card.querySelector(".text-success.font-mono");
+    expect(latency).not.toBeNull();
+    expect(latency?.textContent).toContain("87");
+    // 延迟常驻：文本由令牌上色而非旧统计行的 muted 文案
+    expect(container.querySelector(".hover\\:border-primary\\/40")).not.toBeNull();
+  });
+
+  it("连通检测后延迟更新为实测值并保持 text-success font-mono", async () => {
+    mockedApi.listChannels.mockResolvedValue([
+      channel("c1", { enabled: true, avg_latency_ms: 0 }),
+    ]);
+    render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
+
+    // 未有实测延迟且 avg 为 0 时不渲染延迟
+    const card = screen.getByText("渠道c1").closest(".group") as HTMLElement;
+    expect(card.querySelector(".text-success.font-mono")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "连通检测" }));
+    await waitFor(() => {
+      const latency = card.querySelector(".text-success.font-mono");
+      expect(latency?.textContent).toContain("120");
+    });
+  });
+
+  it("停用卡渲染 已停用 标签且卡片 opacity-55，无 success 点", async () => {
+    mockedApi.listChannels.mockResolvedValue([
+      channel("c2", { enabled: false, name: "停用渠道" }),
+    ]);
+    render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText("停用渠道")).toBeInTheDocument());
+
+    const card = screen.getByText("停用渠道").closest(".group") as HTMLElement;
+    expect(card.className).toContain("opacity-55");
+    expect(card.textContent).toContain("已停用");
+    expect(card.querySelector(".bg-success")).toBeNull();
+  });
+
+  it("页面源码不含 border-border-active 死类与 bg-gradient-to-* 渐变类", () => {
+    expect(channelsPageSource).not.toContain("border-border-active");
+    expect(channelsPageSource).not.toMatch(/bg-gradient-to-/);
+  });
+
+  it("状态筛选使用 SegmentedTabs：tablist 选项数与 STATUS_OPTIONS 一致，all 语义往返", async () => {
+    mockedApi.listChannels.mockResolvedValue([
+      channel("c1", { enabled: true }),
+      channel("c2", { enabled: false, name: "停用渠道" }),
+    ]);
+    render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
+
+    const tablist = screen.getByRole("tablist", { name: "渠道状态筛选" });
+    const tabs = Array.from(tablist.querySelectorAll("[role='tab']"));
+    expect(tabs.length).toBe(STATUS_OPTIONS.length);
+    expect(tabs.map((t) => t.textContent)).toEqual(
+      STATUS_OPTIONS.map((o) => o.label)
+    );
+
+    // 初始 全部：两张卡都在
+    expect(screen.getByText("渠道c1")).toBeInTheDocument();
+    expect(screen.getByText("停用渠道")).toBeInTheDocument();
+
+    // 切到 启用：只留启用卡
+    fireEvent.click(screen.getByRole("tab", { name: "启用" }));
+    await waitFor(() => expect(screen.queryByText("停用渠道")).not.toBeInTheDocument());
+    expect(screen.getByText("渠道c1")).toBeInTheDocument();
+
+    // 切回 全部（"all" 值语义往返）
+    fireEvent.click(screen.getByRole("tab", { name: "全部" }));
+    await waitFor(() => expect(screen.getByText("停用渠道")).toBeInTheDocument());
+    expect(screen.getByText("渠道c1")).toBeInTheDocument();
   });
 });

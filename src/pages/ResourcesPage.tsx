@@ -18,7 +18,7 @@ const tabCls = (active: boolean) =>
   cn(
     "inline-flex min-w-[120px] items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all",
     active
-      ? "bg-blue-500 text-white shadow-sm"
+      ? "bg-primary text-primary-foreground shadow-sm"
       : "text-muted-foreground opacity-60 hover:opacity-100 hover:bg-muted/50"
   );
 

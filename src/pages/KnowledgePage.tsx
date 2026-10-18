@@ -13,7 +13,7 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { StatusBadge } from "../components/StatusBadge";
 import {
   Card,
   CardContent,
@@ -429,9 +429,9 @@ export default function KnowledgePage() {
                             checked={kb.enabled}
                             onCheckedChange={() => toggleKb(kb)}
                           />
-                          <Badge variant={kb.enabled ? "default" : "secondary"}>
+                          <StatusBadge semantic={kb.enabled ? "success" : "neutral"}>
                             {kb.enabled ? "启用" : "禁用"}
-                          </Badge>
+                          </StatusBadge>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -447,7 +447,7 @@ export default function KnowledgePage() {
                           </button>
                           {kb.needs_reindex && (
                             <button
-                              className="inline-flex items-center gap-1 text-amber-600 hover:underline"
+                              className="inline-flex items-center gap-1 text-warning hover:underline"
                               onClick={() => reindexKb(kb)}
                             >
                               <RefreshCw className="h-3 w-3" />
@@ -540,13 +540,17 @@ export default function KnowledgePage() {
                         {doc.chunk_count}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge
-                          variant={
-                            doc.status === "completed" ? "default" : "secondary"
+                        <StatusBadge
+                          semantic={
+                            doc.status === "completed"
+                              ? "success"
+                              : doc.status === "error"
+                                ? "danger"
+                                : "neutral"
                           }
                         >
                           {doc.status}
-                        </Badge>
+                        </StatusBadge>
                       </td>
                       <td className="max-w-[160px] truncate px-4 py-3 text-muted-foreground">
                         {doc.error ?? "-"}
@@ -606,7 +610,9 @@ export default function KnowledgePage() {
                       {c.filename}
                     </span>
                     {c.symbol && <span className="font-mono">{c.symbol}</span>}
-                    <Badge variant="secondary">分数 {c.score.toFixed(4)}</Badge>
+                    <StatusBadge semantic="neutral">
+                      分数 {c.score.toFixed(4)}
+                    </StatusBadge>
                   </div>
                   <div className="whitespace-pre-wrap">{c.content}</div>
                 </li>

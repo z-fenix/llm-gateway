@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Layers, List, Search } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
@@ -9,20 +9,29 @@ import type { ApiKey, Channel, LogFilter, LogStats, RequestLog, SecurityFinding,
 import LogTrendChart, { type Dimension } from "../components/LogTrendChart";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import { StatusBadge } from "../components/StatusBadge";
+import { httpStatusSemantic, riskSemantic } from "../lib/semantics";
+import { SegmentedTabs } from "../components/SegmentedTabs";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { cn } from "../lib/utils";
 import { getUsageRangePresetLabel, resolveUsageRange } from "../lib/usageRange";
 import { UsageDateRangePicker } from "../components/UsageDateRangePicker";
-import { cacheHitRatePercent, formatUsd } from "../lib/usage";
+import { formatUsd } from "../lib/usage";
 
 function prettyJson(s?: string | null): string {
   if (!s) return "(无内容)";
@@ -33,25 +42,13 @@ function prettyJson(s?: string | null): string {
   }
 }
 
-function riskBadgeClass(level: string): string {
-  switch (level) {
-    case "clean": return "bg-muted text-muted-foreground";
-    case "info": return "bg-blue-100 text-blue-700";
-    case "low": return "bg-green-100 text-green-700";
-    case "medium": return "bg-yellow-100 text-yellow-700";
-    case "high": return "bg-orange-100 text-orange-700";
-    case "critical": return "bg-red-100 text-red-700";
-    default: return "bg-muted text-muted-foreground";
-  }
-}
-
 function actionMarker(action: string, sanitized: boolean): React.ReactNode {
   const a = action.toLowerCase();
   if (a === "block") {
-    return (<span className="ml-1 text-xs text-red-600">已阻断</span>);
+    return (<span className="ml-1 text-xs text-destructive">已阻断</span>);
   }
   if (a === "redact" || a === "sanitize" || sanitized) {
-    return (<span className="ml-1 text-xs text-blue-600">已脱敏</span>);
+    return (<span className="ml-1 text-xs text-info">已脱敏</span>);
   }
   return null;
 }
@@ -70,15 +67,6 @@ function sessionProviderLabel(p?: string | null): string {
   }
 }
 
-function sessionBadgeClass(p?: string | null): string {
-  switch (p) {
-    case "claude": return "bg-purple-100 text-purple-700";
-    case "codex": return "bg-blue-100 text-blue-700";
-    case "gemini": return "bg-teal-100 text-teal-700";
-    default: return "bg-muted text-muted-foreground";
-  }
-}
-
 function FindingsPanel({ logId }: { logId: string }) {
   const [findings, setFindings] = useState<SecurityFinding[] | null>(null);
   useEffect(() => {
@@ -93,7 +81,7 @@ function FindingsPanel({ logId }: { logId: string }) {
       {findings.map((f) => (
         <li key={f.id} className="rounded-md border border-border bg-card p-2 text-xs">
           <div className="flex flex-wrap gap-2 font-medium">
-            <span className={cn("rounded px-1", riskBadgeClass(f.severity))}>{f.severity}</span>
+            <StatusBadge semantic={riskSemantic(f.severity)}>{f.severity}</StatusBadge>
             <span>{f.title}</span>
             <span className="text-muted-foreground">({f.phase})</span>
           </div>
@@ -150,21 +138,31 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
   { label: "成本", value: "cost" },
 ];
 
-const LOG_COLUMNS = [
-  "#", "时间", "密钥", "角色", "本地会话", "请求模型", "上游模型", "渠道", "状态", "风险",
-  "Token", "缓存读取", "缓存创建", "费用", "延迟", "兜底",
-];
+// 全部选项的哨兵值（Radix Select 不允许空字符串 item value）
+const ALL = "all";
 
-const selectCls =
-  "h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20";
+const NUMERIC_CELL = "px-3 py-2 text-right font-mono tabular-nums text-muted-foreground";
+
+const LOG_COLUMNS: { label: string; align?: "right" }[] = [
+  { label: "#" }, { label: "时间" }, { label: "密钥" }, { label: "角色" }, { label: "本地会话" },
+  { label: "请求模型" }, { label: "上游模型" }, { label: "渠道" }, { label: "状态" }, { label: "风险" },
+  { label: "Token", align: "right" }, { label: "缓存读取", align: "right" }, { label: "缓存创建", align: "right" },
+  { label: "费用", align: "right" }, { label: "延迟", align: "right" }, { label: "兜底" },
+];
 
 function LogTableHeader() {
   return (
     <thead>
       <tr className="border-b border-border text-left text-muted-foreground">
         {LOG_COLUMNS.map((c) => (
-          <th key={c} className="whitespace-nowrap px-4 py-3 font-medium">
-            {c}
+          <th
+            key={c.label}
+            className={cn(
+              "whitespace-nowrap px-3 py-2 font-medium",
+              c.align === "right" && "text-right"
+            )}
+          >
+            {c.label}
           </th>
         ))}
       </tr>
@@ -187,27 +185,25 @@ function LogRow({
         className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/50"
         onClick={onToggle}
       >
-        <td className="px-4 py-3 text-muted-foreground">{log.seq}</td>
-        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+        <td className="px-3 py-2 text-muted-foreground">{log.seq}</td>
+        <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
           {new Date(log.created_at * 1000).toLocaleString()}
         </td>
-        <td className="px-4 py-3 text-muted-foreground">{log.key_name ?? "-"}</td>
-        <td className="px-4 py-3">
+        <td className="px-3 py-2 text-muted-foreground">{log.key_name ?? "-"}</td>
+        <td className="px-3 py-2">
           {log.role ? (
-            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
-              {log.role}
-            </Badge>
+            <span className="font-mono text-xs text-foreground">{log.role}</span>
           ) : (
             "-"
           )}
         </td>
-        <td className="px-4 py-3">
+        <td className="px-3 py-2">
           {log.session_id ? (
             <div className="flex flex-col gap-0.5">
               {log.session_provider && (
-                <span className={cn("w-fit rounded px-1 text-xs", sessionBadgeClass(log.session_provider))}>
+                <StatusBadge semantic="neutral" className="w-fit">
                   {sessionProviderLabel(log.session_provider)}
-                </span>
+                </StatusBadge>
               )}
               <span className="font-mono text-xs text-muted-foreground" title={log.session_id}>
                 {shortSessionId(log.session_id)}
@@ -217,52 +213,49 @@ function LogRow({
             "-"
           )}
         </td>
-        <td className="px-4 py-3 font-mono text-xs text-foreground">
+        <td className="px-3 py-2 font-mono text-xs text-foreground">
           {log.request_model ?? "-"}
         </td>
-        <td className="px-4 py-3 font-mono text-xs text-foreground">
+        <td className="px-3 py-2 font-mono text-xs text-foreground">
           {log.upstream_model ?? "-"}
         </td>
-        <td className="px-4 py-3 text-muted-foreground">{log.channel_name ?? "-"}</td>
-        <td
-          className={cn(
-            "px-4 py-3",
-            log.status_code === 200 ? "text-green-600" : "text-red-600"
+        <td className="px-3 py-2 text-muted-foreground">{log.channel_name ?? "-"}</td>
+        <td className="px-3 py-2">
+          {log.status_code == null ? (
+            <span className="text-muted-foreground">-</span>
+          ) : (
+            <StatusBadge semantic={httpStatusSemantic(log.status_code)}>
+              {log.status_code}
+            </StatusBadge>
           )}
-        >
-          {log.status_code ?? "-"}
         </td>
-        <td className="px-4 py-3">
-          <span className={cn("rounded px-1 text-xs", riskBadgeClass(log.risk_level))}>
-            {log.risk_level}
-          </span>
+        <td className="px-3 py-2">
+          <StatusBadge semantic={riskSemantic(log.risk_level)}>{log.risk_level}</StatusBadge>
           {actionMarker(log.security_action, log.sanitized)}
         </td>
-        <td className="px-4 py-3 text-muted-foreground">
-          {log.input_tokens}+{log.output_tokens}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">
+        <td className={NUMERIC_CELL}>{log.input_tokens}+{log.output_tokens}</td>
+        <td className={NUMERIC_CELL}>
           {log.cache_read_tokens ? log.cache_read_tokens.toLocaleString() : "-"}
         </td>
-        <td className="px-4 py-3 text-muted-foreground">
+        <td className={NUMERIC_CELL}>
           {log.cache_creation_tokens ? log.cache_creation_tokens.toLocaleString() : "-"}
         </td>
-        <td className="px-4 py-3 text-muted-foreground">
+        <td className={NUMERIC_CELL}>
           {log.total_cost_usd ? formatUsd(log.total_cost_usd) : "-"}
         </td>
-        <td className="px-4 py-3 text-muted-foreground">{log.latency_ms}ms</td>
-        <td className="px-4 py-3 text-muted-foreground">
+        <td className={NUMERIC_CELL}>{log.latency_ms}ms</td>
+        <td className="px-3 py-2 text-muted-foreground">
           {log.fallback ? "是" : "-"}
         </td>
       </tr>
       {open && (
         <tr className="border-b border-border bg-muted/50">
-          <td colSpan={16} className="px-4 py-3">
+          <td colSpan={16} className="px-3 py-2">
             <div className="space-y-2">
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="font-mono">TraceID: {log.trace_id}</span>
                 {log.error && <span className="text-destructive">{log.error}</span>}
-                {log.risk_summary && <span className="text-orange-600">{log.risk_summary}</span>}
+                {log.risk_summary && <span className="text-warning">{log.risk_summary}</span>}
               </div>
               <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-2 text-xs">
@@ -285,6 +278,31 @@ function LogRow({
         </tr>
       )}
     </Fragment>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { label: string; value: string }[];
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[132px]" aria-label={label}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -389,18 +407,24 @@ export default function LogsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 统计与趋势随刷新非ce变化重新加载
+  // 统计与趋势随刷新 nonce 变化重新加载
   useEffect(() => {
     loadStatsTrend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshNonce]);
 
+  // 手动/自动刷新：拉取数据的同时通知顶栏同步网关状态
+  const refresh = useCallback(() => {
+    setRefreshNonce((n) => n + 1);
+    window.dispatchEvent(new CustomEvent("gateway-refresh"));
+  }, []);
+
   // 自动刷新
   useEffect(() => {
     if (!secs) return;
-    const t = setInterval(() => setRefreshNonce((n) => n + 1), secs * 1000);
+    const t = setInterval(refresh, secs * 1000);
     return () => clearInterval(t);
-  }, [secs]);
+  }, [secs, refresh]);
 
   const updateFilter = (patch: Partial<LogFilter>) => {
     setFilter((prev) => ({ ...prev, ...patch }));
@@ -430,15 +454,16 @@ export default function LogsPage() {
     return stats.total_input_tokens + stats.total_output_tokens;
   }, [stats]);
 
-  // 缓存命中率 = cache_read / (input + cache_creation + cache_read)，0 兜底（LogStats 无直接命中率字段）
-  const cacheHitRate = useMemo(() => {
-    if (!stats) return 0;
-    return cacheHitRatePercent(
-      stats.total_input_tokens,
-      stats.cache_read_tokens ?? 0,
-      stats.cache_creation_tokens ?? 0
-    );
-  }, [stats]);
+  // 统计带 4 项：总调用 / 成功率 / Token / 费用
+  const statItems = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { label: "总调用", value: String(stats.total_calls) },
+      { label: "成功率", value: successRate !== null ? `${successRate}%` : "—" },
+      { label: "Token", value: totalTokens.toLocaleString() },
+      { label: "费用", value: formatUsd(stats.cost ?? 0) },
+    ];
+  }, [stats, successRate, totalTokens]);
 
   // 按 session_id 对当前页结果分组；无 session_id 时回退到 trace_id
   const sessions = useMemo<SessionGroup[]>(() => {
@@ -498,7 +523,7 @@ export default function LogsPage() {
           <RefreshControls
             secs={secs}
             onSecsChange={setSecs}
-            onRefresh={() => setRefreshNonce((n) => n + 1)}
+            onRefresh={refresh}
           />
         }
       />
@@ -508,7 +533,7 @@ export default function LogsPage() {
         </div>
       )}
 
-      <Card className="mb-6">
+      <Card className="mb-4">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">筛选</CardTitle>
         </CardHeader>
@@ -520,62 +545,48 @@ export default function LogsPage() {
               value={filter.keyword || ""}
               onChange={(e) => updateFilter({ keyword: e.target.value || undefined })}
             />
-            <select
-              className={selectCls}
-              value={filter.channel_id || ""}
-              onChange={(e) => updateFilter({ channel_id: e.target.value || undefined })}
-            >
-              <option value="">全部渠道</option>
-              {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.api_key_id || ""}
-              onChange={(e) => updateFilter({ api_key_id: e.target.value || undefined })}
-            >
-              <option value="">全部密钥</option>
-              {apiKeys.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.role || ""}
-              onChange={(e) => updateFilter({ role: e.target.value || undefined })}
-            >
-              <option value="">全部角色</option>
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.risk_level || ""}
-              onChange={(e) => updateFilter({ risk_level: e.target.value || undefined })}
-            >
-              <option value="">全部风险</option>
-              {RISK_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.status || ""}
-              onChange={(e) => updateFilter({ status: e.target.value as LogFilter["status"] || undefined })}
-            >
-              {STATUS_OPTIONS.map((s) => <option key={s.label} value={s.value || ""}>{s.label}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.is_stream === undefined ? "" : String(filter.is_stream)}
-              onChange={(e) => {
-                const v = e.target.value;
-                updateFilter({ is_stream: v === "" ? undefined : v === "true" });
-              }}
-            >
-              {STREAM_OPTIONS.map((s) => <option key={s.label} value={s.value === undefined ? "" : String(s.value)}>{s.label}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.session_provider || ""}
-              onChange={(e) => updateFilter({ session_provider: e.target.value || undefined })}
-            >
-              {SESSION_PROVIDERS.map((p) => <option key={p.value || "all"} value={p.value}>{p.label}</option>)}
-            </select>
+            <FilterSelect
+              label="渠道"
+              value={filter.channel_id || ALL}
+              onChange={(v) => updateFilter({ channel_id: v === ALL ? undefined : v })}
+              options={[{ label: "全部渠道", value: ALL }, ...channels.map((c) => ({ label: c.name, value: c.id }))]}
+            />
+            <FilterSelect
+              label="密钥"
+              value={filter.api_key_id || ALL}
+              onChange={(v) => updateFilter({ api_key_id: v === ALL ? undefined : v })}
+              options={[{ label: "全部密钥", value: ALL }, ...apiKeys.map((k) => ({ label: k.name, value: k.id }))]}
+            />
+            <FilterSelect
+              label="角色"
+              value={filter.role || ALL}
+              onChange={(v) => updateFilter({ role: v === ALL ? undefined : v })}
+              options={[{ label: "全部角色", value: ALL }, ...ROLES.map((r) => ({ label: r, value: r }))]}
+            />
+            <FilterSelect
+              label="风险"
+              value={filter.risk_level || ALL}
+              onChange={(v) => updateFilter({ risk_level: v === ALL ? undefined : v })}
+              options={[{ label: "全部风险", value: ALL }, ...RISK_LEVELS.map((l) => ({ label: l, value: l }))]}
+            />
+            <FilterSelect
+              label="状态"
+              value={filter.status || ALL}
+              onChange={(v) => updateFilter({ status: v === ALL ? undefined : v as LogFilter["status"] })}
+              options={STATUS_OPTIONS.map((s) => ({ label: s.label, value: s.value || ALL }))}
+            />
+            <FilterSelect
+              label="流式"
+              value={filter.is_stream === undefined ? ALL : String(filter.is_stream)}
+              onChange={(v) => updateFilter({ is_stream: v === ALL ? undefined : v === "true" })}
+              options={STREAM_OPTIONS.map((s) => ({ label: s.label, value: s.value === undefined ? ALL : String(s.value) }))}
+            />
+            <FilterSelect
+              label="会话来源"
+              value={filter.session_provider || ALL}
+              onChange={(v) => updateFilter({ session_provider: v === ALL ? undefined : v })}
+              options={SESSION_PROVIDERS.map((p) => ({ label: p.label, value: p.value || ALL }))}
+            />
             <Input
               className="w-48"
               placeholder="Session ID"
@@ -596,149 +607,22 @@ export default function LogsPage() {
       </Card>
 
       {stats && (
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">总调用</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{stats.total_calls}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">总 Token</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{totalTokens.toLocaleString()}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">成功率</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{successRate !== null ? `${successRate}%` : "—"}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">风险分布</div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {stats.risk_distribution.length === 0 && <span className="text-xs text-muted-foreground">无</span>}
-              {stats.risk_distribution.map(([level, count]) => (
-                <span key={level} className={cn("rounded px-1 text-xs", riskBadgeClass(level))}>{level}: {count}</span>
-              ))}
+        <div
+          data-testid="log-stat-strip"
+          className="mb-4 flex flex-wrap items-center gap-x-10 gap-y-2 rounded-lg border border-border bg-card px-4 py-2.5"
+        >
+          {statItems.map((it) => (
+            <div key={it.label} className="flex items-baseline gap-2">
+              <span className="text-xs text-muted-foreground">{it.label}</span>
+              <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                {it.value}
+              </span>
             </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">估算费用</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{formatUsd(stats.cost ?? 0)}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">缓存命中率</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{cacheHitRate.toFixed(1)}%</div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-purple-500"
-                style={{ width: `${Math.min(100, cacheHitRate)}%` }}
-              />
-            </div>
-          </Card>
+          ))}
         </div>
       )}
 
-      {stats && (
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card className="p-4">
-            <div className="mb-1 text-xs font-medium text-muted-foreground">Top 渠道</div>
-            {stats.top_channels.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
-              <ul className="space-y-0.5">
-                {stats.top_channels.map(([name, count]) => (
-                  <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
-                ))}
-              </ul>
-            )}
-          </Card>
-          <Card className="p-4">
-            <div className="mb-1 text-xs font-medium text-muted-foreground">Top 密钥</div>
-            {stats.top_api_keys.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
-              <ul className="space-y-0.5">
-                {stats.top_api_keys.map(([name, count]) => (
-                  <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-      )}
-
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">趋势</CardTitle>
-          <div className="flex gap-1 text-sm" role="tablist" aria-label="趋势维度">
-            {DIMENSION_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                role="tab"
-                aria-selected={dimension === tab.value}
-                onClick={() => setDimension(tab.value)}
-                className={cn(
-                  "rounded-md px-2 py-1 transition-colors",
-                  dimension === tab.value
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={bucketSize} />
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">日志清理</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Label htmlFor="cleanup-date" className="text-sm text-muted-foreground">
-              清理日期
-            </Label>
-            <Input
-              id="cleanup-date"
-              type="date"
-              className="w-40"
-              value={cleanupDate}
-              onChange={(e) => setCleanupDate(e.target.value)}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-orange-600"
-              onClick={onDeleteBefore}
-            >
-              删除该日之前
-            </Button>
-            <Button variant="destructive" size="sm" onClick={onClearAll}>
-              清空全部
-            </Button>
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <Label htmlFor="retention-days" className="text-sm text-muted-foreground">
-                日志保留天数
-              </Label>
-              <Input
-                id="retention-days"
-                type="number"
-                min={0}
-                className="w-20"
-                value={retentionInput}
-                onChange={(e) => setRetentionInput(e.target.value)}
-              />
-              <Button variant="secondary" size="sm" onClick={onSaveRetention}>
-                保存
-              </Button>
-              {retentionError && (
-                <span className="text-xs text-destructive">{retentionError}</span>
-              )}
-              <span className="text-xs text-muted-foreground">当前: {retentionDays} 天</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
+      <Card className="mb-4">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-base">日志列表</CardTitle>
           <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
@@ -795,13 +679,13 @@ export default function LogsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">会话</th>
-                    <th className="px-4 py-3 font-medium">请求数</th>
-                    <th className="px-4 py-3 font-medium">首次时间</th>
-                    <th className="px-4 py-3 font-medium">最后时间</th>
-                    <th className="px-4 py-3 font-medium">角色</th>
-                    <th className="px-4 py-3 font-medium">状态</th>
-                    <th className="px-4 py-3 font-medium">风险</th>
+                    <th className="px-3 py-2 font-medium">会话</th>
+                    <th className="px-3 py-2 text-right font-medium">请求数</th>
+                    <th className="px-3 py-2 font-medium">首次时间</th>
+                    <th className="px-3 py-2 font-medium">最后时间</th>
+                    <th className="px-3 py-2 font-medium">角色</th>
+                    <th className="px-3 py-2 font-medium">状态</th>
+                    <th className="px-3 py-2 font-medium">风险</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -832,40 +716,38 @@ export default function LogsPage() {
                           onClick={() => setOpenSession(expanded ? null : s.key)}
                         >
                           <td
-                            className="px-4 py-3 font-mono text-xs text-foreground"
+                            className="px-3 py-2 font-mono text-xs text-foreground"
                             title={s.key}
                           >
                             <div className="flex items-center gap-2">
                               {isSessionGroup && s.logs[0]?.session_provider && (
-                                <span className={cn("w-fit rounded px-1 text-xs", sessionBadgeClass(s.logs[0].session_provider))}>
+                                <StatusBadge semantic="neutral">
                                   {sessionProviderLabel(s.logs[0].session_provider)}
-                                </span>
+                                </StatusBadge>
                               )}
                               <span>{isSessionGroup ? shortSessionId(s.key) : shortTrace(s.key)}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-foreground">{s.logs.length}</td>
-                          <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">{s.logs.length}</td>
+                          <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
                             {new Date(first.created_at * 1000).toLocaleString()}
                           </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                          <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
                             {new Date(last.created_at * 1000).toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-3 py-2 text-muted-foreground">
                             {roles.length ? roles.join(" / ") : "-"}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-3 py-2 text-muted-foreground">
                             {statuses.length ? statuses.join(" / ") : "-"}
                           </td>
-                          <td className="px-4 py-3">
-                            <span className={cn("rounded px-1 text-xs", riskBadgeClass(worst))}>
-                              {worst}
-                            </span>
+                          <td className="px-3 py-2">
+                            <StatusBadge semantic={riskSemantic(worst)}>{worst}</StatusBadge>
                           </td>
                         </tr>
                         {expanded && (
                           <tr className="border-b border-border bg-muted/30">
-                            <td colSpan={7} className="px-4 py-3">
+                            <td colSpan={7} className="px-3 py-2">
                               <div className="overflow-x-auto overflow-hidden rounded-lg border border-border bg-card">
                                 <table className="w-full text-sm">
                                   <LogTableHeader />
@@ -910,6 +792,68 @@ export default function LogsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="mb-4">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">趋势</CardTitle>
+          <SegmentedTabs
+            value={dimension}
+            onChange={setDimension}
+            options={DIMENSION_TABS}
+            ariaLabel="趋势维度"
+          />
+        </CardHeader>
+        <CardContent>
+          <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={bucketSize} />
+        </CardContent>
+      </Card>
+
+      <div className="rounded-lg border border-border/60 bg-surface px-4 py-3">
+        <div className="text-sm font-medium text-muted-foreground">日志清理</div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Label htmlFor="cleanup-date" className="text-sm text-muted-foreground">
+            清理日期
+          </Label>
+          <Input
+            id="cleanup-date"
+            type="date"
+            className="w-40"
+            value={cleanupDate}
+            onChange={(e) => setCleanupDate(e.target.value)}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-warning"
+            onClick={onDeleteBefore}
+          >
+            删除该日之前
+          </Button>
+          <Button variant="destructive" size="sm" onClick={onClearAll}>
+            清空全部
+          </Button>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Label htmlFor="retention-days" className="text-sm text-muted-foreground">
+              日志保留天数
+            </Label>
+            <Input
+              id="retention-days"
+              type="number"
+              min={0}
+              className="w-20"
+              value={retentionInput}
+              onChange={(e) => setRetentionInput(e.target.value)}
+            />
+            <Button variant="secondary" size="sm" onClick={onSaveRetention}>
+              保存
+            </Button>
+            {retentionError && (
+              <span className="text-xs text-destructive">{retentionError}</span>
+            )}
+            <span className="text-xs text-muted-foreground">当前: {retentionDays} 天</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

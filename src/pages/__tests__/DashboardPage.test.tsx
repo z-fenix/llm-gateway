@@ -13,6 +13,7 @@ vi.mock("../../lib/api", () => ({
   api: {
     getStats: vi.fn(),
     getLogTimeseries: vi.fn(),
+    getLogStats: vi.fn(),
   },
 }));
 
@@ -25,6 +26,19 @@ const stats = {
   total_tokens: 5000,
   active_channels: 2,
   avg_latency_ms: 123,
+};
+
+const logStats = {
+  total_calls: 99,
+  total_input_tokens: 100,
+  total_output_tokens: 100,
+  success_count: 95,
+  risk_distribution: [],
+  top_channels: [
+    ["主渠道", 50],
+    ["备用渠道", 40],
+  ] as [string, number][],
+  top_api_keys: [["默认密钥", 80]] as [string, number][],
 };
 
 const bucket = {
@@ -41,6 +55,7 @@ describe("DashboardPage", () => {
     vi.resetAllMocks();
     mockedApi.getStats.mockResolvedValue(stats);
     mockedApi.getLogTimeseries.mockResolvedValue([bucket]);
+    mockedApi.getLogStats.mockResolvedValue(logStats);
   });
 
   it("统计数据未返回时展示加载状态", () => {
@@ -162,5 +177,44 @@ describe("DashboardPage", () => {
     await waitFor(() =>
       expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "cost")
     );
+  });
+
+  it("渲染 Top 渠道/Top 密钥两榜（数据源 get_log_stats）", async () => {
+    render(<DashboardPage />);
+    await waitFor(() =>
+      expect(mockedApi.getLogStats).toHaveBeenCalledWith({})
+    );
+    expect(await screen.findByText("Top 渠道")).toBeInTheDocument();
+    expect(screen.getByText("主渠道")).toBeInTheDocument();
+    expect(screen.getByText("50")).toBeInTheDocument();
+    expect(screen.getByText("Top 密钥")).toBeInTheDocument();
+    expect(screen.getByText("默认密钥")).toBeInTheDocument();
+  });
+
+  it("Top 榜为空时展示无数据兜底", async () => {
+    mockedApi.getLogStats.mockResolvedValue({
+      ...logStats,
+      top_channels: [],
+      top_api_keys: [],
+    });
+    render(<DashboardPage />);
+    await waitFor(() =>
+      expect(mockedApi.getLogStats).toHaveBeenCalled()
+    );
+    const emptyHints = await screen.findAllByText("无数据");
+    expect(emptyHints).toHaveLength(2);
+  });
+
+  it("手动刷新时 dispatch gateway-refresh 供顶栏同步网关状态", async () => {
+    const handler = vi.fn();
+    window.addEventListener("gateway-refresh", handler);
+    try {
+      render(<DashboardPage />);
+      await waitFor(() => expect(screen.getByText("今日请求")).toBeInTheDocument());
+      fireEvent.click(screen.getByRole("button", { name: "刷新" }));
+      expect(handler).toHaveBeenCalled();
+    } finally {
+      window.removeEventListener("gateway-refresh", handler);
+    }
   });
 });

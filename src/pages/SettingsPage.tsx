@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   CircleDollarSign,
+  Database,
   Download,
   FileJson,
-  Import,
   Minimize2,
+  Palette,
   RefreshCw,
   Server,
   TerminalSquare,
   Wrench,
 } from "lucide-react";
 import { api } from "../lib/api";
+import { useTheme, type ThemeMode } from "../lib/theme";
 import type {
   ApiKey,
   AppConfigInfo,
@@ -23,14 +25,8 @@ import type {
 } from "../types";
 import { normalizeModelId } from "../lib/usage";
 import PageHeader from "../components/PageHeader";
+import { SegmentedTabs, type SegmentedTabsOption } from "../components/SegmentedTabs";
 import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
@@ -49,7 +45,77 @@ const CLI_TARGET_LABELS: Record<string, string> = {
   codex: "Codex",
 };
 
+const THEME_OPTIONS: SegmentedTabsOption<ThemeMode>[] = [
+  { value: "light", label: "浅色" },
+  { value: "dark", label: "深色" },
+  { value: "system", label: "跟随系统" },
+];
+
+/** 分组面板：圆角边框卡片，小标题头部，内容按行分隔。 */
+function SettingsPanel({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <header className="border-b border-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        </div>
+        {description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        )}
+      </header>
+      <div className="divide-y divide-border">{children}</div>
+    </section>
+  );
+}
+
+/** 面板行：左侧标题 + 弱化说明，右侧控件。 */
+function SettingsRow({
+  htmlFor,
+  title,
+  description,
+  children,
+}: {
+  htmlFor?: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3">
+      <div className="min-w-0 space-y-0.5">
+        {htmlFor ? (
+          <Label htmlFor={htmlFor} className="text-sm font-medium">
+            {title}
+          </Label>
+        ) : (
+          <p className="text-sm font-medium text-foreground">{title}</p>
+        )}
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+    </div>
+  );
+}
+
+/** 面板内的自由内容块（表格、编辑器等）。 */
+function SettingsBlock({ children }: { children: ReactNode }) {
+  return <div className="px-4 py-3">{children}</div>;
+}
+
 export default function SettingsPage() {
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+
   const [error, setError] = useState<string | null>(null);
 
   const [config, setConfig] = useState<AppConfigInfo | null>(null);
@@ -426,125 +492,109 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* 端口配置 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Server className="h-4 w-4 text-muted-foreground" />
-            端口配置
-          </CardTitle>
-          <CardDescription>
-            修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为
-            8777-8787
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">当前绑定地址:</span>
-              <span className="font-mono">
-                {config?.bound_addr ?? "未启动"}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="w-40 space-y-1.5">
-                <Label htmlFor="preferred-port">首选端口</Label>
+      <div className="space-y-4">
+        {/* 外观 */}
+        <SettingsPanel icon={<Palette />} title="外观">
+          <SettingsRow title="主题" description="跟随系统时自动切换明暗">
+            <SegmentedTabs
+              value={themeMode}
+              onChange={setThemeMode}
+              options={THEME_OPTIONS}
+              ariaLabel="主题"
+            />
+          </SettingsRow>
+        </SettingsPanel>
+
+        {/* 端口配置 */}
+        <SettingsPanel
+          icon={<Server />}
+          title="端口配置"
+          description="修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787"
+        >
+          <SettingsRow title="当前绑定地址">
+            <span className="font-mono text-sm">
+              {config?.bound_addr ?? "未启动"}
+            </span>
+          </SettingsRow>
+          <SettingsBlock>
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+              <div className="min-w-0 space-y-0.5">
+                <Label htmlFor="preferred-port" className="text-sm font-medium">
+                  首选端口
+                </Label>
+                <p className="text-xs text-muted-foreground">网关监听端口</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
                   id="preferred-port"
                   type="number"
                   min={8777}
                   max={8787}
+                  className="w-32"
                   value={preferredPort}
                   onChange={(e) => setPreferredPort(e.target.value)}
                 />
+                <Button onClick={savePreferredPort}>保存</Button>
+                {portSaved && (
+                  <Button onClick={restartGateway} disabled={restarting}>
+                    <RefreshCw
+                      className={`h-4 w-4 ${restarting ? "animate-spin" : ""}`}
+                    />
+                    {restarting ? "重启中..." : "立即重启"}
+                  </Button>
+                )}
               </div>
-              <Button onClick={savePreferredPort}>保存</Button>
-              {portSaved && (
-                <Button
-                  className="bg-emerald-600 text-white hover:bg-emerald-600/90"
-                  onClick={restartGateway}
-                  disabled={restarting}
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${restarting ? "animate-spin" : ""}`}
-                  />
-                  {restarting ? "重启中..." : "立即重启"}
-                </Button>
-              )}
             </div>
             {portSaved && !restarted && (
-              <p className="text-sm text-emerald-600">
+              <p className="mt-2 text-sm text-success">
                 已保存，点击“立即重启”使新端口生效。
               </p>
             )}
             {restarted && (
-              <p className="text-sm text-emerald-600">网关已重启。</p>
+              <p className="text-sm text-success">网关已重启。</p>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </SettingsBlock>
+        </SettingsPanel>
 
-      {/* 关闭时最小化到托盘 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Minimize2 className="h-4 w-4 text-muted-foreground" />
-            关闭行为
-          </CardTitle>
-          <CardDescription>
-            点击窗口关闭按钮时隐藏到系统托盘，网关继续在后台运行
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-            <div className="space-y-0.5">
-              <Label>关闭时最小化到托盘</Label>
-              <p className="text-xs text-muted-foreground">
-                开启后关闭窗口仅隐藏到托盘，可从托盘菜单“显示主窗口”或“退出”恢复/结束
-              </p>
-            </div>
+        {/* 关闭行为 */}
+        <SettingsPanel
+          icon={<Minimize2 />}
+          title="关闭行为"
+          description="点击窗口关闭按钮时隐藏到系统托盘，网关继续在后台运行"
+        >
+          <SettingsRow
+            title="关闭时最小化到托盘"
+            description="开启后关闭窗口仅隐藏到托盘，可从托盘菜单“显示主窗口”或“退出”恢复/结束"
+          >
             <Switch
               checked={minimizeToTray}
               onCheckedChange={updateMinimizeToTray}
               aria-label="关闭时最小化到托盘"
             />
-          </div>
-        </CardContent>
-      </Card>
+          </SettingsRow>
+        </SettingsPanel>
 
-      {/* 整流器 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-            整流器
-          </CardTitle>
-          <CardDescription>
-            Anthropic 兼容性错误自动整流重试与图片降级
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-            <div className="space-y-0.5">
-              <Label>启用整流器</Label>
-              <p className="text-xs text-muted-foreground">
-                关闭后所有整流与图片降级均不生效
-              </p>
-            </div>
+        {/* 整流器 */}
+        <SettingsPanel
+          icon={<Wrench />}
+          title="整流器"
+          description="Anthropic 兼容性错误自动整流重试与图片降级"
+        >
+          <SettingsRow
+            title="启用整流器"
+            description="关闭后所有整流与图片降级均不生效"
+          >
             <Switch
               checked={rectifier.enabled}
               onCheckedChange={(v) => updateRectifier("enabled", v)}
               aria-label="启用整流器"
             />
-          </div>
+          </SettingsRow>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-            <div className="space-y-0.5">
-              <Label>修复 thinking signature 错误</Label>
-              <p className="text-xs text-muted-foreground">
-                删除 thinking 块并重试
-              </p>
-            </div>
+          <SettingsRow
+            title="修复 thinking signature 错误"
+            description="删除 thinking 块并重试"
+          >
             <Switch
               checked={rectifier.request_thinking_signature}
               disabled={!rectifier.enabled}
@@ -553,15 +603,12 @@ export default function SettingsPage() {
               }
               aria-label="修复 thinking signature 错误"
             />
-          </div>
+          </SettingsRow>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-            <div className="space-y-0.5">
-              <Label>修复 thinking budget 错误</Label>
-              <p className="text-xs text-muted-foreground">
-                调整 budget_tokens 并重试
-              </p>
-            </div>
+          <SettingsRow
+            title="修复 thinking budget 错误"
+            description="调整 budget_tokens 并重试"
+          >
             <Switch
               checked={rectifier.request_thinking_budget}
               disabled={!rectifier.enabled}
@@ -570,15 +617,12 @@ export default function SettingsPage() {
               }
               aria-label="修复 thinking budget 错误"
             />
-          </div>
+          </SettingsRow>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-            <div className="space-y-0.5">
-              <Label>图片降级（总开关）</Label>
-              <p className="text-xs text-muted-foreground">
-                开启后对媒体兼容性问题启用图片降级处理
-              </p>
-            </div>
+          <SettingsRow
+            title="图片降级（总开关）"
+            description="开启后对媒体兼容性问题启用图片降级处理"
+          >
             <Switch
               checked={rectifier.request_media_fallback}
               disabled={!rectifier.enabled}
@@ -587,15 +631,12 @@ export default function SettingsPage() {
               }
               aria-label="图片降级（总开关）"
             />
-          </div>
+          </SettingsRow>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
-            <div className="space-y-0.5">
-              <Label>发送前剥离图片（纯文本模型）</Label>
-              <p className="text-xs text-muted-foreground">
-                发送前将 image block 替换为文本标记
-              </p>
-            </div>
+          <SettingsRow
+            title="发送前剥离图片（纯文本模型）"
+            description="发送前将 image block 替换为文本标记"
+          >
             <Switch
               checked={rectifier.request_media_heuristic}
               disabled={!rectifier.enabled || !rectifier.request_media_fallback}
@@ -604,323 +645,308 @@ export default function SettingsPage() {
               }
               aria-label="发送前剥离图片（纯文本模型）"
             />
-          </div>
-        </CardContent>
-      </Card>
+          </SettingsRow>
+        </SettingsPanel>
 
-      {/* 模型定价（估算费用） */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
-            模型定价（估算费用）
-          </CardTitle>
-          <CardDescription>
-            配置模型每百万 token 的估算单价（USD），用于请求日志与趋势的费用估算；按归一化模型名匹配（自动去掉 provider
-            前缀/后缀，如 openrouter/anthropic/claude-sonnet-4.5:free → claude-sonnet-4.5）
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {prices.length === 0 ? (
-            <p className="mb-3 text-sm text-muted-foreground">尚未配置模型定价</p>
-          ) : (
-            <div className="mb-4 overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="px-4 py-2 font-medium">模型</th>
-                    <th className="px-4 py-2 font-medium">显示名</th>
-                    <th className="px-4 py-2 font-medium">输入</th>
-                    <th className="px-4 py-2 font-medium">输出</th>
-                    <th className="px-4 py-2 font-medium">缓存命中</th>
-                    <th className="px-4 py-2 font-medium">缓存创建</th>
-                    <th className="px-4 py-2 font-medium">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {prices.map((p) => (
-                    <tr key={p.model_id} className="border-b border-border last:border-0">
-                      <td className="px-4 py-2 font-mono text-xs text-foreground">{p.model_id}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{p.display_name}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{p.input_cost_per_million}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{p.output_cost_per_million}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{p.cache_read_cost_per_million}</td>
-                      <td className="px-4 py-2 text-muted-foreground">{p.cache_creation_cost_per_million}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-1">
-                          <Button variant="outline" size="sm" onClick={() => editModelPrice(p)}>
-                            编辑
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => deleteModelPrice(p)}>
-                            删除
-                          </Button>
-                        </div>
-                      </td>
+        {/* 模型定价（估算费用） */}
+        <SettingsPanel
+          icon={<CircleDollarSign />}
+          title="模型定价（估算费用）"
+          description="配置模型每百万 token 的估算单价（USD），用于请求日志与趋势的费用估算；按归一化模型名匹配（自动去掉 provider 前缀/后缀，如 openrouter/anthropic/claude-sonnet-4.5:free → claude-sonnet-4.5）"
+        >
+          <SettingsBlock>
+            {prices.length === 0 ? (
+              <p className="mb-3 text-sm text-muted-foreground">尚未配置模型定价</p>
+            ) : (
+              <div className="mb-4 overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="px-4 py-2 font-medium">模型</th>
+                      <th className="px-4 py-2 font-medium">显示名</th>
+                      <th className="px-4 py-2 font-medium">输入</th>
+                      <th className="px-4 py-2 font-medium">输出</th>
+                      <th className="px-4 py-2 font-medium">缓存命中</th>
+                      <th className="px-4 py-2 font-medium">缓存创建</th>
+                      <th className="px-4 py-2 font-medium">操作</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <div className="rounded-lg border border-border p-3">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-medium">
-                {editingPrice ? `编辑定价: ${editingPrice.model_id}` : "新增定价"}
-              </p>
-              {editingPrice && (
-                <Button variant="ghost" size="sm" onClick={cancelEditPrice}>
-                  取消编辑
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="price-model">模型名</Label>
-                <Input
-                  id="price-model"
-                  placeholder="如 claude-sonnet-4.5"
-                  value={priceModel}
-                  onChange={(e) => setPriceModel(e.target.value)}
-                />
-                {normalizedModel && normalizedModel !== priceModel.trim().toLowerCase() && (
-                  <p className="text-xs text-muted-foreground">
-                    将归一化为:{" "}
-                    <span className="font-mono text-foreground">{normalizedModel}</span>
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="price-display-name">显示名（可选）</Label>
-                <Input
-                  id="price-display-name"
-                  placeholder="Claude Sonnet 4.5"
-                  value={priceDisplayName}
-                  onChange={(e) => setPriceDisplayName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="price-input">输入($/M)</Label>
-                <Input
-                  id="price-input"
-                  type="number"
-                  min={0}
-                  step="any"
-                  placeholder="3"
-                  value={priceInput}
-                  onChange={(e) => setPriceInput(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="price-output">输出($/M)</Label>
-                <Input
-                  id="price-output"
-                  type="number"
-                  min={0}
-                  step="any"
-                  placeholder="15"
-                  value={priceOutput}
-                  onChange={(e) => setPriceOutput(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="price-cache-read">缓存命中($/M)</Label>
-                <Input
-                  id="price-cache-read"
-                  type="number"
-                  min={0}
-                  step="any"
-                  placeholder="0.3"
-                  value={priceCacheRead}
-                  onChange={(e) => setPriceCacheRead(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="price-cache-creation">缓存创建($/M)</Label>
-                <Input
-                  id="price-cache-creation"
-                  type="number"
-                  min={0}
-                  step="any"
-                  placeholder="3.75"
-                  value={priceCacheCreation}
-                  onChange={(e) => setPriceCacheCreation(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button onClick={saveModelPrice} aria-label="保存定价">
-                {editingPrice ? "保存修改" : "保存"}
-              </Button>
-              <Button variant="outline" onClick={fillAnthropicReference} aria-label="Anthropic 参考">
-                Anthropic 参考
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                缓存创建 ≈ 1.25×输入，缓存命中 ≈ 0.1×输入
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* CLI 配置编辑 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <TerminalSquare className="h-4 w-4 text-muted-foreground" />
-            CLI 配置
-          </CardTitle>
-          <CardDescription>
-            编辑 Claude Code / Codex 配置，让本地 CLI 工具直连网关
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 space-y-1.5">
-            <Label htmlFor="cli-target">目标 CLI</Label>
-            <Select
-              value={target}
-              onValueChange={(v) => {
-                setTarget(v);
-                if (cliEditorOpen) {
-                  void readCliConfigFor(v);
-                }
-              }}
-            >
-              <SelectTrigger id="cli-target" aria-label="目标 CLI">
-                <SelectValue placeholder="选择目标 CLI" />
-              </SelectTrigger>
-              <SelectContent>
-                {CLI_TARGETS.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {CLI_TARGET_LABELS[t] ?? t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {targetInfo && (
-              <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                <p>
-                  状态: {targetInfo.configured ? "已配置" : "未配置"}
-                </p>
-                <p className="truncate" title={targetInfo.path}>
-                  路径: {targetInfo.path}
-                </p>
+                  </thead>
+                  <tbody>
+                    {prices.map((p) => (
+                      <tr key={p.model_id} className="border-b border-border last:border-0">
+                        <td className="px-4 py-2 font-mono text-xs text-foreground">{p.model_id}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{p.display_name}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{p.input_cost_per_million}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{p.output_cost_per_million}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{p.cache_read_cost_per_million}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{p.cache_creation_cost_per_million}</td>
+                        <td className="px-4 py-2">
+                          <div className="flex gap-1">
+                            <Button variant="outline" size="sm" onClick={() => editModelPrice(p)}>
+                              编辑
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => deleteModelPrice(p)}>
+                              删除
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
-          </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <Button variant="outline" onClick={toggleCliEditor}>
-              <FileJson className="h-4 w-4" />
-              编辑配置
-            </Button>
-          </div>
-
-          {cliEditorOpen && (
-            <div className="mt-4 space-y-3 rounded-lg border border-border p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="rounded-lg border border-border p-3">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">
-                  编辑 {CLI_TARGET_LABELS[target] ?? target} 配置
-                  {target === "codex" && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      config.toml（将转为 JSON 编辑）
-                    </span>
-                  )}
+                  {editingPrice ? `编辑定价: ${editingPrice.model_id}` : "新增定价"}
                 </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={formatCliJson}
-                    disabled={cliLoading}
-                  >
-                    格式化
+                {editingPrice && (
+                  <Button variant="ghost" size="sm" onClick={cancelEditPrice}>
+                    取消编辑
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={reloadCliConfig}
-                    disabled={cliLoading}
-                  >
-                    重新加载
-                  </Button>
-                  <Button
-                    size="sm"
-                    aria-label="保存 CLI 配置"
-                    onClick={saveCliConfig}
-                    disabled={cliLoading}
-                  >
-                    保存
-                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="price-model">模型名</Label>
+                  <Input
+                    id="price-model"
+                    placeholder="如 claude-sonnet-4.5"
+                    value={priceModel}
+                    onChange={(e) => setPriceModel(e.target.value)}
+                  />
+                  {normalizedModel && normalizedModel !== priceModel.trim().toLowerCase() && (
+                    <p className="text-xs text-muted-foreground">
+                      将归一化为:{" "}
+                      <span className="font-mono text-foreground">{normalizedModel}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price-display-name">显示名（可选）</Label>
+                  <Input
+                    id="price-display-name"
+                    placeholder="Claude Sonnet 4.5"
+                    value={priceDisplayName}
+                    onChange={(e) => setPriceDisplayName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price-input">输入($/M)</Label>
+                  <Input
+                    id="price-input"
+                    type="number"
+                    min={0}
+                    step="any"
+                    placeholder="3"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price-output">输出($/M)</Label>
+                  <Input
+                    id="price-output"
+                    type="number"
+                    min={0}
+                    step="any"
+                    placeholder="15"
+                    value={priceOutput}
+                    onChange={(e) => setPriceOutput(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price-cache-read">缓存命中($/M)</Label>
+                  <Input
+                    id="price-cache-read"
+                    type="number"
+                    min={0}
+                    step="any"
+                    placeholder="0.3"
+                    value={priceCacheRead}
+                    onChange={(e) => setPriceCacheRead(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price-cache-creation">缓存创建($/M)</Label>
+                  <Input
+                    id="price-cache-creation"
+                    type="number"
+                    min={0}
+                    step="any"
+                    placeholder="3.75"
+                    value={priceCacheCreation}
+                    onChange={(e) => setPriceCacheCreation(e.target.value)}
+                  />
                 </div>
               </div>
-              {target === "claude_code" && (
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="min-w-[220px] space-y-1.5">
-                    <Label htmlFor="editor-api-key">
-                      API 密钥（写入 ANTHROPIC_AUTH_TOKEN）
-                    </Label>
-                    <Select value={apiKeyId} onValueChange={setApiKeyId}>
-                      <SelectTrigger
-                        id="editor-api-key"
-                        className="h-8"
-                        aria-label="编辑器 API 密钥"
-                      >
-                        <SelectValue placeholder="选择密钥" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {apiKeys.map((k) => (
-                          <SelectItem key={k.id} value={k.id}>
-                            {k.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={applyGatewayEnv}
-                    disabled={cliLoading}
-                  >
-                    设置当前网关
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    仅改写 env.ANTHROPIC_BASE_URL 与 env.ANTHROPIC_AUTH_TOKEN，其余保持 Claude Code 默认
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button onClick={saveModelPrice} aria-label="保存定价">
+                  {editingPrice ? "保存修改" : "保存"}
+                </Button>
+                <Button variant="outline" onClick={fillAnthropicReference} aria-label="Anthropic 参考">
+                  Anthropic 参考
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  缓存创建 ≈ 1.25×输入，缓存命中 ≈ 0.1×输入
+                </span>
+              </div>
+            </div>
+          </SettingsBlock>
+        </SettingsPanel>
+
+        {/* CLI 配置编辑 */}
+        <SettingsPanel
+          icon={<TerminalSquare />}
+          title="CLI 配置"
+          description="编辑 Claude Code / Codex 配置，让本地 CLI 工具直连网关"
+        >
+          <SettingsBlock>
+            <div className="mb-4 space-y-1.5">
+              <Label htmlFor="cli-target">目标 CLI</Label>
+              <Select
+                value={target}
+                onValueChange={(v) => {
+                  setTarget(v);
+                  if (cliEditorOpen) {
+                    void readCliConfigFor(v);
+                  }
+                }}
+              >
+                <SelectTrigger id="cli-target" aria-label="目标 CLI">
+                  <SelectValue placeholder="选择目标 CLI" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLI_TARGETS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {CLI_TARGET_LABELS[t] ?? t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {targetInfo && (
+                <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                  <p>
+                    状态: {targetInfo.configured ? "已配置" : "未配置"}
+                  </p>
+                  <p className="truncate" title={targetInfo.path}>
+                    路径: {targetInfo.path}
                   </p>
                 </div>
               )}
-              {cliLoading && (
-                <p className="text-xs text-muted-foreground">读取中...</p>
-              )}
-              <textarea
-                className="min-h-[240px] w-full rounded-md border bg-background p-2 font-mono text-xs"
-                value={cliJson}
-                onChange={(e) => setCliJson(e.target.value)}
-                aria-label="CLI 配置 JSON"
-                spellCheck={false}
-              />
-              {cliJsonInvalid && (
-                <p className="text-xs text-red-500">JSON 格式错误</p>
-              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* 导出 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Download className="h-4 w-4 text-muted-foreground" />
-            导出配置
-          </CardTitle>
-          <CardDescription>
-            将渠道、API 密钥、角色路由等配置导出为 JSON 文件
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-3 flex flex-wrap gap-2">
+            <div className="mt-4 flex items-center gap-2">
+              <Button variant="outline" onClick={toggleCliEditor}>
+                <FileJson className="h-4 w-4" />
+                编辑配置
+              </Button>
+            </div>
+
+            {cliEditorOpen && (
+              <div className="mt-4 space-y-3 rounded-lg border border-border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    编辑 {CLI_TARGET_LABELS[target] ?? target} 配置
+                    {target === "codex" && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        config.toml（将转为 JSON 编辑）
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={formatCliJson}
+                      disabled={cliLoading}
+                    >
+                      格式化
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={reloadCliConfig}
+                      disabled={cliLoading}
+                    >
+                      重新加载
+                    </Button>
+                    <Button
+                      size="sm"
+                      aria-label="保存 CLI 配置"
+                      onClick={saveCliConfig}
+                      disabled={cliLoading}
+                    >
+                      保存
+                    </Button>
+                  </div>
+                </div>
+                {target === "claude_code" && (
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[220px] space-y-1.5">
+                      <Label htmlFor="editor-api-key">
+                        API 密钥（写入 ANTHROPIC_AUTH_TOKEN）
+                      </Label>
+                      <Select value={apiKeyId} onValueChange={setApiKeyId}>
+                        <SelectTrigger
+                          id="editor-api-key"
+                          className="h-8"
+                          aria-label="编辑器 API 密钥"
+                        >
+                          <SelectValue placeholder="选择密钥" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {apiKeys.map((k) => (
+                            <SelectItem key={k.id} value={k.id}>
+                              {k.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={applyGatewayEnv}
+                      disabled={cliLoading}
+                    >
+                      设置当前网关
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      仅改写 env.ANTHROPIC_BASE_URL 与 env.ANTHROPIC_AUTH_TOKEN，其余保持 Claude Code 默认
+                    </p>
+                  </div>
+                )}
+                {cliLoading && (
+                  <p className="text-xs text-muted-foreground">读取中...</p>
+                )}
+                <textarea
+                  className="min-h-[240px] w-full rounded-md border bg-background p-2 font-mono text-xs"
+                  value={cliJson}
+                  onChange={(e) => setCliJson(e.target.value)}
+                  aria-label="CLI 配置 JSON"
+                  spellCheck={false}
+                />
+                {cliJsonInvalid && (
+                  <p className="text-xs text-destructive">JSON 格式错误</p>
+                )}
+              </div>
+            )}
+          </SettingsBlock>
+        </SettingsPanel>
+
+        {/* 数据管理（导出 / 导入） */}
+        <SettingsPanel
+          icon={<Database />}
+          title="数据管理"
+          description="导出与导入网关配置（渠道、API 密钥、角色路由等）"
+        >
+          <SettingsRow
+            title="导出配置"
+            description="将渠道、API 密钥、角色路由等配置导出为 JSON 文件"
+          >
             <Input
               type="text"
               className="min-w-[220px] flex-1"
@@ -932,33 +958,24 @@ export default function SettingsPage() {
               <Download className="h-4 w-4" />
               导出
             </Button>
-          </div>
-          <p className="flex items-start gap-1.5 text-xs text-amber-600">
-            <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
-            已脱敏，导入后需重新补填。
-          </p>
-          {exportBytes !== null && (
-            <p className="mt-2 text-sm text-emerald-600">
-              导出成功：{exportBytes} 字节
+          </SettingsRow>
+          <SettingsBlock>
+            <p className="flex items-start gap-1.5 text-xs text-warning">
+              <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
+              已脱敏，导入后需重新补填。
             </p>
-          )}
-        </CardContent>
-      </Card>
+            {exportBytes !== null && (
+              <p className="mt-2 text-sm text-success">
+                导出成功：{exportBytes} 字节
+              </p>
+            )}
+          </SettingsBlock>
 
-      {/* 导入 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Import className="h-4 w-4 text-muted-foreground" />
-            导入配置
-          </CardTitle>
-          <CardDescription>
-            从导出的 JSON 文件恢复配置，可预览冲突后选择跳过或覆盖
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-3 flex flex-wrap gap-2">
+          <SettingsRow
+            title="导入配置"
+            description="从导出的 JSON 文件恢复配置，可预览冲突后选择跳过或覆盖"
+          >
             <Input
               type="text"
               className="min-w-[220px] flex-1"
@@ -969,72 +986,70 @@ export default function SettingsPage() {
             <Button variant="outline" onClick={previewImportFile}>
               预览
             </Button>
-          </div>
-
-          {preview && (
-            <div className="mb-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
-              <p className="font-medium">导入预览</p>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                <p className="text-muted-foreground">
-                  渠道: <span className="text-foreground">{preview.channels}</span>
-                </p>
-                <p className="text-muted-foreground">
-                  API 密钥:{" "}
-                  <span className="text-foreground">{preview.api_keys}</span>
-                </p>
-                <p className="text-muted-foreground">
-                  角色路由:{" "}
-                  <span className="text-foreground">{preview.role_routes}</span>
-                </p>
-                <p className="text-muted-foreground">
-                  角色模式:{" "}
-                  <span className="text-foreground">
-                    {preview.role_patterns}
-                  </span>
-                </p>
-                <p className="text-muted-foreground">
-                  自定义规则:{" "}
-                  <span className="text-foreground">
-                    {preview.custom_rules}
-                  </span>
-                </p>
-                <p className="text-muted-foreground">
-                  冲突:{" "}
-                  <span className="text-foreground">{preview.conflicts}</span>
-                </p>
+          </SettingsRow>
+          <SettingsBlock>
+            {preview && (
+              <div className="mb-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                <p className="font-medium">导入预览</p>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <p className="text-muted-foreground">
+                    渠道: <span className="text-foreground">{preview.channels}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    API 密钥:{" "}
+                    <span className="text-foreground">{preview.api_keys}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    角色路由:{" "}
+                    <span className="text-foreground">{preview.role_routes}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    角色模式:{" "}
+                    <span className="text-foreground">
+                      {preview.role_patterns}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    自定义规则:{" "}
+                    <span className="text-foreground">
+                      {preview.custom_rules}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    冲突:{" "}
+                    <span className="text-foreground">{preview.conflicts}</span>
+                  </p>
+                </div>
+                {preview.conflicts > 0 ? (
+                  <div className="mt-3 flex gap-2">
+                    <Button onClick={() => doImport("skip")}>
+                      跳过已存在
+                    </Button>
+                    <Button variant="destructive" onClick={() => doImport("overwrite")}>
+                      覆盖已存在
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    <Button onClick={() => doImport("skip")}>
+                      确认导入
+                    </Button>
+                  </div>
+                )}
               </div>
-              {preview.conflicts > 0 ? (
-                <div className="mt-3 flex gap-2">
-                  <Button onClick={() => doImport("skip")}>
-                    跳过已存在
-                  </Button>
-                  <Button
-                    className="bg-amber-600 text-white hover:bg-amber-600/90"
-                    onClick={() => doImport("overwrite")}
-                  >
-                    覆盖已存在
-                  </Button>
-                </div>
-              ) : (
-                <div className="mt-3">
-                  <Button onClick={() => doImport("skip")}>
-                    确认导入
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+            )}
 
-          {importResult && (
-            <div className="rounded-lg border border-emerald-600/30 bg-emerald-600/5 p-3 text-sm text-emerald-700">
-              <p className="font-medium">导入完成</p>
-              <p>已导入: {importResult.imported}</p>
-              <p>已跳过: {importResult.skipped}</p>
-              <p>已覆盖: {importResult.overwritten}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {importResult && (
+              <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
+                <p className="font-medium">导入完成</p>
+                <p>已导入: {importResult.imported}</p>
+                <p>已跳过: {importResult.skipped}</p>
+                <p>已覆盖: {importResult.overwritten}</p>
+              </div>
+            )}
+          </SettingsBlock>
+        </SettingsPanel>
+      </div>
     </div>
   );
 }

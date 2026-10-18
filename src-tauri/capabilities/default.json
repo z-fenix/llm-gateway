@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "主窗口默认能力：允许访问 tauri-plugin-store 读写 store.bin（主题等设置持久化）",
+  "windows": ["main"],
+  "permissions": ["store:default"]
+}

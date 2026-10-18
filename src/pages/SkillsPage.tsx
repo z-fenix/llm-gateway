@@ -8,6 +8,7 @@ import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { StatusBadge } from "../components/StatusBadge";
 import {
   Card,
   CardContent,
@@ -26,7 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { cn } from "../lib/utils";
 
 export default function SkillsPage() {
   const [list, setList] = useState<SkillView[]>([]);
@@ -249,17 +249,14 @@ export default function SkillsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge
-                          className={cn(
-                            s.in_db
-                              ? s.enabled
-                                ? "border-transparent bg-emerald-500/10 text-emerald-600"
-                                : "bg-secondary text-muted-foreground"
-                              : "border-dashed bg-transparent text-muted-foreground"
-                          )}
+                        <StatusBadge
+                          semantic={
+                            s.in_db ? (s.enabled ? "success" : "neutral") : "neutral"
+                          }
+                          className={!s.in_db ? "border border-dashed" : undefined}
                         >
                           {s.in_db ? (s.enabled ? "已启用" : "已导入") : "未导入"}
-                        </Badge>
+                        </StatusBadge>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -391,15 +388,9 @@ export default function SkillsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge
-                      className={cn(
-                        v.synced
-                          ? "border-transparent bg-emerald-500/10 text-emerald-600"
-                          : "bg-secondary text-muted-foreground"
-                      )}
-                    >
+                    <StatusBadge semantic={v.synced ? "success" : "neutral"}>
                       {v.synced ? "已同步" : "未同步"}
-                    </Badge>
+                    </StatusBadge>
                   </td>
                   <td className="px-4 py-3">
                     <Switch

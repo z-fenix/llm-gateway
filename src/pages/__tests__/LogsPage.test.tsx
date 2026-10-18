@@ -106,14 +106,14 @@ describe("LogsPage", () => {
   it("角色筛选下拉包含 auto 选项", async () => {
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() =>
-      expect(screen.getByText("全部角色")).toBeInTheDocument()
+      expect(screen.getByRole("combobox", { name: "角色" })).toBeInTheDocument()
     );
 
-    const roleSelect = screen.getByText("全部角色").closest("select")!;
-    expect(within(roleSelect).getByRole("option", { name: "auto" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: "角色" }));
+    expect(await screen.findByRole("option", { name: "auto" })).toBeInTheDocument();
   });
 
-  it("统计卡片渲染聚合数据", async () => {
+  it("统计带渲染 4 项（总调用/成功率/Token/费用）", async () => {
     mockedApi.getLogStats.mockResolvedValue({
       total_calls: 128,
       total_input_tokens: 1000,
@@ -125,10 +125,59 @@ describe("LogsPage", () => {
     });
 
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByText("128")).toBeInTheDocument());
-    expect(screen.getByText(/1,?500/)).toBeInTheDocument();
-    expect(screen.getByText(/78\.1%/)).toBeInTheDocument();
-    expect(screen.getByText("high: 10")).toBeInTheDocument();
+    const strip = await screen.findByTestId("log-stat-strip");
+    expect(within(strip).getByText("总调用")).toBeInTheDocument();
+    expect(within(strip).getByText("成功率")).toBeInTheDocument();
+    expect(within(strip).getByText("Token")).toBeInTheDocument();
+    expect(within(strip).getByText("费用")).toBeInTheDocument();
+    expect(within(strip).getByText("128")).toBeInTheDocument();
+    expect(within(strip).getByText("78.1%")).toBeInTheDocument();
+    expect(within(strip).getByText("1,500")).toBeInTheDocument();
+    expect(within(strip).getByText("$0")).toBeInTheDocument();
+  });
+
+  it("Top 渠道/Top 密钥不再渲染", async () => {
+    mockedApi.getLogStats.mockResolvedValue({
+      total_calls: 10,
+      total_input_tokens: 0,
+      total_output_tokens: 0,
+      success_count: 10,
+      risk_distribution: [],
+      top_channels: [["Channel A", 50]],
+      top_api_keys: [["Key A", 40]],
+    });
+
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    await waitFor(() => expect(mockedApi.getLogStats).toHaveBeenCalled());
+    expect(screen.queryByText("Top 渠道")).not.toBeInTheDocument();
+    expect(screen.queryByText("Top 密钥")).not.toBeInTheDocument();
+    expect(screen.queryByText("Channel A")).not.toBeInTheDocument();
+    expect(screen.queryByText("Key A")).not.toBeInTheDocument();
+  });
+
+  it("表格状态/风险徽章使用 StatusBadge 语义类", async () => {
+    mockedApi.listLogs.mockResolvedValue({
+      total: 1,
+      items: [makeLog({ id: "l1", status_code: 200, risk_level: "low" })],
+    });
+
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText("$0")).toBeInTheDocument());
+    expect(screen.getByText("low")).toHaveClass("text-success");
+    expect(screen.getByText("200")).toHaveClass("text-success");
+  });
+
+  it("手动刷新 dispatch gateway-refresh 供顶栏同步网关状态", async () => {
+    const handler = vi.fn();
+    window.addEventListener("gateway-refresh", handler);
+    try {
+      render(<MemoryRouter><LogsPage /></MemoryRouter>);
+      await waitFor(() => expect(screen.getByText("查询")).toBeInTheDocument());
+      fireEvent.click(screen.getByRole("button", { name: "刷新" }));
+      expect(handler).toHaveBeenCalled();
+    } finally {
+      window.removeEventListener("gateway-refresh", handler);
+    }
   });
 
   it("趋势面板 4 tab 切换 dimension", async () => {
@@ -356,7 +405,7 @@ describe("LogsPage", () => {
     expect(mockedApi.getLogStats.mock.calls[1][0].after).toBe(f2.after);
   });
 
-  it("统计卡展示估算费用与缓存命中率", async () => {
+  it("统计带展示估算费用（缓存命中率不再展示）", async () => {
     mockedApi.getLogStats.mockResolvedValue({
       total_calls: 100,
       total_input_tokens: 100,
@@ -370,10 +419,9 @@ describe("LogsPage", () => {
       top_api_keys: [],
     });
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByText("估算费用")).toBeInTheDocument());
-    // 命中率 = cache_read/(input+cache_creation+cache_read) = 20/(100+30+20) = 13.3%
-    expect(screen.getByText("13.3%")).toBeInTheDocument();
-    expect(screen.getByText("$0.001500")).toBeInTheDocument();
+    const strip = await screen.findByTestId("log-stat-strip");
+    expect(within(strip).getByText("$0.001500")).toBeInTheDocument();
+    expect(within(strip).queryByText(/命中率/)).not.toBeInTheDocument();
   });
 
   it("日志表渲染缓存读取/缓存创建/费用列", async () => {
