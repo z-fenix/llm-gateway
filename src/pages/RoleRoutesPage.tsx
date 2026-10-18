@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Edit3, Plus, Trash2 } from "lucide-react";
 import { ModelCombobox } from "../components/ModelCombobox";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import { ROLE_ORDER, routesByRole } from "../lib/roleSort";
 import type {
   BreakerStatus,
@@ -590,13 +591,13 @@ export default function RoleRoutesPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <button
-                                className="text-primary hover:underline"
+                                className={`text-primary hover:underline ${FOCUS_RING}`}
                                 onClick={() => openEditPattern(p)}
                               >
                                 编辑
                               </button>
                               <button
-                                className="inline-flex items-center gap-1 text-destructive hover:underline"
+                                className={`inline-flex items-center gap-1 text-destructive hover:underline ${FOCUS_RING}`}
                                 onClick={() => setDeletingPattern(p)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -779,7 +780,7 @@ export default function RoleRoutesPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <button
-                                className="text-primary hover:underline"
+                                className={`text-primary hover:underline ${FOCUS_RING}`}
                                 aria-label="编辑路由"
                                 title="编辑"
                                 onClick={() => openEditRoute(r)}
@@ -787,7 +788,7 @@ export default function RoleRoutesPage() {
                                 <Edit3 className="h-3 w-3" />
                               </button>
                               <button
-                                className="inline-flex items-center gap-1 text-destructive hover:underline"
+                                className={`inline-flex items-center gap-1 text-destructive hover:underline ${FOCUS_RING}`}
                                 aria-label="删除路由"
                                 onClick={() => setDeletingRoute(r)}
                               >

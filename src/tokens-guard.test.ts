@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { FOCUS_RING } from "./lib/focusRing";
 
 // 硬编码色守卫：Vite ?raw glob 在编译期把整个 src 树的 tsx 源码读成字符串，
 // 等价于计划里的 node:fs walk（项目未装 @types/node，故用 glob 方案）。
@@ -99,5 +100,36 @@ describe("guard: gateway-refresh 常量与 NEUTRAL_TAG 共享", () => {
     const src = sources["./pages/McpServersPage.tsx"];
     expect(src).toMatch(/from ["']\.\.\/components\/StatusBadge["']/);
     expect(src).not.toContain("h-1.5 w-1.5 rounded-full");
+  });
+});
+
+describe("guard: 裸 button 文本链的键盘焦点环", () => {
+  // 匹配窗口：自 <button 起在 200 字符内遇到首个 className 字符串值。
+  // 页面里目标按钮的 className 均为首属性，窗口不会跨元素误捕获；
+  // text-warning / text-muted-foreground / text-destructive/80 变体不在守卫范围。
+  const LINK_BUTTON_CLASS = () =>
+    /<button\b[\s\S]{0,200}?className=\{?["'`][^"'`]*text-(?:primary|destructive) hover:underline[^"'`]*["'`]/g;
+
+  const pageSources = Object.entries(sources).filter(
+    ([path]) => path.startsWith("./pages/") && !path.includes("__tests__")
+  );
+
+  it("FOCUS_RING 常量为预期类串", () => {
+    expect(FOCUS_RING).toBe(
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+    );
+  });
+
+  it("text-primary/text-destructive hover:underline 裸 button 的 className 均携带 FOCUS_RING", () => {
+    const offenders: string[] = [];
+    let matches = 0;
+    for (const [path, src] of pageSources) {
+      for (const m of src.matchAll(LINK_BUTTON_CLASS())) {
+        matches += 1;
+        if (!m[0].includes("FOCUS_RING")) offenders.push(path);
+      }
+    }
+    expect(matches).toBeGreaterThan(0); // 守卫不可静默失效（目标按钮全部消失时应人工复核）
+    expect(offenders).toEqual([]);
   });
 });

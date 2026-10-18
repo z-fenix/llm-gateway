@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Layers, List, Search } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import { GATEWAY_REFRESH_EVENT } from "../lib/events";
 import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
@@ -183,8 +184,15 @@ function LogRow({
   return (
     <Fragment>
       <tr
-        className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/50"
+        tabIndex={0}
+        className={`${FOCUS_RING} cursor-pointer border-b border-border last:border-0 hover:bg-accent/50`}
         onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
       >
         <td className="px-3 py-2 font-mono tabular-nums text-muted-foreground">{log.seq}</td>
         <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-muted-foreground">
@@ -707,14 +715,23 @@ export default function LogsPage() {
                     const worst = worstRisk(s.logs);
                     const expanded = openSession === s.key;
                     const isSessionGroup = s.logs.some((l) => l.session_id === s.key);
+                    const toggleOpen = () => setOpenSession(expanded ? null : s.key);
                     return (
                       <Fragment key={s.key}>
                         <tr
+                          tabIndex={0}
                           className={cn(
                             "cursor-pointer border-b border-border last:border-0 hover:bg-accent/50",
+                            FOCUS_RING,
                             expanded && "bg-accent/30"
                           )}
-                          onClick={() => setOpenSession(expanded ? null : s.key)}
+                          onClick={toggleOpen}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleOpen();
+                            }
+                          }}
                         >
                           <td
                             className="px-3 py-2 font-mono text-xs text-foreground"

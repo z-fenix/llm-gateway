@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Copy, KeyRound, Plus } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { ApiKey } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -290,7 +291,7 @@ export default function ApiKeysPage() {
                       {k.key}
                     </span>
                     <button
-                      className="ml-2 inline-flex items-center gap-1 text-primary hover:underline"
+                      className={`ml-2 inline-flex items-center gap-1 text-primary hover:underline ${FOCUS_RING}`}
                       onClick={() => copyKey(k)}
                       title="复制密钥"
                     >
@@ -315,19 +316,19 @@ export default function ApiKeysPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(k)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => toggleEnabled(k)}
                       >
                         {k.enabled ? "禁用" : "启用"}
                       </button>
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(k)}
                       >
                         删除

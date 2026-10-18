@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Plus } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { Prompt } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -240,13 +241,13 @@ export default function PromptsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(p)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(p)}
                       >
                         删除

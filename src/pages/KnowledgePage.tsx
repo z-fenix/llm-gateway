@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileUp, Library, RefreshCw, Search, Settings2 } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type {
   Channel,
   KbDocument,
@@ -402,10 +403,17 @@ export default function KnowledgePage() {
                   {kbs.map((kb) => (
                     <tr
                       key={kb.id}
-                      className={`cursor-pointer border-b border-border last:border-0 hover:bg-accent/50 ${
+                      tabIndex={0}
+                      className={`cursor-pointer border-b border-border last:border-0 hover:bg-accent/50 ${FOCUS_RING} ${
                         selectedKbId === kb.id ? "bg-accent/60" : ""
                       }`}
                       onClick={() => setSelectedKbId(kb.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedKbId(kb.id);
+                        }
+                      }}
                     >
                       <td className="px-4 py-3 font-medium text-foreground">
                         {kb.name}
@@ -440,7 +448,7 @@ export default function KnowledgePage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
-                            className="text-primary hover:underline"
+                            className={`text-primary hover:underline ${FOCUS_RING}`}
                             onClick={() => openEdit(kb)}
                           >
                             编辑
@@ -455,7 +463,7 @@ export default function KnowledgePage() {
                             </button>
                           )}
                           <button
-                            className="text-destructive hover:underline"
+                            className={`text-destructive hover:underline ${FOCUS_RING}`}
                             onClick={() => setDeletingKb(kb)}
                           >
                             删除
@@ -557,7 +565,7 @@ export default function KnowledgePage() {
                       </td>
                       <td className="px-4 py-3">
                         <button
-                          className="text-destructive hover:underline"
+                          className={`text-destructive hover:underline ${FOCUS_RING}`}
                           onClick={() => setDeletingDoc(doc)}
                         >
                           删除

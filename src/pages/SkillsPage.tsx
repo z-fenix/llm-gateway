@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Download, Plus, RefreshCw, Server, Sparkles } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { InstalledSkill, Skill, SkillView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -280,7 +281,7 @@ export default function SkillsPage() {
                         <div className="flex items-center gap-3">
                           {!s.in_db && (
                             <button
-                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              className={`inline-flex items-center gap-1 text-primary hover:underline ${FOCUS_RING}`}
                               onClick={() => handleImport(s.directory)}
                             >
                               <Download className="h-3 w-3" />
@@ -289,7 +290,7 @@ export default function SkillsPage() {
                           )}
                           {s.mcpServers.length > 0 && (
                             <button
-                              className="text-primary hover:underline"
+                              className={`text-primary hover:underline ${FOCUS_RING}`}
                               onClick={() => handleSyncMcp(s.directory)}
                             >
                               同步 MCP
@@ -427,13 +428,13 @@ export default function SkillsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(v.skill)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(v.skill)}
                       >
                         删除

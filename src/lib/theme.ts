@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { load } from "@tauri-apps/plugin-store";
 
 export type ThemeMode = "light" | "dark" | "system";
@@ -148,15 +148,42 @@ export function initTheme(): void {
  */
 export async function ensureThemeReady(): Promise<void> {
   await ensureStore();
-  applyTheme(loadThemeMode() ?? "system");
+  const resolved = loadThemeMode() ?? "system";
+  applyTheme(resolved);
+  notifyThemeChange(resolved);
+}
+
+// 跨源主题变更注册表：模块内任何改变生效主题的入口（ensureThemeReady 镜像解析、
+// setMode 持久化完成）都通过它广播，供其他 useTheme 实例等订阅方对齐自身状态
+type ThemeChangeCallback = (mode: ThemeMode) => void;
+const themeChangeListeners = new Set<ThemeChangeCallback>();
+
+/** 订阅主题模式变更，返回退订函数。 */
+export function subscribeThemeChange(cb: (mode: ThemeMode) => void): () => void {
+  themeChangeListeners.add(cb);
+  return () => {
+    themeChangeListeners.delete(cb);
+  };
+}
+
+function notifyThemeChange(mode: ThemeMode): void {
+  themeChangeListeners.forEach((cb) => cb(mode));
 }
 
 /** React hook：当前主题模式与切换函数（立即应用并持久化）。 */
 export function useTheme(): { mode: ThemeMode; setMode: (mode: ThemeMode) => void } {
   const [mode, setModeState] = useState<ThemeMode>(() => loadThemeMode() ?? "system");
+  useEffect(() => {
+    // 跨源变更才对齐状态：自身 setMode 触发的通知是同值，函数式更新直接跳过
+    return subscribeThemeChange((next) => {
+      setModeState((prev) => (prev === next ? prev : next));
+    });
+  }, []);
   const setMode = useCallback((next: ThemeMode) => {
     applyTheme(next);
-    void saveThemeMode(next);
+    // 通知放在 save 解析后：镜像（cachedMode/localStorage）已更新，
+    // 其他实例收到通知时 loadThemeMode 能读到一致的新值
+    void saveThemeMode(next).then(() => notifyThemeChange(next));
     setModeState(next);
   }, []);
   return { mode, setMode };

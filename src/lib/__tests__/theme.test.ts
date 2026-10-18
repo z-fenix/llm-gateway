@@ -222,6 +222,69 @@ describe("useTheme", () => {
   });
 });
 
+describe("useTheme 跨源同步", () => {
+  function importFresh(): Promise<typeof import("../theme")> {
+    return import("../theme");
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    storeState.loadImpl = null;
+    vi.resetModules();
+  });
+
+  it("ensureThemeReady 解析出持久化模式后，useTheme 的 mode 随之对齐", async () => {
+    const store = { get: vi.fn().mockResolvedValue("dark"), set: vi.fn(), save: vi.fn() };
+    // load 返回手动控制的 deferred：镜像在 release 前保持未决，模拟首帧窗口
+    let release!: (store: unknown) => void;
+    storeState.loadImpl = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        })
+    );
+    const mod = await importFresh();
+
+    const { result } = renderHook(() => mod.useTheme());
+    expect(result.current.mode).toBe("system"); // 镜像未决，首帧按默认渲染
+
+    await act(async () => {
+      release(store);
+      await mod.ensureThemeReady();
+    });
+
+    expect(result.current.mode).toBe("dark");
+  });
+
+  it("setMode 后其他 useTheme 实例的 mode 对齐（跨实例同步）", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    const { useTheme } = await importFresh();
+    const a = renderHook(() => useTheme());
+    const b = renderHook(() => useTheme());
+
+    await act(async () => {
+      a.result.current.setMode("dark");
+    });
+
+    expect(a.result.current.mode).toBe("dark");
+    expect(b.result.current.mode).toBe("dark");
+  });
+
+  it("subscribeThemeChange 返回的退订函数生效", async () => {
+    storeState.loadImpl = vi.fn().mockRejectedValue(new Error("store 打不开"));
+    const mod = await importFresh();
+    const cb = vi.fn();
+    const unsub = mod.subscribeThemeChange(cb);
+    unsub();
+
+    await act(async () => {
+      await mod.ensureThemeReady();
+    });
+
+    expect(cb).not.toHaveBeenCalled();
+  });
+});
+
 describe("initTheme", () => {
   beforeEach(() => {
     localStorage.clear();

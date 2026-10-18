@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Cable, Plus, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
+import { FOCUS_RING } from "../lib/focusRing";
 import type { McpServer, McpServerView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -578,13 +579,13 @@ export default function McpServersPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => openEdit(v.server)}
                       >
                         编辑
                       </button>
                       <button
-                        className="text-primary hover:underline"
+                        className={`text-primary hover:underline ${FOCUS_RING}`}
                         onClick={() => handleTest(v)}
                       >
                         测试
@@ -598,14 +599,14 @@ export default function McpServersPage() {
                         </button>
                       ) : (
                         <button
-                          className="text-primary hover:underline"
+                          className={`text-primary hover:underline ${FOCUS_RING}`}
                           onClick={() => handleConnect(v)}
                         >
                           连接
                         </button>
                       )}
                       <button
-                        className="text-destructive hover:underline"
+                        className={`text-destructive hover:underline ${FOCUS_RING}`}
                         onClick={() => setDeleting(v.server)}
                       >
                         删除
