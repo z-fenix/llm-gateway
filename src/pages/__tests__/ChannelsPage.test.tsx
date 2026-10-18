@@ -93,14 +93,17 @@ describe("ChannelsPage", () => {
     expect(await screen.findByRole("heading", { name: "新建渠道" })).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("名称"), { target: { value: "新渠道" } });
-    fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: "https://api.deepseek.com" } });
-    fireEvent.change(screen.getByPlaceholderText("真实上游 API Key"), { target: { value: "sk-test" } });
+    fireEvent.change(screen.getByLabelText(/^Base URL/), { target: { value: "https://api.deepseek.com" } });
+    // DSH 改造后密钥为 SecretInput（write-only，无 placeholder），用 aria-label 定位；
+    // 旧断言 getByPlaceholderText("真实上游 API Key") 钉在旧布局上，属于本次修正
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test" } });
     fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
     const modelInputs = screen.getAllByPlaceholderText(/输入或选择模型/);
     fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
     fireEvent.change(screen.getByLabelText("超时秒数"), { target: { value: "60" } });
 
-    fireEvent.click(screen.getByText("保存"));
+    // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言 getByText("保存") 属于本次修正
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
 
     await waitFor(() => expect(mockedApi.createChannel).toHaveBeenCalled());
     expect(mockedApi.createChannel.mock.calls[0][0].name).toBe("新渠道");
@@ -108,7 +111,8 @@ describe("ChannelsPage", () => {
   });
 
   it("编辑渠道：打开对话框并加载模型映射", async () => {
-    mockedApi.listChannels.mockResolvedValue([channel("c1")]);
+    // 编辑态夹具携带后端打码哨兵 api_key（list_channels 返回形态）
+    mockedApi.listChannels.mockResolvedValue([channel("c1", { api_key: "sk-***test" })]);
     mockedApi.getModelMap.mockResolvedValue([
       { channel_id: "c1", source_model: "sonnet", target_model: "claude-sonnet-4-5" },
     ]);
@@ -165,7 +169,7 @@ describe("ChannelsPage", () => {
   });
 
   it("编辑弹窗通过 onOpenChange 关闭（点 X）会清空 editing 状态", async () => {
-    mockedApi.listChannels.mockResolvedValue([channel("c1")]);
+    mockedApi.listChannels.mockResolvedValue([channel("c1", { api_key: "sk-***test" })]);
     render(<ChannelsPage />);
     await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
 
@@ -271,5 +275,113 @@ describe("ChannelsPage 渠道页改版（Task 8）", () => {
     fireEvent.click(screen.getByRole("tab", { name: "全部" }));
     await waitFor(() => expect(screen.getByText("停用渠道")).toBeInTheDocument());
     expect(screen.getByText("渠道c1")).toBeInTheDocument();
+  });
+});
+
+describe("ChannelsPage 渠道表单 DSH 改造（Task 2）", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockedApi.listChannels.mockResolvedValue([]);
+    mockedApi.createChannel.mockResolvedValue(channel("c-new"));
+    mockedApi.updateChannel.mockResolvedValue(undefined);
+    mockedApi.deleteChannel.mockResolvedValue(undefined);
+    mockedApi.duplicateChannel.mockResolvedValue(channel("c-new"));
+    mockedApi.testChannel.mockResolvedValue({ ok: true, latency_ms: 120, error: null });
+    mockedApi.getModelMap.mockResolvedValue([]);
+    mockedApi.setModelMap.mockResolvedValue(undefined);
+    mockedApi.deleteModelMap.mockResolvedValue(undefined);
+  });
+
+  async function openCreateDialog() {
+    const { container } = render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText("暂无渠道")).toBeInTheDocument());
+    fireEvent.click(screen.getAllByRole("button", { name: "新建渠道" })[0]);
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "新建渠道" })).toBeInTheDocument()
+    );
+    return { container };
+  }
+
+  async function openEditDialog(fixture: Channel) {
+    mockedApi.listChannels.mockResolvedValue([fixture]);
+    render(<ChannelsPage />);
+    await waitFor(() => expect(screen.getByText(fixture.name)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "编辑渠道" })).toBeInTheDocument()
+    );
+  }
+
+  /** 填写一个能通过校验的新建表单（名称/Base URL/Key/一个模型）。 */
+  function fillCreateForm() {
+    fireEvent.change(screen.getByPlaceholderText("名称"), { target: { value: "新渠道" } });
+    fireEvent.change(screen.getByLabelText(/^Base URL/), { target: { value: "https://api.deepseek.com" } });
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test" } });
+    fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
+    const modelInputs = screen.getAllByPlaceholderText(/输入或选择模型/);
+    fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
+  }
+
+  it("折叠区「自定义设置」存在且默认收起（details 无 open 属性）", async () => {
+    await openCreateDialog();
+
+    // Radix Dialog 传送到 body，从 summary 语义反查 details
+    const details = screen.getByText("自定义设置").closest("details");
+    expect(details).not.toBeNull();
+    expect(details!.querySelector("summary")?.textContent).toContain("自定义设置");
+    expect(details!.hasAttribute("open")).toBe(false);
+    // 折叠字段仍在 DOM（收起仅视觉隐藏）：上游协议 / 优先级 / 权重 / 超时秒数
+    expect(screen.getByText("上游协议")).toBeInTheDocument();
+    expect(screen.getByLabelText("优先级")).toBeInTheDocument();
+    expect(screen.getByLabelText("权重")).toBeInTheDocument();
+    expect(screen.getByLabelText("超时秒数")).toBeInTheDocument();
+  });
+
+  it("必填缺失：行内错误 role=alert 出现且应用禁用；补全后恢复可用", async () => {
+    await openCreateDialog();
+
+    expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
+    expect(screen.getByText("Base URL 不能为空")).toBeInTheDocument();
+    expect(screen.getByText("API Key 不能为空")).toBeInTheDocument();
+    const apply = screen.getByRole("button", { name: "应用" });
+    expect(apply).toBeDisabled();
+
+    fillCreateForm();
+    await waitFor(() => expect(apply).toBeEnabled());
+  });
+
+  it("编辑态 key 留空提交：updateChannel payload 的 api_key 为原掩码值", async () => {
+    await openEditDialog(channel("c1", { api_key: "sk-***test" }));
+
+    // 密钥不回填：输入框为空，placeholder 提示已保存
+    const keyInput = screen.getByLabelText("API Key") as HTMLInputElement;
+    expect(keyInput.value).toBe("");
+    expect(keyInput.placeholder).toBe("已保存，留空保持不变");
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    await waitFor(() => expect(mockedApi.updateChannel).toHaveBeenCalledTimes(1));
+    const payload = mockedApi.updateChannel.mock.calls[0][0];
+    expect(payload.api_key).toBe("sk-***test");
+    expect(payload.id).toBe("c1");
+  });
+
+  it("busy 提交中：应用文案切换为「应用中」且取消禁用，完成后恢复关闭", async () => {
+    await openCreateDialog();
+    fillCreateForm();
+
+    let resolveCreate!: (v: Channel) => void;
+    mockedApi.createChannel.mockImplementationOnce(
+      () => new Promise<Channel>((res) => { resolveCreate = res; })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+
+    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+
+    resolveCreate(channel("c-new"));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "应用中" })).not.toBeInTheDocument()
+    );
   });
 });
