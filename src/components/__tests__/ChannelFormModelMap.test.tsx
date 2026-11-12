@@ -36,10 +36,27 @@ describe("ChannelForm 模型映射", () => {
     mockedApi.getModelMap.mockResolvedValue([]);
   });
 
+  it("编辑时获取模型自动展开，并显示与已填模型不同的候选", async () => {
+    mockedApi.listChannelModels.mockResolvedValue(["new-upstream-model"]);
+    render(<ChannelForm initial={editForm()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "获取模型列表" }));
+    expect(await screen.findByRole("option", { name: "new-upstream-model" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: "new-upstream-model" }));
+    expect(screen.getByPlaceholderText("输入或选择模型…")).toHaveValue("new-upstream-model");
+    expect(mockedApi.listChannelModels).toHaveBeenCalledWith(expect.objectContaining({ channelId: "c1", apiKey: "sk-***test" }));
+  });
+
+  it("模型行为空且获取失败时仍展开内置候选", async () => {
+    mockedApi.listChannelModels.mockRejectedValue(new Error("offline"));
+    render(<ChannelForm initial={{ ...editForm(), models: [] }} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "获取模型列表" }));
+    expect(await screen.findByRole("option", { name: "gpt-4o" })).toBeInTheDocument();
+  });
+
   it("新建模式（无 id）不请求模型映射", () => {
     render(<ChannelForm onSubmit={vi.fn()} onCancel={vi.fn()} />);
     expect(mockedApi.getModelMap).not.toHaveBeenCalled();
-    expect(screen.queryByText("模型映射")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "配置映射" })).toBeDisabled();
   });
 
   it("编辑模式加载并列出模型映射", async () => {

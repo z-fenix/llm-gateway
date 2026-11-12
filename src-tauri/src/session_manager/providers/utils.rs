@@ -118,6 +118,84 @@ fn extract_text_from_item(item: &Value) -> Option<String> {
     None
 }
 
+/// 结构化阅读块；兼容 Claude 内容块、Codex response_item 与 Gemini 工具记录。
+pub fn extract_blocks(content: &Value) -> Vec<crate::session_manager::SessionBlock> {
+    use crate::session_manager::SessionBlock as B;
+    let string = |v: Option<&Value>| v.and_then(Value::as_str).map(str::to_string);
+    match content {
+        Value::String(text) if !text.trim().is_empty() => vec![B::Text { text: text.clone() }],
+        Value::Array(items) => items.iter().flat_map(extract_blocks).collect(),
+        Value::Object(_) => {
+            let kind = content["type"].as_str().unwrap_or("");
+            match kind {
+                "thinking" | "reasoning" => {
+                    let text = string(content.get("thinking"))
+                        .or_else(|| string(content.get("text")))
+                        .unwrap_or_else(|| extract_text(&content["summary"]));
+                    if text.is_empty() {
+                        vec![]
+                    } else {
+                        vec![B::Thinking { text }]
+                    }
+                }
+                "tool_use" | "toolCall" | "function_call" | "custom_tool_call" => {
+                    let raw = content
+                        .get("input")
+                        .or_else(|| content.get("args"))
+                        .or_else(|| content.get("arguments"))
+                        .cloned()
+                        .unwrap_or(Value::Null);
+                    let input = raw
+                        .as_str()
+                        .and_then(|s| serde_json::from_str(s).ok())
+                        .unwrap_or(raw);
+                    vec![B::ToolCall {
+                        id: string(content.get("call_id").or_else(|| content.get("id"))),
+                        name: string(content.get("name")),
+                        input,
+                    }]
+                }
+                "tool_result" | "function_call_output" | "custom_tool_call_output" => {
+                    let raw = content
+                        .get("content")
+                        .or_else(|| content.get("output"))
+                        .unwrap_or(&Value::Null);
+                    let text = extract_text(raw);
+                    let output = if text.is_empty() && !raw.is_null() {
+                        raw.to_string()
+                    } else {
+                        text
+                    };
+                    vec![B::ToolResult {
+                        id: string(
+                            content
+                                .get("tool_use_id")
+                                .or_else(|| content.get("call_id"))
+                                .or_else(|| content.get("id")),
+                        ),
+                        output,
+                        status: if content["is_error"].as_bool() == Some(true) {
+                            "error"
+                        } else {
+                            "unknown"
+                        }
+                        .into(),
+                    }]
+                }
+                _ => {
+                    let text = extract_text(&Value::Array(vec![content.clone()]));
+                    if text.is_empty() {
+                        vec![]
+                    } else {
+                        vec![B::Text { text }]
+                    }
+                }
+            }
+        }
+        _ => vec![],
+    }
+}
+
 pub fn truncate_summary(text: &str, max_chars: usize) -> String {
     let trimmed = text.trim();
     if trimmed.is_empty() {

@@ -125,6 +125,17 @@ describe("主题持久化", () => {
       expect(localStorage.getItem("theme")).toBe("light");
     });
 
+    it("store 已缓存旧模式但保存失败时，内存与 localStorage 均使用新模式", async () => {
+      const store = { get: vi.fn().mockResolvedValue("dark"), set: vi.fn().mockRejectedValue(new Error("write failed")), save: vi.fn() };
+      storeState.loadImpl = vi.fn().mockResolvedValue(store);
+      const { saveThemeMode, loadThemeMode, ensureThemeReady } = await importFresh();
+      await ensureThemeReady();
+      expect(loadThemeMode()).toBe("dark");
+      await saveThemeMode("light");
+      expect(loadThemeMode()).toBe("light");
+      expect(localStorage.getItem("theme")).toBe("light");
+    });
+
     it("store.set 抛错时同样降级写入 localStorage", async () => {
       const store = { get: vi.fn(), set: vi.fn().mockRejectedValue(new Error("set 失败")), save: vi.fn() };
       storeState.loadImpl = vi.fn().mockResolvedValue(store);

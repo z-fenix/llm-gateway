@@ -48,7 +48,7 @@ export function SecretInput({
         className={cn(
           // 沿用 ui/input 的既有类（复制而非导入，保持原语自包含），
           // 加 font-mono 密钥等宽与 pr-10 给 reveal 按钮留位。
-          "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 pr-10 font-mono text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+          "flex h-9 w-full rounded-xl border border-input bg-card px-3 py-1 pr-10 font-mono text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
         )}
       />
       {value.length > 0 && (

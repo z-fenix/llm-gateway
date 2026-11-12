@@ -93,9 +93,9 @@ describe("SettingsPage", () => {
     render(<SettingsPage />);
     fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
-      expect(screen.getByText("端口配置")).toBeInTheDocument()
+      expect(screen.getByText("本地网关")).toBeInTheDocument()
     );
-    expect(screen.getByText("CLI 配置")).toBeInTheDocument();
+    expect(screen.getByText("将 Claude Code 连接到本地网关")).toBeInTheDocument();
     expect(screen.getByText("导出配置")).toBeInTheDocument();
     expect(screen.getByText("导入配置")).toBeInTheDocument();
     expect(screen.getByText("127.0.0.1:8777")).toBeInTheDocument();
@@ -221,6 +221,8 @@ describe("SettingsPage", () => {
     const textarea = await screen.findByLabelText("CLI 配置 JSON");
     fireEvent.change(textarea, { target: { value: '{"env":{"A":"2"}}' } });
     fireEvent.click(screen.getByRole("button", { name: "保存 CLI 配置" }));
+    expect(mockedApi.writeCliConfigContent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "确认写入" }));
     await waitFor(() =>
       expect(mockedApi.writeCliConfigContent).toHaveBeenCalledWith(
         "claude_code",
@@ -376,4 +378,18 @@ describe("SettingsPage", () => {
     );
     confirmSpy.mockRestore();
   });
+  it("取消 CLI 写入确认不修改文件，非法 JSON 不能提交", async () => {
+    render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "CLI 接入" }));
+    fireEvent.click(await screen.findByRole("button", { name: "编辑配置" }));
+    const editor = await screen.findByLabelText("CLI 配置 JSON");
+    fireEvent.change(editor, { target: { value: '{"env":{"A":"2"}}' } });
+    fireEvent.click(screen.getByRole("button", { name: "保存 CLI 配置" }));
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    expect(mockedApi.writeCliConfigContent).not.toHaveBeenCalled();
+    expect(editor).toHaveValue('{"env":{"A":"2"}}');
+    fireEvent.change(editor, { target: { value: '{invalid' } });
+    expect(screen.getByRole("button", { name: "保存 CLI 配置" })).toBeDisabled();
+  });
+
 });

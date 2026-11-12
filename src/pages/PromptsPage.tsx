@@ -1,7 +1,12 @@
+import { DialogBody } from "../components/ui/dialog";
+import { FOCUS_RING } from "../lib/focusRing";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Plus } from "lucide-react";
 import { api } from "../lib/api";
+import { useFormValidation } from "../lib/useFormValidation";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import type { Prompt } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -31,6 +36,9 @@ export default function PromptsPage() {
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [pending, setPending] = useState(false);
+  const formValidation = useFormValidation({ name: name.trim() ? undefined : "名称不能为空", content: content.trim() ? undefined : "内容不能为空" });
+  const [draft, setDraft] = useState<string | null>(null);
+  const [enableTarget, setEnableTarget] = useState<Prompt | null>(null);
 
   const [deleting, setDeleting] = useState<Prompt | null>(null);
 
@@ -51,6 +59,7 @@ export default function PromptsPage() {
   }, []);
 
   const resetForm = () => {
+    formValidation.reset();
     setName("");
     setDescription("");
     setContent("");
@@ -76,6 +85,7 @@ export default function PromptsPage() {
   };
 
   const handleSave = async () => {
+    if (pending || formValidation.invalid) return;
     const trimmedName = name.trim();
     const trimmedContent = content.trim();
     if (!trimmedName) {
@@ -133,6 +143,16 @@ export default function PromptsPage() {
   };
 
   const selected = list.find((p) => p.id === selectedId) ?? list[0];
+  const saveDraft = async () => {
+    if (!selected || pending || !draft?.trim()) return;
+    setPending(true);
+    try {
+      await api.upsertPrompt(selected.id, selected.name, draft, selected.description);
+      setList((items) => items.map((p) => p.id === selected.id ? { ...p, content: draft } : p));
+      setDraft(null);
+      toast.success("模板已保存，启用状态未改变");
+    } catch (err) { handleError(err); } finally { setPending(false); }
+  };
 
   return (
     <div className="page-stack" id="prompts">
@@ -153,24 +173,24 @@ export default function PromptsPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && !pending && closeDialog()}>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? "编辑 Prompt" : "新增 Prompt"}</DialogTitle>
             <DialogDescription>
               {editing ? "修改模板内容后保存" : "填写名称与 CLAUDE.md 模板内容"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="prompt-name">名称</Label>
-              <Input
-                id="prompt-name"
+
+<DialogBody className="space-y-5"><div className="space-y-4">
+            <FormField label="名称" htmlFor="prompt-name" error={formValidation.errors.name}>
+<Input
+                id="prompt-name" onBlur={() => formValidation.touch("name")} aria-invalid={!!formValidation.errors.name}
                 placeholder="例如：默认开发模板"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-            </div>
+</FormField>
             <div className="space-y-1.5">
               <Label htmlFor="prompt-description">描述</Label>
               <Input
@@ -180,28 +200,22 @@ export default function PromptsPage() {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="prompt-content">内容</Label>
-              <textarea
-                id="prompt-content"
+            <FormField label="内容" htmlFor="prompt-content" error={formValidation.errors.content}>
+<textarea
+                id="prompt-content" onBlur={() => formValidation.touch("content")} aria-invalid={!!formValidation.errors.content}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="在此输入 CLAUDE.md 内容..."
                 className="min-h-[320px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20"
               />
-            </div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={closeDialog} disabled={pending}>
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+</FormField>
+          </div></DialogBody>
+
+          <FormFooter onCancel={closeDialog} onSubmit={handleSave} busy={pending} submitDisabled={formValidation.invalid} />
         </DialogContent>
       </Dialog>
 
+      <div className="info-banner"><div><h2 className="text-[13px] font-medium">全局模板 · 仅启用一套</h2><p className="mt-1.5 text-xs text-muted-foreground">启用后写入 ~/.claude/CLAUDE.md，原文件会自动备份。</p></div></div>
       {list.length === 0 ? (
         <EmptyState
           icon={<FileText className="h-8 w-8" />}
@@ -213,13 +227,14 @@ export default function PromptsPage() {
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[292px_minmax(0,1fr)]">
           <Card className="space-y-3 p-4"><p className="px-1 py-2 text-sm font-semibold">我的模板</p>{list.map((p) => <div key={p.id} className={`rounded-xl p-4 ${selected?.id === p.id ? "bg-accent" : "bg-background"}`}>
-            <button className="w-full text-left" onClick={() => setSelectedId(p.id)}><p className="text-sm font-medium">{p.name}</p><p className="mt-2 text-xs text-muted-foreground">{p.description ?? "暂无描述"}</p></button>
-            <div className="mt-3 flex items-center justify-between gap-2"><Switch checked={p.enabled} onCheckedChange={() => handleEnable(p)} aria-label={`启用 ${p.name}`} /><div className="flex gap-3 text-xs"><button className="text-primary hover:underline" onClick={() => openEdit(p)}>编辑</button><button className="text-destructive hover:underline" onClick={() => setDeleting(p)}>删除</button></div></div>
+            <button className="w-full text-left" onClick={() => { if (pending || (draft !== null && draft !== selected.content && !window.confirm("切换模板将放弃未保存的修改，是否继续？"))) return; setSelectedId(p.id); setDraft(null); }}><p className="text-sm font-medium">{p.name}</p><p className="mt-2 text-xs text-muted-foreground">{p.description ?? "暂无描述"}</p></button>
+            <div className="mt-3 flex items-center justify-between gap-2"><Switch checked={p.enabled} disabled={p.enabled || pending} onCheckedChange={() => setEnableTarget(p)} aria-label={`启用 ${p.name}`} /><div className="flex gap-3 text-xs"><button className={`text-primary hover:underline ${FOCUS_RING}`} onClick={() => openEdit(p)}>编辑</button><button className={`text-destructive hover:underline ${FOCUS_RING}`} onClick={() => setDeleting(p)}>删除</button></div></div>
           </div>)}</Card>
-          <Card className="min-w-0 p-6"><div className="page-toolbar"><h2 className="text-lg font-semibold">模板预览</h2><Button variant="outline" onClick={() => openEdit(selected)}>修改模板</Button></div><p className="mb-5 mt-3 text-xs text-muted-foreground">启用后写入 ~/.claude/CLAUDE.md，原文件自动备份；同时仅启用一套模板。</p><pre className="min-h-[360px] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-background p-5 font-mono text-xs leading-7">{selected.content}</pre><p className="mt-4 text-xs text-muted-foreground">保存模板不会自动启用；切换模板时才写入全局文件。</p></Card>
+          <Card className="min-w-0 space-y-5 p-6"><div className="page-toolbar"><div><h2 className="text-base font-semibold">{selected.name}</h2><p className="mt-2 text-xs text-muted-foreground">CLAUDE.md · 修改后保存，不会自动启用</p></div><Button variant="outline" size="sm" onClick={() => openEdit(selected)}>模板设置</Button></div><textarea aria-label="模板内容" disabled={pending} value={draft ?? selected.content} onChange={(e) => setDraft(e.target.value)} className="min-h-[390px] w-full resize-y border-0 bg-background font-mono text-xs leading-7" spellCheck={false} /><div className="page-toolbar"><span className="text-xs text-muted-foreground">{draft !== null ? "有未保存的修改" : "模板内容已保存"}</span><div className="flex gap-2"><Button variant="outline" onClick={() => setEnableTarget(selected)} disabled={pending || selected.enabled}>{selected.enabled ? "已启用" : "启用模板"}</Button><Button onClick={saveDraft} disabled={pending || draft === null || !draft.trim()}>{pending ? "保存中…" : "保存模板"}</Button></div></div></Card>
         </div>
       )}
 
+      <ConfirmDialog open={!!enableTarget} title="启用全局模板？" message="将写入 ~/.claude/CLAUDE.md，原文件自动备份，同时只启用一套模板。未保存的编辑不会写入。" onCancel={() => setEnableTarget(null)} onConfirm={() => { if (enableTarget) handleEnable(enableTarget); setEnableTarget(null); }} />
       <ConfirmDialog
         open={deleting !== null}
         title="删除 Prompt"

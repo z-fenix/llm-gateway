@@ -2,6 +2,8 @@ import { act, render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SessionsPage from "../SessionsPage";
+// Preload the lazy chunk during collection, not inside the 5s interaction timer.
+import "../../components/sessions/SessionReader";
 import { api } from "../../lib/api";
 import type { SessionMeta, SessionMessage } from "../../types";
 
@@ -87,7 +89,7 @@ describe("SessionsPage", () => {
     render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText("登录问题排查")).toBeInTheDocument());
 
-    const input = screen.getByPlaceholderText("搜索标题 / 项目目录 / 会话 ID");
+    const input = screen.getByPlaceholderText("搜索会话 / 项目 / ID");
     fireEvent.change(input, { target: { value: "登录" } });
 
     await waitFor(() => {
@@ -108,7 +110,7 @@ describe("SessionsPage", () => {
     render(<MemoryRouter><SessionsPage /></MemoryRouter>);
     fireEvent.click(await screen.findByText("会话一"));
     fireEvent.click(screen.getByText("会话二"));
-    expect(await screen.findByText("当前会话消息")).toBeInTheDocument();
+    expect(await screen.findByText("当前会话消息", {}, {timeout:10000})).toBeInTheDocument();
     await act(async () => { resolveFirst([makeMessage("assistant", "过期会话消息")]); });
     expect(screen.getByText("当前会话消息")).toBeInTheDocument();
     expect(screen.queryByText("过期会话消息")).not.toBeInTheDocument();
@@ -132,10 +134,28 @@ describe("SessionsPage", () => {
       )
     );
 
-    expect(screen.getByText("你好")).toBeInTheDocument();
+    expect(await screen.findByText("你好", {}, {timeout:10000})).toBeInTheDocument();
     expect(screen.getByText("你好，有什么可以帮忙？")).toBeInTheDocument();
-    expect(screen.getByText("用户")).toBeInTheDocument();
-    expect(screen.getByText("助手")).toBeInTheDocument();
+    expect(screen.getByText("USER")).toBeInTheDocument();
+    expect(screen.getByText("ASSISTANT")).toBeInTheDocument();
+  });
+
+  it("窄屏选择会话后把详情带入视口，而不是留在列表下方", async () => {
+    const width = window.innerWidth;
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:390});
+    const original = HTMLElement.prototype.scrollIntoView;
+    const scroll = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scroll;
+    try {
+      mockedApi.listSessions.mockResolvedValue([makeSession()]);
+      render(<MemoryRouter><SessionsPage /></MemoryRouter>);
+      fireEvent.click(await screen.findByText("测试会话"));
+      await waitFor(()=>expect(scroll).toHaveBeenCalled());
+      expect(scroll.mock.instances.some(node=>node.getAttribute("aria-label")==="会话详情")).toBe(true);
+    } finally {
+      Object.defineProperty(window,"innerWidth",{configurable:true,value:width});
+      HTMLElement.prototype.scrollIntoView = original;
+    }
   });
 
   it("删除走确认对话框并调用 deleteSession", async () => {

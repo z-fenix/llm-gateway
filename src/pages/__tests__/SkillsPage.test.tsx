@@ -75,9 +75,9 @@ describe("SkillsPage", () => {
     await waitFor(() => expect(screen.getByText("文档助手")).toBeInTheDocument());
     expect(screen.getByText("测试助手")).toBeInTheDocument();
     expect(screen.getByText("生成项目文档")).toBeInTheDocument();
-    expect(screen.getByText("-")).toBeInTheDocument();
-    expect(screen.getByText("doc-assistant")).toBeInTheDocument();
-    expect(screen.getByText("test-assistant")).toBeInTheDocument();
+    expect(screen.getByText("暂无描述")).toBeInTheDocument();
+    expect(screen.getByText("~/.claude/skills/doc-assistant/SKILL.md")).toBeInTheDocument();
+    expect(screen.getByText("~/.claude/skills/test-assistant/SKILL.md")).toBeInTheDocument();
     expect(screen.getByText("已同步")).toBeInTheDocument();
     expect(screen.getByText("未同步")).toBeInTheDocument();
   });
@@ -90,6 +90,8 @@ describe("SkillsPage", () => {
     await waitFor(() => expect(screen.getByText("待启用")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("switch"));
+    expect(mockedApi.toggleSkillEnabled).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "确认" }));
     await waitFor(() =>
       expect(api.toggleSkillEnabled).toHaveBeenCalledWith("s1", true)
     );

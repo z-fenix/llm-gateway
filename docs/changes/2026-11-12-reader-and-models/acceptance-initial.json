@@ -1,0 +1,1429 @@
+[
+  {
+    "name": "create-success-light-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-light-1440",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-light-1440",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-light-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 3 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:30\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:30\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:30\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 3 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:30\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:30\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:30\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-light-1440",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 3 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/projec",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-219",
+      "renderedRows": 9,
+      "scroll": 150980
+    },
+    "failed": false
+  },
+  {
+    "name": "short-dialog-light-1440",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 541,
+      "scroll": 1091
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-dark-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-dark-1440",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-dark-1440",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-dark-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 3 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:31\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:31\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:31\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 3 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:31\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:31\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:31\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-dark-1440",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 3 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/projec",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-219",
+      "renderedRows": 9,
+      "scroll": 150980
+    },
+    "failed": false
+  },
+  {
+    "name": "short-dialog-dark-1440",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 541,
+      "scroll": 1091
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-light-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-light-1024",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-light-1024",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-light-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 4 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:31\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:31\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:31\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 4 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:31\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:31\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:31\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-light-1024",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 4 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/projec",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-219",
+      "renderedRows": 9,
+      "scroll": 150920
+    },
+    "failed": false
+  },
+  {
+    "name": "short-dialog-light-1024",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 1024,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 541,
+      "scroll": 1091
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-dark-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-dark-1024",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-dark-1024",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-dark-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 4 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:31\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:31\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:31\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 4 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:32\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:32\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:32\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-dark-1024",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 4 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/projec",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-219",
+      "renderedRows": 9,
+      "scroll": 150920
+    },
+    "failed": false
+  },
+  {
+    "name": "short-dialog-dark-1024",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 1024,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 541,
+      "scroll": 1091
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-light-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-light-768",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-light-768",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-light-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 4 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:32\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:32\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:32\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 5 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:32\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:32\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:32\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-light-768",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-12-reader-and-models/screenshots/long-reader-light-768.png 768 1000 (async()=>{const wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing UI '+f.toString())};const button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);const click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,100))};const theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,150))};const input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};await theme(false);(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));const firstRows=document.querySelectorAll('[data-row]').length;if(firstRows>=100)throw Error('Long reader not virtualized');input('[aria-label=\"查找会话正文\"]','synthetic-needle-219');await wait(()=>document.querySelector('mark')?.textContent==='synthetic-needle-219');return {match:document.querySelector('mark').textContent,renderedRows:firstRows,scroll:document.querySelector('[aria-label=\"会话消息\"]').scrollTop};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Long reader not virtualized\r\n    at <anonymous>:1:1060\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Long reader not virtualized\r\n    at <anonymous>:1:1060\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "short-dialog-light-768",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 768,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 541,
+      "scroll": 1091
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-dark-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-dark-768",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-dark-768",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 672,
+      "protocolWidth": 220,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-dark-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 6 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:33\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:33\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:33\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 6 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:33\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:33\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:33\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-dark-768",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-12-reader-and-models/screenshots/long-reader-dark-768.png 768 1000 (async()=>{const wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing UI '+f.toString())};const button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);const click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,100))};const theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,150))};const input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};await theme(true);(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));const firstRows=document.querySelectorAll('[data-row]').length;if(firstRows>=100)throw Error('Long reader not virtualized');input('[aria-label=\"查找会话正文\"]','synthetic-needle-219');await wait(()=>document.querySelector('mark')?.textContent==='synthetic-needle-219');return {match:document.querySelector('mark').textContent,renderedRows:firstRows,scroll:document.querySelector('[aria-label=\"会话消息\"]').scrollTop};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Long reader not virtualized\r\n    at <anonymous>:1:1059\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Long reader not virtualized\r\n    at <anonymous>:1:1059\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "short-dialog-dark-768",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 768,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 541,
+      "scroll": 1091
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-light-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 358,
+      "protocolWidth": 297,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-light-390",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 358,
+      "protocolWidth": 297,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-light-390",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 358,
+      "protocolWidth": 297,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-light-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 6 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:33\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:33\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:33\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 6 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:33\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:33\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:33\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-light-390",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-12-reader-and-models/screenshots/long-reader-light-390.png 390 1000 (async()=>{const wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing UI '+f.toString())};const button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);const click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,100))};const theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,150))};const input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};await theme(false);(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));const firstRows=document.querySelectorAll('[data-row]').length;if(firstRows>=100)throw Error('Long reader not virtualized');input('[aria-label=\"查找会话正文\"]','synthetic-needle-219');await wait(()=>document.querySelector('mark')?.textContent==='synthetic-needle-219');return {match:document.querySelector('mark').textContent,renderedRows:firstRows,scroll:document.querySelector('[aria-label=\"会话消息\"]').scrollTop};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Long reader not virtualized\r\n    at <anonymous>:1:1060\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Long reader not virtualized\r\n    at <anonymous>:1:1060\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "short-dialog-light-390",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 549,
+      "scroll": 1435
+    },
+    "failed": false
+  },
+  {
+    "name": "create-success-dark-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 358,
+      "protocolWidth": 297,
+      "titleSize": "23px",
+      "mode": "success",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-empty-dark-390",
+    "url": "http://127.0.0.1:5177/?models=empty#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 358,
+      "protocolWidth": 297,
+      "titleSize": "23px",
+      "mode": "empty",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "create-error-dark-390",
+    "url": "http://127.0.0.1:5177/?models=error#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志",
+      "gpt-4ogpt-4o-minigpt-4.1gpt-4.1-minigpt-4.1-nanoo3o4-minigpt-4-turbo"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "dialogWidth": 358,
+      "protocolWidth": 297,
+      "titleSize": "23px",
+      "mode": "error",
+      "footer": true
+    },
+    "failed": false
+  },
+  {
+    "name": "supplier-dark-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "protocol": "Anthropic Messages",
+      "model": "claude-haiku-4-5"
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 7 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n00:34\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n思考\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n00:34\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n00:34\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "reader": true,
+      "expanded": "true",
+      "rows": 11
+    },
+    "failed": false
+  },
+  {
+    "name": "reader-search-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 7 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 00:27:26\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n1 / 1\nUSER\n第 1 轮\n00:34\n第 1 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-0\nASSISTANT\n第 1 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 2 轮\n00:34\n第 2 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n含失败步骤\n思考\n先检查配置，再验证失败路径。\nRead\n失败\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-1\nASSISTANT\n第 2 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\nUSER\n第 3 轮\n00:34\n第 3 轮：检查角色路由配置与失败回退。\n执行过程\n2 个执行步骤\n思考\n先检查配置，再验证失败路径。\nRead\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"src/router/config.ts\"\n}\n\n输出结果\n\npriority = 100; cooldown = 60; synthetic-needle-2\nASSISTANT\n第 3 轮 · 最终回复\n## 配置检查完成\n\n- 优先级与回退配置已检查\n- 补充熔断恢复测试\n\n```typescript\nconst priority = 100;\nconst cooldown = 60;\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 回退 | 已验证 |\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-1",
+      "failed": true
+    },
+    "failed": false
+  },
+  {
+    "name": "long-reader-dark-390",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 7 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/projec",
+    "errors": [],
+    "interaction": {
+      "match": "synthetic-needle-219",
+      "renderedRows": 9,
+      "scroll": 151069
+    },
+    "failed": false
+  },
+  {
+    "name": "short-dialog-dark-390",
+    "url": "http://127.0.0.1:5177/?state=long#/channels",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存渠道名称 *供应商Anthropic上游协议 *Anthropic MessagesBase URL *API Key *凭据将加密存储在本地，日志不会记录原始密钥。支持模型"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "moved": 0,
+      "bottom": 549,
+      "scroll": 1435
+    },
+    "failed": false
+  }
+]

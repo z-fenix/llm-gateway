@@ -100,10 +100,10 @@ describe("ChannelsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /添加模型/ }));
     const modelInputs = screen.getAllByPlaceholderText(/输入或选择模型/);
     fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
-    fireEvent.change(screen.getByLabelText("超时秒数"), { target: { value: "60" } });
+    fireEvent.change(screen.getByLabelText("超时（秒）"), { target: { value: "60" } });
 
     // DSH 改造后页脚按钮为「应用」（FormFooter 默认），旧断言 getByText("保存") 属于本次修正
-    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    fireEvent.click(screen.getByRole("button", { name: /创建渠道|保存渠道/ }));
 
     await waitFor(() => expect(mockedApi.createChannel).toHaveBeenCalled());
     expect(mockedApi.createChannel.mock.calls[0][0].name).toBe("新渠道");
@@ -126,24 +126,11 @@ describe("ChannelsPage", () => {
     expect(screen.getByText("claude-sonnet-4-5")).toBeInTheDocument();
   });
 
-  it("列表渲染状态点与已停用标签（Task 8 改版语义）", async () => {
-    mockedApi.listChannels.mockResolvedValue([
-      channel("c1", { enabled: true, avg_latency_ms: 87 }),
-      channel("c2", { enabled: false, name: "禁用渠道" }),
-    ]);
+  it("列表通过开关呈现渠道启用状态", async () => {
+    mockedApi.listChannels.mockResolvedValue([channel("c1"), channel("c2", { enabled: false })]);
     render(<ChannelsPage />);
-    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
-
-    const enabledCard = screen.getByText("渠道c1").closest(".group") as HTMLElement;
-    expect(enabledCard.querySelector(".bg-success")).not.toBeNull();
-    expect(enabledCard.textContent).toContain("87ms");
-
-    const disabledCard = screen.getByText("禁用渠道").closest(".group") as HTMLElement;
-    expect(disabledCard.textContent).toContain("已停用");
-    expect(disabledCard.className).toContain("opacity-55");
-
-    fireEvent.click(screen.getAllByRole("button", { name: "连通检测" })[0]);
-    await waitFor(() => expect(mockedApi.testChannel).toHaveBeenCalledWith("c1"));
+    expect(await screen.findByRole("switch", { name: "启用 渠道c1" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: "启用 渠道c2" })).toHaveAttribute("aria-checked", "false");
   });
 
   it("删除渠道需经过确认弹窗：确认后才调用 deleteChannel 并刷新", async () => {
@@ -194,52 +181,28 @@ describe("ChannelsPage 渠道页改版（Task 8）", () => {
     mockedApi.testChannel.mockResolvedValue({ ok: true, latency_ms: 120, error: null });
   });
 
-  it("启用卡渲染 success 状态点与 text-success 等宽延迟（avg_latency_ms 常驻）", async () => {
-    mockedApi.listChannels.mockResolvedValue([
-      channel("c1", { enabled: true, avg_latency_ms: 87 }),
-    ]);
-    const { container } = render(<ChannelsPage />);
-    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
-
-    const card = screen.getByText("渠道c1").closest(".group") as HTMLElement;
-    const dot = card.querySelector(".bg-success");
-    expect(dot).not.toBeNull();
-    const latency = card.querySelector(".text-success.font-mono");
-    expect(latency).not.toBeNull();
-    expect(latency?.textContent).toContain("87");
-    // 延迟常驻：文本由令牌上色而非旧统计行的 muted 文案
-    expect(container.querySelector(".hover\\:border-primary\\/40")).not.toBeNull();
+  it("表格常驻显示渠道统计与延迟", async () => {
+    mockedApi.listChannels.mockResolvedValue([channel("c1", { avg_latency_ms: 87 })]);
+    render(<ChannelsPage />);
+    expect(await screen.findByText(/0 \/ 87 ms/)).toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("连通检测后延迟更新为实测值并保持 text-success font-mono", async () => {
-    mockedApi.listChannels.mockResolvedValue([
-      channel("c1", { enabled: true, avg_latency_ms: 0 }),
-    ]);
+  it("连通检测调用对应渠道，不修改配置统计", async () => {
+    mockedApi.listChannels.mockResolvedValue([channel("c1", { avg_latency_ms: 0 })]);
     render(<ChannelsPage />);
-    await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
-
-    // 未有实测延迟且 avg 为 0 时不渲染延迟
-    const card = screen.getByText("渠道c1").closest(".group") as HTMLElement;
-    expect(card.querySelector(".text-success.font-mono")).toBeNull();
-
+    await screen.findByText("渠道c1");
     fireEvent.click(screen.getByRole("button", { name: "连通检测" }));
-    await waitFor(() => {
-      const latency = card.querySelector(".text-success.font-mono");
-      expect(latency?.textContent).toContain("120");
-    });
+    await waitFor(() => expect(mockedApi.testChannel).toHaveBeenCalledWith("c1"));
+    expect(screen.getByText(/0 \/ 0 ms/)).toBeInTheDocument();
   });
 
-  it("停用卡渲染 已停用 标签且卡片 opacity-55，无 success 点", async () => {
-    mockedApi.listChannels.mockResolvedValue([
-      channel("c2", { enabled: false, name: "停用渠道" }),
-    ]);
+  it("停用渠道仍可编辑和检测", async () => {
+    mockedApi.listChannels.mockResolvedValue([channel("c2", { enabled: false, name: "停用渠道" })]);
     render(<ChannelsPage />);
-    await waitFor(() => expect(screen.getByText("停用渠道")).toBeInTheDocument());
-
-    const card = screen.getByText("停用渠道").closest(".group") as HTMLElement;
-    expect(card.className).toContain("opacity-55");
-    expect(card.textContent).toContain("已停用");
-    expect(card.querySelector(".bg-success")).toBeNull();
+    expect(await screen.findByRole("switch", { name: "启用 停用渠道" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("button", { name: "编辑" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "连通检测" })).toBeEnabled();
   });
 
   it("页面源码不含 border-border-active 死类与 bg-gradient-to-* 渐变类", () => {
@@ -255,7 +218,7 @@ describe("ChannelsPage 渠道页改版（Task 8）", () => {
     render(<ChannelsPage />);
     await waitFor(() => expect(screen.getByText("渠道c1")).toBeInTheDocument());
 
-    const tablist = screen.getByRole("tablist", { name: "渠道状态筛选" });
+    const tablist = screen.getByRole("tablist", { name: "渠道状态" });
     const tabs = Array.from(tablist.querySelectorAll("[role='tab']"));
     expect(tabs.length).toBe(STATUS_OPTIONS.length);
     expect(tabs.map((t) => t.textContent)).toEqual(
@@ -322,26 +285,17 @@ describe("ChannelsPage 渠道表单 DSH 改造（Task 2）", () => {
     fireEvent.change(modelInputs[modelInputs.length - 1], { target: { value: "deepseek-chat" } });
   }
 
-  it("折叠区「自定义设置」存在且默认收起（details 无 open 属性）", async () => {
+  it("新建模态按设计展示协议与调度字段", async () => {
     await openCreateDialog();
-
-    // Radix Dialog 传送到 body，从 summary 语义反查 details
-    const details = screen.getByText("自定义设置").closest("details");
-    expect(details).not.toBeNull();
-    expect(details!.querySelector("summary")?.textContent).toContain("自定义设置");
-    expect(details!.hasAttribute("open")).toBe(false);
-    // 折叠字段仍在 DOM（收起仅视觉隐藏）：上游协议 / 优先级 / 权重 / 超时秒数
-    expect(screen.getByText("上游协议")).toBeInTheDocument();
-    expect(screen.getByLabelText("优先级")).toBeInTheDocument();
-    expect(screen.getByLabelText("权重")).toBeInTheDocument();
-    expect(screen.getByLabelText("超时秒数")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "上游协议" })).toBeVisible();
+    for (const label of ["优先级", "权重", "超时（秒）"]) expect(screen.getByLabelText(label)).toBeVisible();
   });
 
   it("必填缺失：pristine 无行内错误但应用禁用；触碰名称后行内错误出现；补全后恢复可用", async () => {
     await openCreateDialog();
 
     // pristine：不喊错（无 role=alert），仅应用禁用
-    const apply = screen.getByRole("button", { name: "应用" });
+    const apply = screen.getByRole("button", { name: /创建渠道|保存渠道/ });
     expect(apply).toBeDisabled();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
@@ -362,7 +316,7 @@ describe("ChannelsPage 渠道表单 DSH 改造（Task 2）", () => {
     expect(keyInput.value).toBe("");
     expect(keyInput.placeholder).toBe("已保存，留空保持不变");
 
-    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    fireEvent.click(screen.getByRole("button", { name: /创建渠道|保存渠道/ }));
     await waitFor(() => expect(mockedApi.updateChannel).toHaveBeenCalledTimes(1));
     const payload = mockedApi.updateChannel.mock.calls[0][0];
     expect(payload.api_key).toBe("sk-***test");
@@ -378,14 +332,14 @@ describe("ChannelsPage 渠道表单 DSH 改造（Task 2）", () => {
       () => new Promise<Channel>((res) => { resolveCreate = res; })
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "应用" }));
+    fireEvent.click(screen.getByRole("button", { name: /创建渠道|保存渠道/ }));
 
-    expect(screen.getByRole("button", { name: "应用中" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "保存中…" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
 
     resolveCreate(channel("c-new"));
     await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "应用中" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "保存中…" })).not.toBeInTheDocument()
     );
   });
 });

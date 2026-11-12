@@ -1,6 +1,6 @@
+import { DialogBody } from "./ui/dialog";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Download, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { api } from "../lib/api";
 import type { Channel, ModelMapEntry } from "../types";
 import { STATIC_MODEL_CATALOG } from "../lib/modelCatalog";
@@ -8,6 +8,8 @@ import { ModelCombobox } from "./ModelCombobox";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { SecretInput } from "./form/SecretInput";
+import { FormFooter } from "./form/FormFooter";
 import {
   Accordion,
   AccordionContent,
@@ -61,12 +63,16 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
 }) {
   const [f, setF] = useState<Partial<Channel>>({
     supplier: "openai", upstream_protocol: "openai-chat", priority: 0, weight: 1, enabled: true,
-    timeout_secs: 60, models: [], ...initial,
+    timeout_secs: 60, models: [""], ...initial,
   });
   const [attempted, setAttempted] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<keyof Channel, boolean>>>({});
+  const [secret, setSecret] = useState("");
   const [saving, setSaving] = useState(false);
-  // 提交过一次后才展示错误，之后随输入实时更新
-  const errors = attempted ? validateForm(f) : {};
+  const values = { ...f, api_key: secret || initial?.api_key || "" };
+  const validation = validateForm(values);
+  const errors: FieldErrors = Object.fromEntries(Object.entries(validation).filter(([key]) => attempted || touched[key as keyof Channel]));
+  const touch = (key: keyof Channel) => setTouched((p) => ({ ...p, [key]: true }));
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
 
   // ---- 支持模型：可搜索下拉（候选来自「从上游刷新」或内置静态清单） ----
@@ -74,36 +80,50 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     () => STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []
   );
   const [modelFetching, setModelFetching] = useState(false);
-  const [modelSource, setModelSource] = useState<"static" | "upstream">("static");
-  const applyStatic = (supplier: string) => {
-    setModelOptions(STATIC_MODEL_CATALOG[supplier] ?? []);
+  const [modelRefresh, setModelRefresh] = useState(0);
+  const [modelSource, setModelSource] = useState<"static" | "upstream" | "empty">("static");
+  const [modelError, setModelError] = useState("");
+  const modelRequest = useRef(0);
+  useEffect(() => {
+    modelRequest.current += 1;
+    setModelFetching(false);
+    setModelOptions(STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []);
     setModelSource("static");
-  };
+    setModelError("");
+    return () => { modelRequest.current += 1; };
+  }, [f.supplier, f.base_url, f.upstream_protocol, secret]);
   const changeSupplier = (v: string) => {
-    set("supplier", v);
-    applyStatic(v);
+    setF(p => ({ ...p, supplier: v, ...(!initial?.id ? {
+      upstream_protocol: v === "claude" ? "anthropic-messages" : v === "gemini" ? "gemini-native" : "openai-chat",
+    } : {}) }));
   };
   const refreshModels = async () => {
+    const request = ++modelRequest.current;
     setModelFetching(true);
+    setModelError("");
     try {
       const list = await api.listChannelModels({
         baseUrl: (f.base_url ?? "").trim(),
         upstreamProtocol: f.upstream_protocol ?? "openai-chat",
-        apiKey: f.api_key ?? "",
+        apiKey: secret || initial?.api_key || "",
         timeoutSecs: f.timeout_secs ?? 60,
-        channelId: channelId,
+        channelId,
       });
-      // 上游列表 + 内置清单合并，兼顾准确与兜底；去重去空白。
-      const merged = Array.from(
-        new Set([...list, ...(STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? [])])
-      ).filter(Boolean);
-      if (merged.length > 0) setModelSource("upstream");
-      setModelOptions(merged);
-    } catch {
-      applyStatic(f.supplier ?? "openai");
-      toast.info("无法从上游获取模型，已切回内置清单");
+      if (request !== modelRequest.current) return;
+      const models = [...new Set(list.map(m => m.trim()).filter(Boolean))];
+      setModelSource(models.length ? "upstream" : "empty");
+      setModelOptions(models.length ? models : STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []);
+      if (!(f.models ?? []).length) addModel();
+      setModelRefresh(value => value + 1);
+    } catch (err) {
+      if (request !== modelRequest.current) return;
+      setModelSource("static");
+      setModelOptions(STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []);
+      setModelError(`获取失败：${err instanceof Error ? err.message : String(err)}。请检查地址、协议与凭据，或手动输入模型 ID。`);
+      if (!(f.models ?? []).length) addModel();
+      setModelRefresh(value => value + 1);
     } finally {
-      setModelFetching(false);
+      if (request === modelRequest.current) setModelFetching(false);
     }
   };
 
@@ -128,6 +148,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     const next = [...(f.models ?? [])];
     next.splice(i, 1);
     set("models", next);
+    touch("models");
   };
   const updateModel = (i: number, v: string) => {
     const next = [...(f.models ?? [])];
@@ -195,29 +216,30 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   const inputCls = (k: keyof Channel) =>
     errors[k] ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : undefined;
   const errMsg = (k: keyof Channel) =>
-    errors[k] ? <p className="mt-1 text-xs text-destructive">{errors[k]}</p> : null;
+    errors[k] ? <p role="alert" className="mt-1 text-xs text-destructive">{errors[k]}</p> : null;
 
   const submit = async () => {
     if (saving) return;
     setAttempted(true);
-    if (Object.keys(validateForm(f)).length > 0) return;
+    if (Object.keys(validation).length > 0) return;
     // 提交前 trim + 过滤空白模型，避免 "   " 之类的条目泄漏进 /v1/models 响应
     const models = (f.models ?? []).map((m) => m.trim()).filter(Boolean);
     setSaving(true);
     try {
-      await onSubmit({ ...f, models } as Channel);
+      await onSubmit({ ...values, models } as Channel);
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden">
+      <DialogBody className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-1.5">
-        <Label htmlFor="channel-name">名称</Label>
-        <Input id="channel-name" className={inputCls("name")} placeholder="名称"
-          value={f.name ?? ""} onChange={(e) => set("name", e.target.value)} />
+        <Label htmlFor="channel-name">渠道名称 <span aria-hidden="true">*</span></Label>
+        <Input id="channel-name" required className={inputCls("name")} placeholder="名称"
+          value={f.name ?? ""} onBlur={() => touch("name")} aria-invalid={!!errors.name} onChange={(e) => set("name", e.target.value)} />
         {errMsg("name")}
       </div>
 
@@ -226,15 +248,15 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         <Select value={f.supplier} onValueChange={changeSupplier}>
           <SelectTrigger aria-label="供应商"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {SUPPLIERS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            {SUPPLIERS.map((p) => <SelectItem key={p} value={p}>{{openai:"OpenAI",claude:"Anthropic",deepseek:"DeepSeek",gemini:"Google Gemini",custom:"自定义"}[p]}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-      <div className="space-y-1.5">
-        <Label>上游协议</Label>
+      <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="min-w-0 space-y-1.5">
+        <Label>上游协议 *</Label>
         <Select value={f.upstream_protocol} onValueChange={(v) => set("upstream_protocol", v)}>
           <SelectTrigger aria-label="上游协议"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -244,23 +266,22 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="channel-base-url">Base URL</Label>
-        <Input id="channel-base-url" className={inputCls("base_url")}
+        <Label htmlFor="channel-base-url">Base URL *</Label>
+        <Input id="channel-base-url" required className={inputCls("base_url")}
           placeholder="Base URL，如 https://api.deepseek.com"
-          value={f.base_url ?? ""} onChange={(e) => set("base_url", e.target.value)} />
+          value={f.base_url ?? ""} onBlur={() => touch("base_url")} aria-invalid={!!errors.base_url} onChange={(e) => set("base_url", e.target.value)} />
         {errMsg("base_url")}
       </div>
 
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="channel-api-key">API Key</Label>
-        <Input type="password" autoComplete="new-password" id="channel-api-key" className={inputCls("api_key")}
-          placeholder="真实上游 API Key"
-          value={f.api_key ?? ""} onChange={(e) => set("api_key", e.target.value)} />
+        <Label htmlFor="channel-api-key">API Key <span aria-hidden="true">*</span></Label>
+        <div onBlur={() => touch("api_key")}><SecretInput value={secret} onChange={setSecret} saved={initial?.id ? "已保存，留空保持不变" : "输入上游 API Key"} ariaLabel="API Key" invalid={!!errors.api_key} disabled={saving} /></div>
         {errMsg("api_key")}
+        <p className="text-[11px] text-muted-foreground">凭据将加密存储在本地，日志不会记录原始密钥。</p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" onBlur={() => touch("models")}>
         <div className="flex items-center justify-between">
           <Label>支持模型</Label>
           <Button type="button" variant="outline" size="sm" onClick={refreshModels} disabled={modelFetching}>
@@ -271,8 +292,11 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         <p className="text-xs text-muted-foreground">
           {modelSource === "upstream"
             ? "已从上游加载模型，可直接选择或继续输入。"
-            : "内置模型清单，可点击「获取模型列表」拉取上游真实模型。"}
+            : modelSource === "empty"
+              ? "上游返回空模型列表。下方仅为内置参考，可手动输入模型 ID。"
+              : "内置参考清单，不代表上游已支持；获取真实列表或手动输入模型 ID。"}
         </p>
+        {modelError && <p role="alert" className="text-xs text-destructive">{modelError}</p>}
         {(f.models ?? []).map((m, i) => (
           <div key={modelKeys.current[i] ?? `m${i}`} className="flex items-center gap-2">
             <ModelCombobox
@@ -280,6 +304,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
               onChange={(v) => updateModel(i, v)}
               options={modelOptions}
               loading={modelFetching}
+              openSignal={i === 0 ? modelRefresh : 0}
               error={!!errors.models}
             />
             <Button type="button" variant="ghost" size="icon"
@@ -294,31 +319,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         {errMsg("models")}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="channel-priority">优先级</Label>
-          <Input id="channel-priority" type="number" className={inputCls("priority")}
-            placeholder="优先级" value={f.priority ?? 0}
-            onChange={(e) => set("priority", Number(e.target.value))} />
-          {errMsg("priority")}
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="channel-weight">权重</Label>
-          <Input id="channel-weight" type="number" className={inputCls("weight")}
-            placeholder="权重" value={f.weight ?? 1}
-            onChange={(e) => set("weight", Number(e.target.value))} />
-          {errMsg("weight")}
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="channel-timeout">超时秒数</Label>
-        <Input id="channel-timeout" type="number" className={inputCls("timeout_secs")}
-          placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0}
-          onChange={(e) => set("timeout_secs", Number(e.target.value))} />
-        {errMsg("timeout_secs")}
-      </div>
-
+      {!channelId && <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-background p-4"><div><h3 className="text-sm font-medium">模型名称映射</h3><p className="mt-1 text-[11px] text-muted-foreground">创建后可配置请求模型到上游模型的映射。</p></div><Button variant="outline" size="sm" disabled>配置映射</Button></div>}
       {channelId && (
         <Accordion type="single" collapsible defaultValue="model-map" className="rounded-lg border border-border px-3">
           <AccordionItem value="model-map" className="border-b-0">
@@ -361,10 +362,33 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         </Accordion>
       )}
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
-        <Button type="button" onClick={submit} disabled={saving}>{saving && <Loader2 className="animate-spin" />}保存</Button>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="channel-priority">优先级</Label>
+          <Input id="channel-priority" type="number" className={inputCls("priority")}
+            placeholder="优先级" value={f.priority ?? 0}
+            onChange={(e) => set("priority", Number(e.target.value))} />
+          {errMsg("priority")}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="channel-weight">权重</Label>
+          <Input id="channel-weight" type="number" className={inputCls("weight")}
+            placeholder="权重" value={f.weight ?? 1}
+            onChange={(e) => set("weight", Number(e.target.value))} />
+          {errMsg("weight")}
+        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="channel-timeout">超时（秒）</Label>
+        <Input id="channel-timeout" type="number" className={inputCls("timeout_secs")}
+          placeholder="超时秒数（>=1）" value={f.timeout_secs ?? 0}
+          onBlur={() => touch("timeout_secs")} onChange={(e) => set("timeout_secs", Number(e.target.value))} />
+        {errMsg("timeout_secs")}
       </div>
+      </div>
+
+
+      </DialogBody>
+      <FormFooter onCancel={onCancel} onSubmit={submit} busy={saving} submitDisabled={Object.keys(validation).length > 0} submitLabel={initial?.id ? "保存渠道" : "创建渠道"} busyLabel="保存中…" />
     </div>
   );
 }

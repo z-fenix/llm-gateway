@@ -45,7 +45,7 @@ export default function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
-        <DialogFooter className="mt-2">
+        <DialogFooter className="mt-2 gap-3 sm:space-x-0">
           <Button variant="outline" onClick={onCancel} disabled={pending}>
             {cancelText}
           </Button>

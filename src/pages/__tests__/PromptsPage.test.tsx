@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import PromptsPage from "../PromptsPage";
 import { api } from "../../lib/api";
@@ -50,8 +50,8 @@ describe("PromptsPage", () => {
       prompt("p2", { name: "写作模板", enabled: false }),
     ]);
     render(<PromptsPage />);
-    await waitFor(() => expect(screen.getByText("开发模板")).toBeInTheDocument());
-    expect(screen.getByText("写作模板")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: /开发模板/ })).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /写作模板/ })).toBeInTheDocument();
 
     const switches = screen.getAllByRole("switch");
     expect(switches.length).toBe(2);
@@ -61,12 +61,14 @@ describe("PromptsPage", () => {
 
   it("点击启用开关调用 enablePrompt 并刷新列表", async () => {
     mockedApi.listPrompts.mockResolvedValue([
-      prompt("p1", { name: "开发模板", enabled: true }),
+      prompt("p1", { name: "开发模板", enabled: false }),
     ]);
     render(<PromptsPage />);
-    await waitFor(() => expect(screen.getByText("开发模板")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /开发模板/ })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("switch"));
+    expect(mockedApi.enablePrompt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "确认" }));
     await waitFor(() => expect(api.enablePrompt).toHaveBeenCalledWith("p1")
     );
     await waitFor(() => expect(api.listPrompts).toHaveBeenCalledTimes(2));
@@ -108,14 +110,14 @@ describe("PromptsPage", () => {
       prompt("p1", { name: "旧模板", content: "# 旧内容", description: "旧描述" }),
     ]);
     render(<PromptsPage />);
-    await waitFor(() => expect(screen.getByText("旧模板")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /旧模板/ })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     expect(
       await screen.findByRole("heading", { name: "编辑 Prompt" })
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue("旧模板")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("# 旧内容")).toBeInTheDocument();
+    expect(within(screen.getByRole("dialog")).getByDisplayValue("# 旧内容")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/^内容/), {
       target: { value: "# 新内容" },
@@ -135,7 +137,7 @@ describe("PromptsPage", () => {
   it("删除走确认对话框并调用 deletePrompt", async () => {
     mockedApi.listPrompts.mockResolvedValue([prompt("p1", { name: "待删除" })]);
     render(<PromptsPage />);
-    await waitFor(() => expect(screen.getByText("待删除")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /待删除/ })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "删除" }));
     expect(
@@ -213,4 +215,31 @@ describe("PromptsPage", () => {
       ).not.toBeInTheDocument()
     );
   });
+  it("未保存的正文切换模板前可取消，取消后保留编辑内容", async () => {
+    mockedApi.listPrompts.mockResolvedValue([prompt("p1"), prompt("p2")]);
+    render(<PromptsPage />);
+    const editor = await screen.findByRole("textbox", { name: "模板内容" });
+    fireEvent.change(editor, { target: { value: "未保存内容" } });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    fireEvent.click(screen.getByRole("button", { name: /prompt-p2/ }));
+    expect(confirm).toHaveBeenCalled();
+    expect(editor).toHaveValue("未保存内容");
+    expect(mockedApi.upsertPrompt).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+  it("正文保存期间禁止继续编辑，避免保存完成覆盖新输入", async () => {
+    mockedApi.listPrompts.mockResolvedValue([prompt("p1")]);
+    let resolve!: (value: Prompt) => void;
+    mockedApi.upsertPrompt.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    render(<PromptsPage />);
+    const editor = await screen.findByRole("textbox", { name: "模板内容" });
+    fireEvent.change(editor, { target: { value: "修改内容" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存模板" }));
+    expect(editor).toBeDisabled();
+    resolve(prompt("p1", { content: "修改内容" }));
+    await waitFor(() => expect(editor).toBeEnabled());
+    expect(editor).toHaveValue("修改内容");
+    expect(mockedApi.enablePrompt).not.toHaveBeenCalled();
+  });
+
 });

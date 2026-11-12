@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { TimeBucket } from "../types";
+import { formatTokenAmount } from "../lib/tokenUnits";
 import { formatUsd, formatUsdAxis } from "../lib/usage";
 
 export type Dimension = "calls" | "tokens" | "success" | "risk" | "cache" | "cost";
@@ -134,7 +135,9 @@ function CustomTooltip({
                 ? `${e.value}%`
                 : dimension === "cost"
                   ? formatUsd(Number(e.value))
-                  : String(e.value)}
+                  : dimension === "tokens" || dimension === "cache"
+                    ? formatTokenAmount(Number(e.value))
+                    : String(e.value)}
             </span>
           </div>
         ))}
@@ -147,10 +150,12 @@ export default function LogTrendChart({
   buckets,
   dimension,
   bucketSecs,
+  compact = false,
 }: {
   buckets: TimeBucket[];
   dimension: Dimension;
   bucketSecs: number;
+  compact?: boolean;
 }) {
   const chartData = useMemo(
     () =>
@@ -170,7 +175,7 @@ export default function LogTrendChart({
 
   if (buckets.length === 0) {
     return (
-      <div className="flex h-[180px] w-full items-center justify-center rounded border border-dashed border-gray-300 bg-muted text-sm text-muted-foreground">
+      <div className="flex h-[180px] w-full items-center justify-center rounded border border-dashed border-border bg-muted text-sm text-muted-foreground">
         暂无数据
       </div>
     );
@@ -184,18 +189,18 @@ export default function LogTrendChart({
     : RISK_ORDER.map((key) => ({ key, name: RISK_LABELS[key], color: RISK_COLORS[key] }));
   const axes = <><CartesianGrid vertical={false} stroke="hsl(var(--border))" opacity={0.45} />
     <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} minTickGap={36} dy={8} />
-    <YAxis axisLine={false} tickLine={false} width={46} domain={dimension === "success" ? [0, 100] : [0, "auto"]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: number) => dimension === "success" ? `${v}%` : dimension === "cost" ? formatUsdAxis(v) : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
+    <YAxis axisLine={false} tickLine={false} width={46} domain={dimension === "success" ? [0, 100] : [0, "auto"]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: number) => dimension === "success" ? `${v}%` : dimension === "cost" ? formatUsdAxis(v) : dimension === "tokens" || dimension === "cache" ? formatTokenAmount(v) : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
     <Tooltip content={<CustomTooltip dimension={dimension} />} /></>;
   return (
     <div className="min-w-0 space-y-4">
-      <div className="h-[220px] w-full" aria-label={`${series.map((s) => s.name).join("、")}趋势图`}>
+      <div className={compact ? "h-[160px] w-full" : "h-[220px] w-full"} aria-label={`${series.map((s) => s.name).join("、")}趋势图`}>
         <ResponsiveContainer width="100%" height="100%">
           {dimension === "calls" ? <BarChart data={chartData} accessibilityLayer margin={{ top: 10, right: 12, left: 0, bottom: 10 }}>{axes}<Bar dataKey="calls" name="调用量" fill="var(--chart-1)" maxBarSize={18} radius={[4, 4, 0, 0]} isAnimationActive={false} /></BarChart>
             : <AreaChart data={chartData} accessibilityLayer margin={{ top: 10, right: 12, left: 0, bottom: 10 }}>{axes}{series.map((s) => <Area key={s.key} type="monotone" dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={2} fill={s.color} fillOpacity={0.1} stackId={dimension === "risk" ? "risk" : undefined} isAnimationActive={false} activeDot={{ r: 4, stroke: "hsl(var(--card))", strokeWidth: 2 }} />)}</AreaChart>}
         </ResponsiveContainer>
       </div>
       {series.length > 1 && <ul aria-label="图例" className="flex flex-wrap justify-center gap-x-5 gap-y-2">{series.map((s) => <li key={s.key} className="flex items-center gap-2 text-[11px] text-muted-foreground"><svg className="h-2 w-3 shrink-0" aria-hidden="true"><rect width="12" height="3" y="2" fill={s.color} /></svg>{s.name}</li>)}</ul>}
-      <details className="rounded-xl bg-background/70 px-4 py-3"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">查看数据</summary><div className="mt-3 max-h-64 overflow-auto"><table className="data-table"><caption className="sr-only">与趋势图同口径的数据表</caption><thead><tr><th>时间</th>{series.map((s) => <th key={s.key}>{s.name}</th>)}</tr></thead><tbody>{chartData.map((row, index) => <tr key={index}><td>{row.label}</td>{series.map((s) => <td key={s.key}>{dimension === "cost" ? formatUsd(Number((row as Record<string, unknown>)[s.key])) : dimension === "success" ? `${(row as Record<string, unknown>)[s.key]}%` : Number((row as Record<string, unknown>)[s.key]).toLocaleString()}</td>)}</tr>)}</tbody></table></div></details>
+      <details className="rounded-xl bg-background/70 px-4 py-3"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">查看数据</summary><div className="mt-3 max-h-64 overflow-auto"><table className="data-table"><caption className="sr-only">与趋势图同口径的数据表</caption><thead><tr><th>时间</th>{series.map((s) => <th key={s.key}>{s.name}</th>)}</tr></thead><tbody>{chartData.map((row, index) => <tr key={index}><td>{row.label}</td>{series.map((s) => <td key={s.key} title={Number((row as Record<string, unknown>)[s.key]).toLocaleString()}>{dimension === "cost" ? formatUsd(Number((row as Record<string, unknown>)[s.key])) : dimension === "success" ? `${(row as Record<string, unknown>)[s.key]}%` : dimension === "tokens" || dimension === "cache" ? formatTokenAmount(Number((row as Record<string, unknown>)[s.key])) : Number((row as Record<string, unknown>)[s.key]).toLocaleString()}</td>)}</tr>)}</tbody></table></div></details>
     </div>
   );
 }

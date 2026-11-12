@@ -132,16 +132,59 @@ pub fn load_messages(path: &Path) -> Result<Vec<SessionMessage>, String> {
             }
         }
 
-        if content.trim().is_empty() {
+        use crate::session_manager::SessionBlock as B;
+        let mut blocks = Vec::new();
+        if let Some(thoughts) = msg["thoughts"].as_array() {
+            for thought in thoughts {
+                if let Some(text) = thought["description"]
+                    .as_str()
+                    .or_else(|| thought["text"].as_str())
+                {
+                    blocks.push(B::Thinking { text: text.into() });
+                }
+            }
+        }
+        if let Some(calls) = msg["toolCalls"].as_array() {
+            for call in calls {
+                let id = call["id"].as_str().map(str::to_string);
+                blocks.push(B::ToolCall {
+                    id: id.clone(),
+                    name: call["name"].as_str().map(str::to_string),
+                    input: call.get("args").cloned().unwrap_or(Value::Null),
+                });
+                if let Some(result) = call.get("result") {
+                    let output = super::utils::extract_text(result);
+                    blocks.push(B::ToolResult {
+                        id,
+                        output: if output.is_empty() {
+                            result.to_string()
+                        } else {
+                            output
+                        },
+                        status: match call["status"].as_str() {
+                            Some("error") => "error",
+                            Some("success") => "success",
+                            _ => "unknown",
+                        }
+                        .into(),
+                    });
+                }
+            }
+        }
+        blocks.extend(
+            msg.get("content")
+                .map(super::utils::extract_blocks)
+                .unwrap_or_default(),
+        );
+        if content.trim().is_empty() && blocks.is_empty() {
             continue;
         }
-
         let ts = msg.get("timestamp").and_then(parse_timestamp_to_ms);
-
         result.push(SessionMessage {
             role: role.to_string(),
             content,
             ts,
+            blocks,
         });
     }
 
@@ -264,6 +307,17 @@ mod tests {
         assert_eq!(msgs[0].content, "hello");
         assert_eq!(msgs[1].role, "assistant");
         assert_eq!(msgs[1].content, "world");
+    }
+
+    #[test]
+    fn reader_preserves_gemini_tool_arguments_results_and_thoughts() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("reader.json");
+        std::fs::write(&path, r#"{"messages":[{"type":"gemini","content":"done","thoughts":[{"subject":"check","description":"reason"}],"toolCalls":[{"id":"c1","name":"read_file","args":{"path":"file.txt"},"result":[{"text":"contents"}],"status":"success"}]}]}"#).unwrap();
+        let json = serde_json::to_value(load_messages(&path).unwrap()).unwrap();
+        assert_eq!(json[0]["blocks"][0]["type"], "thinking");
+        assert_eq!(json[0]["blocks"][1]["input"]["path"], "file.txt");
+        assert_eq!(json[0]["blocks"][2]["id"], "c1");
     }
 
     #[test]

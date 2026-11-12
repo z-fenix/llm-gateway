@@ -87,7 +87,7 @@ describe("RoleRoutesPage", () => {
       screen.getByRole("button", { name: "查看 sonnet 角色详情" })
     );
     await waitFor(() =>
-      expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument()
+      expect(screen.getByText("deepseek-v4-flash")).toBeInTheDocument()
     );
   };
 
@@ -101,17 +101,17 @@ describe("RoleRoutesPage", () => {
     expect(screen.getAllByText("0 条")).toHaveLength(6);
     // 点击卡片 → 详情面板空状态与新增入口
     fireEvent.click(screen.getByRole("button", { name: "查看 sonnet 角色详情" }));
-    expect(await screen.findByText("暂无「sonnet」路由")).toBeInTheDocument();
+    expect(await screen.findByText("暂无「均衡任务（sonnet）」路由")).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: "新增路由" }).length
     ).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "返回" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "返回角色概览" })).toBeInTheDocument();
   });
 
   it("渲染路由行、上游模型与熔断状态", async () => {
     render(<RoleRoutesPage />);
     await openSonnetDetail();
-    expect(screen.getByDisplayValue("deepseek-v4-flash")).toBeInTheDocument();
+    expect(screen.getByText("deepseek-v4-flash")).toBeInTheDocument();
     expect(screen.getByText("正常")).toBeInTheDocument();
   });
 
@@ -119,9 +119,12 @@ describe("RoleRoutesPage", () => {
     render(<RoleRoutesPage />);
     await openSonnetDetail();
 
-    const select = screen.getByRole("combobox", { name: "sonnet 渠道" });
+    fireEvent.click(screen.getByRole("button", { name: "编辑路由" }));
+    const select = screen.getByRole("combobox", { name: "路由渠道" });
     fireEvent.click(select);
     fireEvent.click(await screen.findByRole("option", { name: "Kimi" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "上游模型" }), { target: { value: "deepseek-v4-flash" } });
+    fireEvent.click(screen.getByRole("button", { name: "应用" }));
 
     await waitFor(() => expect(mockedApi.upsertRoleRoute).toHaveBeenCalled());
     const payload = mockedApi.upsertRoleRoute.mock.calls[0][0];
@@ -143,13 +146,12 @@ describe("RoleRoutesPage", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("combobox", { name: "路由角色" }));
-    fireEvent.click(await screen.findByRole("option", { name: "opus" }));
+    fireEvent.click(await screen.findByRole("option", { name: "复杂任务（opus）" }));
 
     fireEvent.click(screen.getByRole("combobox", { name: "路由渠道" }));
     fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
 
-    fireEvent.click(screen.getByRole("combobox", { name: "上游模型" }));
-    fireEvent.click(await screen.findByRole("option", { name: "opus-model" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "上游模型" }), { target: { value: "opus-model" } });
     fireEvent.change(screen.getByLabelText("优先级"), {
       target: { value: "10" },
     });
@@ -196,6 +198,7 @@ describe("RoleRoutesPage", () => {
       ).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "编辑回退" }));
     const fallbackSelect = screen.getByRole("combobox", { name: "兜底渠道" });
     fireEvent.click(fallbackSelect);
     fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
@@ -215,6 +218,7 @@ describe("RoleRoutesPage", () => {
       ).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "管理识别规则" }));
     fireEvent.click(screen.getByRole("button", { name: "新增规则" }));
     expect(
       await screen.findByRole("heading", { name: "新增规则" })
@@ -246,6 +250,7 @@ describe("RoleRoutesPage", () => {
       ).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "管理识别规则" }));
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     expect(
       await screen.findByRole("heading", { name: "编辑规则" })
@@ -275,6 +280,7 @@ describe("RoleRoutesPage", () => {
       ).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "管理识别规则" }));
     fireEvent.click(screen.getByRole("button", { name: "删除" }));
     expect(
       await screen.findByRole("heading", { name: "删除规则" })
@@ -309,8 +315,7 @@ describe("RoleRoutesPage", () => {
     // 补全后恢复可用
     fireEvent.click(screen.getByRole("combobox", { name: "路由渠道" }));
     fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
-    fireEvent.click(screen.getByRole("combobox", { name: "上游模型" }));
-    fireEvent.click(await screen.findByRole("option", { name: "opus-model" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "上游模型" }), { target: { value: "opus-model" } });
     await waitFor(() => expect(apply).toBeEnabled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -325,8 +330,7 @@ describe("RoleRoutesPage", () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("combobox", { name: "路由渠道" }));
     fireEvent.click(await screen.findByRole("option", { name: "DeepSeek" }));
-    fireEvent.click(screen.getByRole("combobox", { name: "上游模型" }));
-    fireEvent.click(await screen.findByRole("option", { name: "opus-model" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "上游模型" }), { target: { value: "opus-model" } });
 
     let resolveRoute!: () => void;
     mockedApi.upsertRoleRoute.mockImplementationOnce(
@@ -353,6 +357,7 @@ describe("RoleRoutesPage", () => {
       ).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "管理识别规则" }));
     fireEvent.click(screen.getByRole("button", { name: "新增规则" }));
     expect(
       await screen.findByRole("heading", { name: "新增规则" })
@@ -380,6 +385,7 @@ describe("RoleRoutesPage", () => {
       ).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "管理识别规则" }));
     fireEvent.click(screen.getByRole("button", { name: "新增规则" }));
     expect(
       await screen.findByRole("heading", { name: "新增规则" })

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { MessagesSquare, Search, Trash2, ScrollText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { NEUTRAL_TAG } from "../lib/tagStyles";
 import type { SessionMeta, SessionMessage } from "../types";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
 import RefreshControls from "../components/RefreshControls";
@@ -10,10 +11,11 @@ import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
+
+const SessionReader = lazy(() => import("../components/sessions/SessionReader"));
 
 const PROVIDERS = [
   { id: "all", label: "全部" },
@@ -29,17 +31,6 @@ const PROVIDER_LABEL: Record<string, string> = {
   codex: "Codex",
   gemini: "Gemini",
 };
-
-function providerBadgeVariant(provider: string): "default" | "secondary" | "outline" {
-  switch (provider) {
-    case "claude":
-      return "default";
-    case "codex":
-      return "secondary";
-    default:
-      return "outline";
-  }
-}
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleString();
@@ -61,34 +52,9 @@ function shortId(id: string): string {
   return id.length > 16 ? `${id.slice(0, 16)}…` : id;
 }
 
-function roleBadgeVariant(role: string): "default" | "secondary" | "outline" {
-  switch (role) {
-    case "user":
-      return "default";
-    case "assistant":
-      return "secondary";
-    case "tool":
-      return "outline";
-    default:
-      return "outline";
-  }
-}
-
-function messageRoleLabel(role: string): string {
-  switch (role) {
-    case "user":
-      return "用户";
-    case "assistant":
-      return "助手";
-    case "tool":
-      return "工具";
-    default:
-      return role;
-  }
-}
-
 export default function SessionsPage() {
   const messageRequest = useRef(0);
+  const detailRef = useRef<HTMLDivElement>(null);
   const [sessions, setSessions] = useState<SessionMeta[] | null>(null);
   const [providerFilter, setProviderFilter] = useState<ProviderId>("all");
   const [search, setSearch] = useState("");
@@ -199,6 +165,37 @@ export default function SessionsPage() {
 
   const activeCount = sessions?.length ?? 0;
   const selected = filtered.find((s) => sessionKey(s) === expandedKey);
+  useEffect(() => {
+    if (selected && window.innerWidth < 1024) detailRef.current?.scrollIntoView?.({block:"start"});
+  }, [expandedKey]);
+
+  const sessionFilters = (<div className="mb-4 flex flex-col gap-3">
+        <div className="segmented-control">
+          {PROVIDERS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setProviderFilter(p.id)}
+              className={cn(
+                "segmented-item flex-1 px-2.5 text-xs",
+                providerFilter === p.id
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative min-w-0">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder="搜索会话 / 项目 / ID"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>);
 
   return (
     <div className="page-stack" id="sessions">
@@ -215,33 +212,7 @@ export default function SessionsPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="segmented-control">
-          {PROVIDERS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setProviderFilter(p.id)}
-              className={cn(
-                "segmented-item",
-                providerFilter === p.id
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="搜索标题 / 项目目录 / 会话 ID"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+
 
       {error && (
         <div className="mb-4 rounded-xl border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
@@ -249,6 +220,7 @@ export default function SessionsPage() {
         </div>
       )}
 
+      {(sessions === null || filtered.length === 0) && sessionFilters}
       {sessions === null ? (
         <LoadingState />
       ) : filtered.length === 0 ? (
@@ -262,13 +234,13 @@ export default function SessionsPage() {
           }
         />
       ) : (
-        <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[336px_minmax(0,1fr)]">
-          <Card className="p-4"><p className="mb-4 px-1 text-xs text-muted-foreground">最近会话 · {filtered.length} 条</p><div className="space-y-3">{filtered.map((s) => {
+        <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[336px_minmax(0,1fr)]">
+          <Card className="flex min-h-0 flex-col overflow-hidden p-4 lg:h-[672px]">{sessionFilters}<p className="mb-4 shrink-0 px-1 text-xs text-muted-foreground">最近会话 · {filtered.length} 条</p><div aria-label="会话列表" className="max-h-[460px] min-h-0 space-y-3 overflow-y-auto overscroll-contain lg:max-h-none lg:flex-1">{filtered.map((s) => {
             const key = sessionKey(s);
-            return <div key={key} className={cn("rounded-xl border border-border/60 p-3", expandedKey === key ? "border-primary/20 bg-accent" : "bg-card")}>
+            return <div key={key} className={cn("rounded-xl p-3", expandedKey === key ? "bg-accent" : "bg-background")}>
               <button className="w-full text-left" onClick={() => toggleExpand(s)} aria-expanded={expandedKey === key}>
                 <p className="truncate text-sm font-medium">{s.title || "（无标题）"}</p>
-                <p className="mt-2 text-[11px] text-muted-foreground">{PROVIDER_LABEL[s.providerId] ?? s.providerId} · {relativeTime(s.lastActiveAt ?? s.createdAt)}</p>
+                <p className="mt-2 text-[11px] text-muted-foreground"><span className={NEUTRAL_TAG}>{PROVIDER_LABEL[s.providerId] ?? s.providerId}</span> · {relativeTime(s.lastActiveAt ?? s.createdAt)}</p>
                 <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground" title={s.projectDir ?? undefined}>{s.projectDir}</p>
                 <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{shortId(s.sessionId)}</p>
               </button>
@@ -278,10 +250,12 @@ export default function SessionsPage() {
               </div>
             </div>;
           })}</div></Card>
-          <Card className="min-h-[560px] p-6">
+          <Card ref={detailRef} aria-label="会话详情" className="flex min-h-[400px] min-w-0 flex-col gap-5 overflow-hidden p-6 lg:h-[672px]">
             {!selected ? <EmptyState icon={<MessagesSquare className="h-7 w-7" />} title="选择一个会话" description="在左侧选择会话，查看消息时间线与工具调用。" /> : <>
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5"><div><h2 className="text-lg font-semibold">会话详情</h2><p className="mt-2 text-xs text-muted-foreground">{PROVIDER_LABEL[selected.providerId] ?? selected.providerId} · {selected.lastActiveAt ? formatTime(selected.lastActiveAt) : ""}</p></div><Button variant="outline" size="sm" onClick={() => navigate(`/logs?tab=logs&session_id=${encodeURIComponent(selected.sessionId)}&session_provider=${encodeURIComponent(selected.providerId)}`)}>查看关联日志</Button></div>
-              {messagesLoading ? <LoadingState /> : messages && messages.length > 0 ? <div className="space-y-5">{messages.map((m, i) => <article key={i} className={cn("rounded-xl border-b border-border/60 p-4", m.role === "user" && "bg-background")}><div className="mb-3 flex items-center justify-between gap-2"><Badge variant={roleBadgeVariant(m.role)}>{messageRoleLabel(m.role)}</Badge>{m.ts && <time className="text-[11px] text-muted-foreground">{formatTime(m.ts)}</time>}</div><div className="whitespace-pre-wrap break-words text-[13px] leading-7">{m.content}</div></article>)}</div> : <EmptyState title="无消息内容" />}
+              <div className="flex shrink-0 flex-wrap items-start justify-between gap-3"><div className="min-w-0 flex-1"><h2 className="break-words text-[17px] font-semibold">{selected.title || "（无标题）"}</h2><p className="mt-2 text-xs text-muted-foreground">{PROVIDER_LABEL[selected.providerId] ?? selected.providerId} · {(selected.projectDir ?? "").split(/[\\/]/).filter(Boolean).pop() || "本地项目"} · {selected.lastActiveAt || selected.createdAt ? formatTime(selected.lastActiveAt ?? selected.createdAt!) : "时间未知"}</p></div><Button variant="outline" size="sm" onClick={() => navigate(`/logs?tab=logs&session_id=${encodeURIComponent(selected.sessionId)}&session_provider=${encodeURIComponent(selected.providerId)}`)}>查看关联日志</Button></div>
+              <p aria-label="会话项目路径" className="shrink-0 break-all font-mono text-xs text-muted-foreground">{selected.projectDir || "未提供项目路径"}</p>
+              {messagesLoading ? <LoadingState /> : messages ? <Suspense fallback={<LoadingState />}><SessionReader key={sessionKey(selected)} messages={messages} resumeCommand={selected.resumeCommand}/></Suspense> : <EmptyState title="无消息内容" />}
+              <p className="shrink-0 text-[11px] text-muted-foreground">内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。</p>
             </>}
           </Card>
         </div>

@@ -83,6 +83,10 @@ describe("LogTrendChart pure functions", () => {
 });
 
 describe("LogTrendChart component (Recharts)", () => {
+  it("Token 数据表自动显示单位并保留完整原值", () => {
+    render(<LogTrendChart buckets={[{ ...baseBucket, input_tokens: 1234567 }]} dimension="tokens" bucketSecs={3600} />);
+    expect(screen.getByText("1.23M")).toHaveAttribute("title", "1,234,567");
+  });
   it("renders without crashing and shows empty state", () => {
     render(<LogTrendChart buckets={[]} dimension="calls" bucketSecs={3600} />);
     expect(screen.getByText("暂无数据")).toBeInTheDocument();

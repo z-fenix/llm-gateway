@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-12",
+  "branch": "style/design-parity",
+  "unit": {
+    "command": "pnpm test:unit",
+    "files": 40,
+    "tests": 426,
+    "passed": true
+  },
+  "typecheck": {
+    "command": "pnpm typecheck",
+    "passed": true
+  },
+  "build": {
+    "command": "pnpm build:renderer",
+    "passed": true,
+    "jsKB": 966.85,
+    "gzipKB": 290.23,
+    "warning": "Chunk exceeds 500 kB; code splitting deferred"
+  },
+  "diffCheck": {
+    "command": "git diff --check",
+    "passed": true,
+    "note": "Git CRLF conversion warnings remain"
+  },
+  "browser": {
+    "total": 144,
+    "failed": 0,
+    "runtimeExceptions": 0,
+    "pageHorizontalOverflow": 0,
+    "mainHorizontalOverflow": 0,
+    "dialogHorizontalOverflow": 0,
+    "widths": [
+      1440,
+      1024,
+      768,
+      390
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "shortViewportHeight": 600,
+    "backend": "Read-only synthetic Tauri bridge, not native E2E"
+  },
+  "palettes": {
+    "light": "PASS",
+    "dark": "PASS",
+    "surfaceLight": "#ffffff",
+    "surfaceDark": "#18181b"
+  },
+  "review": "Author self-review, no independent code reviewer",
+  "committed": false,
+  "pushed": false
+}

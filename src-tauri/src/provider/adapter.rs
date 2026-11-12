@@ -68,12 +68,20 @@ pub fn auth_header(upstream_protocol: &str, api_key: &str) -> Option<(String, St
     }
 }
 
-/// 上游模型列表 URL。Anthropic 无对应 GET 接口（由调用方提前返回空）。
+/// 上游模型列表 URL，支持 Anthropic / OpenAI 兼容与 Gemini Native。
 /// OpenAI 兼容渠道沿用 `upstream_url` 的 /v1 约定（缺 /v1 则补上）；Gemini 走 `{base}/models?key=...`。
 pub fn models_url(upstream_protocol: &str, base_url: &str, api_key: &str) -> String {
     let base = base_url.trim_end_matches('/');
     match upstream_protocol {
-        "gemini-native" => format!("{}/models?key={}", base, api_key),
+        "gemini-native" => {
+            let endpoint = format!("{base}/models");
+            reqwest::Url::parse(&endpoint)
+                .map(|mut url| {
+                    url.query_pairs_mut().append_pair("key", api_key);
+                    url.to_string()
+                })
+                .unwrap_or(endpoint)
+        }
         _ => {
             if base.ends_with("/v1") {
                 format!("{}/models", base)

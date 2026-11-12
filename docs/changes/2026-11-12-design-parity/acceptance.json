@@ -1,0 +1,1143 @@
+{
+  "date": "2026-11-12",
+  "environment": "isolated Chrome; read-only synthetic Tauri bridge",
+  "cases": 87,
+  "issues": 0,
+  "results": [
+    {
+      "name": "01-overview",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "运行概览"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "02-channels",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "03-roles",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "角色路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "04-keys",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "API 密钥"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "05-security",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "安全审计"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "06-logs",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "07-sessions",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "08-knowledge",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "09-prompts",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "10-mcp",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "11-skills",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "12-settings",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "13-cli",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "14-channel-dialog",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "新建渠道配置上游服务；保存后可在列表测试连通性。名称供应商openai上游协议OpenAI Chat CompletionsBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支"
+      ],
+      "errors": []
+    },
+    {
+      "name": "15-role-detail",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "Sonnet 路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "16-request-drawer",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 18:49:35客户端协议openai调用密钥Claude Code请求模型"
+      ],
+      "errors": []
+    },
+    {
+      "name": "17-empty",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-error",
+      "width": 1440,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-loading",
+      "width": 1440,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-channels",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-sessions",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "01-overview",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "运行概览"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "02-channels",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "03-roles",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "角色路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "04-keys",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "API 密钥"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "05-security",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "安全审计"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "06-logs",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "07-sessions",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "08-knowledge",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "09-prompts",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "10-mcp",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "11-skills",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "12-settings",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "13-cli",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "14-channel-dialog",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "新建渠道配置上游服务；保存后可在列表测试连通性。名称供应商openai上游协议OpenAI Chat CompletionsBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支"
+      ],
+      "errors": []
+    },
+    {
+      "name": "15-role-detail",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "Sonnet 路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "16-request-drawer",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 18:49:35客户端协议openai调用密钥Claude Code请求模型"
+      ],
+      "errors": []
+    },
+    {
+      "name": "17-empty",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-error",
+      "width": 1024,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-loading",
+      "width": 1024,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-channels",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-sessions",
+      "width": 1024,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "01-overview",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "运行概览"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "02-channels",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "03-roles",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "角色路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "04-keys",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "API 密钥"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "05-security",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "安全审计"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "06-logs",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "07-sessions",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "08-knowledge",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "09-prompts",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "10-mcp",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "11-skills",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "12-settings",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "13-cli",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "14-channel-dialog",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "新建渠道配置上游服务；保存后可在列表测试连通性。名称供应商openai上游协议OpenAI Chat CompletionsBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支"
+      ],
+      "errors": []
+    },
+    {
+      "name": "15-role-detail",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "Sonnet 路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "16-request-drawer",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 18:49:35客户端协议openai调用密钥Claude Code请求模型"
+      ],
+      "errors": []
+    },
+    {
+      "name": "17-empty",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-error",
+      "width": 768,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-loading",
+      "width": 768,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-channels",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-sessions",
+      "width": 768,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "01-overview",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "运行概览"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "02-channels",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "03-roles",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "角色路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "04-keys",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "API 密钥"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "05-security",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "安全审计"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "06-logs",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "07-sessions",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "08-knowledge",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "09-prompts",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "10-mcp",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "11-skills",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "12-settings",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "13-cli",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "设置"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "14-channel-dialog",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "新建渠道配置上游服务；保存后可在列表测试连通性。名称供应商openai上游协议OpenAI Chat CompletionsBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支"
+      ],
+      "errors": []
+    },
+    {
+      "name": "15-role-detail",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "Sonnet 路由"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "16-request-drawer",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 18:49:35客户端协议openai调用密钥Claude Code请求模型"
+      ],
+      "errors": []
+    },
+    {
+      "name": "17-mobile-navigation",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "运行概览"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-empty",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-error",
+      "width": 390,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-loading",
+      "width": 390,
+      "height": 1000,
+      "h1": [],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-channels",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "渠道管理"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-long-sessions",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "日志与会话"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [],
+      "errors": []
+    },
+    {
+      "name": "17-confirm",
+      "width": 1440,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "启用全局模板？将写入 ~/.claude/CLAUDE.md，原文件自动备份，同时只启用一套模板。未保存的编辑不会写入。取消确认关闭"
+      ],
+      "errors": []
+    },
+    {
+      "name": "17-confirm",
+      "width": 390,
+      "height": 1000,
+      "h1": [
+        "资源"
+      ],
+      "overflow": false,
+      "mainOverflow": false,
+      "dialogOverflow": false,
+      "dialogs": [
+        "启用全局模板？将写入 ~/.claude/CLAUDE.md，原文件自动备份，同时只启用一套模板。未保存的编辑不会写入。取消确认关闭"
+      ],
+      "errors": []
+    }
+  ]
+}

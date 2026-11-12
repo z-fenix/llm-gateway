@@ -57,10 +57,10 @@ describe("SecurityPage", () => {
   it("renders the three sections", async () => {
     render(<SecurityPage />);
     await waitFor(() =>
-      expect(screen.getByText("总开关与模式")).toBeInTheDocument()
+      expect(screen.getByText("安全策略")).toBeInTheDocument()
     );
-    expect(screen.getByText("内置规则")).toBeInTheDocument();
-    expect(screen.getByText("自定义黑白名单")).toBeInTheDocument();
+    expect(screen.getByText("检测规则")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "管理自定义规则" })).toBeInTheDocument();
   });
 
   it("switches mode radio and calls setSecuritySetting", async () => {
@@ -95,6 +95,7 @@ describe("SecurityPage", () => {
 
   it("uses substring wording for custom rule pattern placeholder", async () => {
     render(<SecurityPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "管理自定义规则" }));
     await waitFor(() =>
       expect(screen.getByPlaceholderText("匹配规则（子串）")).toBeInTheDocument()
     );
@@ -122,6 +123,7 @@ describe("SecurityPage", () => {
 
   it("自定义规则删除通过 ConfirmDialog 确认后调用 deleteCustomSecurityRule", async () => {
     render(<SecurityPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "管理自定义规则" }));
     await waitFor(() =>
       expect(screen.getByText("badword")).toBeInTheDocument()
     );

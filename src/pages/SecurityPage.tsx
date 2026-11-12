@@ -1,3 +1,4 @@
+import { DialogBody } from "../components/ui/dialog";
 import { useEffect, useState } from "react";
 import { Plus, RotateCcw, ShieldCheck } from "lucide-react";
 import { api } from "../lib/api";
@@ -6,6 +7,7 @@ import type { BuiltinRule, CustomRule, SecuritySettings } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
 import { riskSemantic } from "../lib/semantics";
@@ -48,7 +50,7 @@ function SettingRow({
   onCheckedChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+    <div className="flex items-center justify-between gap-3 border-b border-border/50 py-2">
       <span className="text-sm text-foreground">{label}</span>
       <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
     </div>
@@ -56,6 +58,7 @@ function SettingRow({
 }
 
 export default function SecurityPage() {
+  const [customOpen, setCustomOpen] = useState(false);
   const [settings, setSettings] = useState<SecuritySettings>({
     enabled: false,
     mode: "audit",
@@ -162,6 +165,7 @@ export default function SecurityPage() {
       <PageHeader
         title="安全审计"
         description="配置内容安全检测规则、扫描范围与处置模式。"
+        action={<Button onClick={() => setCustomOpen(true)}><Plus />管理自定义规则</Button>}
       />
 
       {error && (
@@ -170,12 +174,12 @@ export default function SecurityPage() {
         </div>
       )}
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            总开关与模式
+            安全策略
           </CardTitle>
           <CardDescription>
             开启安全审计后，网关将对进出请求执行内容安全检测
@@ -219,7 +223,7 @@ export default function SecurityPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
             <SettingRow
               label="阻断严重风险"
               checked={settings.block_on_critical}
@@ -257,7 +261,7 @@ export default function SecurityPage() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">高级扫描设置</summary><div className="mt-3 flex flex-wrap items-center gap-2">
             <Label htmlFor="max-scan-bytes" className="text-sm">
               最大扫描字节数
             </Label>
@@ -273,16 +277,16 @@ export default function SecurityPage() {
                 updateSetting("max_scan_bytes", n);
               }}
             />
-          </div>
+          </div></details>
         </CardContent>
       </Card>
 
-      <Card className="p-6"><ShieldCheck className="mb-5 h-7 w-7 text-primary" /><h2 className="text-lg font-semibold">明确保护边界</h2><p className="mt-3 text-[13px] leading-7 text-muted-foreground">扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。</p><div className="mt-5 rounded-xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">严重风险强制阻断当前{settings.block_on_critical ? "已启用" : "未启用"}。规则动作与全局模式取严后生效。</div><a href="#/logs" className="mt-5 inline-flex rounded-full border px-4 py-2 text-xs font-medium hover:bg-muted">查看风险日志</a></Card>
+      <Card className="p-6"><ShieldCheck className="mb-5 h-7 w-7 text-primary" /><h2 className="text-lg font-semibold">明确保护边界</h2><p className="mt-3 text-[13px] leading-7 text-muted-foreground">扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。</p><div className="mt-5 rounded-xl bg-warning/10 p-4 text-xs leading-6 text-warning">严重风险强制阻断当前{settings.block_on_critical ? "已启用" : "未启用"}。规则动作与全局模式取严后生效。</div><a href="#/logs" className="mt-5 inline-flex rounded-full border px-4 py-2 text-xs font-medium hover:bg-muted">查看风险日志</a></Card>
       </div>
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle className="text-lg">内置规则</CardTitle>
+            <CardTitle className="text-base">检测规则</CardTitle>
             <CardDescription>内置检测规则可单独启停，并调整风险级别</CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={resetBuiltin}>
@@ -291,78 +295,16 @@ export default function SecurityPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-xl border border-border/60">
-            <table className="data-table w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">规则ID</th>
-                  <th className="px-4 py-3 font-medium">类别</th>
-                  <th className="px-4 py-3 font-medium">级别</th>
-                  <th className="px-4 py-3 font-medium">标题</th>
-                  <th className="px-4 py-3 font-medium">启用</th>
-                  <th className="px-4 py-3 font-medium">级别</th>
-                </tr>
-              </thead>
-              <tbody>
-                {builtinRules.map((rule) => (
-                  <tr
-                    key={rule.id}
-                    className="border-b border-border last:border-0 hover:bg-accent/50"
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-foreground">
-                      {rule.rule_id}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {rule.category}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge semantic={riskSemantic(rule.severity)}>
-                        {rule.severity}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-4 py-3 text-foreground">{rule.title}</td>
-                    <td className="px-4 py-3">
-                      <Switch
-                        aria-label={`启用 ${rule.title}`}
-                        checked={rule.enabled}
-                        onCheckedChange={(v) =>
-                          updateBuiltin(rule, v, rule.severity)
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Select
-                        value={rule.severity}
-                        onValueChange={(v) =>
-                          updateBuiltin(rule, rule.enabled, v)
-                        }
-                      >
-                        <SelectTrigger
-                          className="h-8 w-28"
-                          aria-label={`${rule.title} 级别`}
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SEVERITIES.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-border/60">
+            {builtinRules.map((rule) => <div key={rule.id} className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"><div className="min-w-0 flex-1"><h3 className="text-sm font-medium">{rule.title}</h3><p className="mt-1.5 text-xs text-muted-foreground">{rule.description ?? rule.rule_id}</p></div><div className="flex items-center gap-4"><StatusBadge semantic={riskSemantic(rule.severity)}>{rule.severity}</StatusBadge><Select value={rule.severity} onValueChange={(v) => updateBuiltin(rule, rule.enabled, v)}><SelectTrigger className="h-8 w-24" aria-label={`${rule.title} 级别`}><SelectValue /></SelectTrigger><SelectContent>{SEVERITIES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select><Switch aria-label={`启用 ${rule.title}`} checked={rule.enabled} onCheckedChange={(v) => updateBuiltin(rule, v, rule.severity)} /></div></div>)}
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Dialog open={customOpen} onOpenChange={setCustomOpen}><DialogContent className="sm:max-w-4xl"><DialogHeader><DialogTitle>自定义黑白名单</DialogTitle><DialogDescription>配置规则后保存，匹配动作与全局模式取严生效。</DialogDescription></DialogHeader>
+<DialogBody className="space-y-5"><Card className="border-0 shadow-none">
         <CardHeader>
-          <CardTitle className="text-lg">自定义黑白名单</CardTitle>
+          <CardTitle className="text-base">规则管理</CardTitle>
           <CardDescription>
             自定义规则用于匹配请求/响应内容，动作与全局模式取严后生效
           </CardDescription>
@@ -531,7 +473,8 @@ export default function SecurityPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card></DialogBody>
+</DialogContent></Dialog>
 
       <ConfirmDialog
         open={deleting !== null}

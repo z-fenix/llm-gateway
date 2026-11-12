@@ -23,6 +23,7 @@ import type {
 } from "../types";
 import { normalizeModelId } from "../lib/usage";
 import PageHeader from "../components/PageHeader";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -77,6 +78,7 @@ export default function SettingsPage() {
   const [cliEditorOpen, setCliEditorOpen] = useState(false);
   const [cliJson, setCliJson] = useState("");
   const [cliLoading, setCliLoading] = useState(false);
+  const [writeConfirmOpen, setWriteConfirmOpen] = useState(false);
 
   const [exportPath, setExportPath] = useState("");
   const [exportBytes, setExportBytes] = useState<number | null>(null);
@@ -245,14 +247,19 @@ export default function SettingsPage() {
   };
 
   const saveCliConfig = async () => {
+    if (cliLoading || cliJsonInvalid || !cliJson.trim()) return;
     clearError();
+    setCliLoading(true);
     try {
-      await api.writeCliConfigContent(target, cliJson);
-      toast.success("CLI 配置已保存");
+      const result = await api.writeCliConfigContent(target, cliJson);
+      setWriteConfirmOpen(false);
+      toast.success(result.backup_path ? `CLI 配置已保存，备份：${result.backup_path}` : "CLI 配置已保存");
       api.getCliTargets().then(setCliTargets).catch(handleError);
     } catch (err) {
       handleError(err);
       toast.error("CLI 配置保存失败");
+    } finally {
+      setCliLoading(false);
     }
   };
 
@@ -422,7 +429,7 @@ export default function SettingsPage() {
     <div className="page-stack" id="settings">
       <PageHeader
         title="设置"
-        description="应用配置、CLI 配置编辑与配置导入导出"
+        description="管理本地网关、CLI 接入、协议兼容与配置备份。"
       />
 
       {error && (
@@ -438,6 +445,7 @@ export default function SettingsPage() {
         </div>
       )}
 
+      <ConfirmDialog open={writeConfirmOpen} title="写入 CLI 配置？" message={`将更新 ${targetInfo?.path ?? (CLI_TARGET_LABELS[target] ?? target)}，原文件会备份。请确认编辑器中的完整配置，不要使用上游渠道密钥。`} onCancel={() => setWriteConfirmOpen(false)} onConfirm={saveCliConfig} pending={cliLoading} confirmText="确认写入" />
       <div className="grid items-start gap-6 lg:grid-cols-[196px_minmax(0,1fr)]">
         <nav aria-label="设置分组" className="flex gap-1 overflow-x-auto lg:sticky lg:top-0 lg:flex-col">{sections.map(([id, label]) => <button key={id} type="button" aria-current={section === id ? "page" : undefined} onClick={() => setSection(id)} className={`shrink-0 rounded-xl px-4 py-3 text-left text-sm transition-colors ${section === id ? "bg-secondary font-medium" : "text-muted-foreground hover:bg-muted"}`}>{label}</button>)}</nav>
         <div className="min-w-0">
@@ -447,7 +455,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Server className="h-4 w-4 text-muted-foreground" />
-            端口配置
+            本地网关
           </CardTitle>
           <CardDescription>
             修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为
@@ -477,7 +485,7 @@ export default function SettingsPage() {
               <Button onClick={savePreferredPort}>保存</Button>
               {portSaved && (
                 <Button
-                  className="bg-emerald-600 text-white hover:bg-emerald-600/90"
+                  className="bg-success text-white hover:bg-success/90"
                   onClick={restartGateway}
                   disabled={restarting}
                 >
@@ -489,12 +497,12 @@ export default function SettingsPage() {
               )}
             </div>
             {portSaved && !restarted && (
-              <p className="text-sm text-green-700">
+              <p className="text-sm text-success">
                 已保存，点击“立即重启”使新端口生效。
               </p>
             )}
             {restarted && (
-              <p className="text-sm text-green-700">网关已重启。</p>
+              <p className="text-sm text-success">网关已重启。</p>
             )}
           </div>
         </CardContent>
@@ -505,18 +513,16 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Minimize2 className="h-4 w-4 text-muted-foreground" />
-            关闭行为
+            应用行为
           </CardTitle>
-          <CardDescription>
-            点击窗口关闭按钮时隐藏到系统托盘，网关继续在后台运行
-          </CardDescription>
+
         </CardHeader>
         <CardContent>
           <div className="setting-row">
             <div className="space-y-0.5">
               <Label>关闭时最小化到托盘</Label>
               <p className="text-xs text-muted-foreground">
-                开启后关闭窗口仅隐藏到托盘，可从托盘菜单“显示主窗口”或“退出”恢复/结束
+                保持网关在后台运行，不中断本地工具连接。
               </p>
             </div>
             <Switch
@@ -528,6 +534,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card className="p-6"><h2 className="text-base font-semibold">更多配置</h2>{[["rectifier", "协议整流", "Thinking 修复、图片降级与文本模型兼容"], ["pricing", "模型定价", "输入、输出、缓存读取与写入的估算单价"], ["backup", "配置备份", "导入导出前预览影响范围，避免覆盖现有配置"]].map(([id, label, description]) => <div className="setting-row" key={id}><div><p className="text-sm font-medium">{label}</p><p className="mt-1 text-xs text-muted-foreground">{description}</p></div><Button variant="outline" size="sm" onClick={() => setSection(id)}>配置</Button></div>)}</Card>
       </section>
       <section aria-label="协议整流配置" hidden={section !== "rectifier" && section !== "all"}>
       {/* 整流器 */}
@@ -784,13 +791,13 @@ export default function SettingsPage() {
       </Card>
 
       </section>
-      <section aria-label="CLI 接入配置" hidden={section !== "cli" && section !== "all"}>
+      <section aria-label="CLI 配置编辑区" hidden={section !== "cli" && section !== "all"}>
       {/* CLI 配置编辑 */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <TerminalSquare className="h-4 w-4 text-muted-foreground" />
-            CLI 配置
+            将 {CLI_TARGET_LABELS[target] ?? target} 连接到本地网关
           </CardTitle>
           <CardDescription>
             编辑 Claude Code / Codex 配置，让本地 CLI 工具直连网关
@@ -831,6 +838,8 @@ export default function SettingsPage() {
             )}
           </div>
 
+          <div className="space-y-3 rounded-xl bg-background p-4"><p className="text-xs font-medium">配置预览 · 仅修改网关相关配置</p><pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-xs leading-7">{target === "claude_code" ? JSON.stringify({ env: { ANTHROPIC_BASE_URL: config?.bound_addr ? `http://${config.bound_addr}` : "<网关监听地址>", ANTHROPIC_AUTH_TOKEN: "<选择的网关密钥>" } }, null, 2) : "Codex 配置将保留现有字段，请打开编辑器读取并预览。"}</pre></div>
+          <div className="info-banner mt-4"><div><p className="text-sm font-medium">写入前备份，保留其他设置</p><p className="mt-1.5 text-xs leading-6 text-muted-foreground">保留已有配置字段；仅使用本地网关访问密钥，请勿填入上游渠道 API Key。</p></div></div>
           <div className="mt-4 flex items-center gap-2">
             <Button variant="outline" onClick={toggleCliEditor}>
               <FileJson className="h-4 w-4" />
@@ -869,8 +878,8 @@ export default function SettingsPage() {
                   <Button
                     size="sm"
                     aria-label="保存 CLI 配置"
-                    onClick={saveCliConfig}
-                    disabled={cliLoading}
+                    onClick={() => setWriteConfirmOpen(true)}
+                    disabled={cliLoading || cliJsonInvalid || !cliJson.trim()}
                   >
                     保存
                   </Button>
@@ -923,13 +932,14 @@ export default function SettingsPage() {
                 spellCheck={false}
               />
               {cliJsonInvalid && (
-                <p className="text-xs text-red-500">JSON 格式错误</p>
+                <p className="text-xs text-destructive">JSON 格式错误</p>
               )}
             </div>
           )}
         </CardContent>
       </Card>
 
+      <Card className="p-6"><h2 className="text-base font-semibold">接入后验证</h2><ol className="mt-3 list-inside list-decimal space-y-2 text-[13px] text-muted-foreground"><li>重启 CLI，让新环境变量生效。</li><li>发起一次请求，回到「日志与会话」确认渠道与角色路由。</li></ol></Card>
       </section>
       <section aria-label="配置备份与恢复" hidden={section !== "backup" && section !== "all"}>
       {/* 导出 */}
@@ -957,13 +967,13 @@ export default function SettingsPage() {
               导出
             </Button>
           </div>
-          <p className="flex items-start gap-1.5 text-xs text-amber-800">
+          <p className="flex items-start gap-1.5 text-xs text-warning">
             <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
             已脱敏，导入后需重新补填。
           </p>
           {exportBytes !== null && (
-            <p className="mt-2 text-sm text-green-700">
+            <p className="mt-2 text-sm text-success">
               导出成功：{exportBytes} 字节
             </p>
           )}
@@ -1033,7 +1043,7 @@ export default function SettingsPage() {
                     跳过已存在
                   </Button>
                   <Button
-                    className="bg-amber-600 text-white hover:bg-amber-600/90"
+                    className="bg-warning text-white hover:bg-warning/90"
                     onClick={() => doImport("overwrite")}
                   >
                     覆盖已存在
@@ -1050,7 +1060,7 @@ export default function SettingsPage() {
           )}
 
           {importResult && (
-            <div className="rounded-lg border border-emerald-600/30 bg-emerald-600/5 p-3 text-sm text-emerald-700">
+            <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
               <p className="font-medium">导入完成</p>
               <p>已导入: {importResult.imported}</p>
               <p>已跳过: {importResult.skipped}</p>

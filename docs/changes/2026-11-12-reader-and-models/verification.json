@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-13",
+  "baseCommit": "47d8920630c7197ad96673bc4091ada9d609425e",
+  "frontend": { "command": "pnpm test:unit", "files": 43, "tests": 441, "failed": 0, "typecheck": "passed", "rendererBuild": "passed" },
+  "backend": { "command": "cargo test", "testProcesses": 17, "unitTests": 478, "integrationTests": 69, "totalTests": 547, "failed": 0, "formatCheck": "passed" },
+  "browser": { "scenarios": 64, "failed": 0, "runtimeExceptions": 0, "pageHorizontalOverflow": 0, "mainHorizontalOverflow": 0, "dialogHorizontalOverflow": 0, "widths": [1440, 1024, 768, 390], "themes": ["light", "dark"], "shortWindowHeight": 600, "longSessionTurns": 220, "longSessionMessages": 880, "entry": "http://127.0.0.1:5177/", "data": "read-only synthetic Tauri bridge", "nativeModels": "localhost HTTP mock tests, not browser fixtures" },
+  "build": { "mainJsKb": 968.67, "mainGzipKb": 291.30, "readerJsKb": 216.96, "readerGzipKb": 66.83, "warning": "main chunk exceeds 500 kB" },
+  "diffWhitespaceCheck": "passed",
+  "credentialPatternScan": "no matches in changed text",
+  "review": "author self-review; no independent reviewer",
+  "limitations": ["Pencil design synchronization blocked by plan usage limit; no filesystem bypass attempted", "Real upstream credentials were not used; native Tauri plus real supplier end-to-end was not verified", "Unit test output retains existing React act/controlled-state fixture warnings", "Main bundle size warning retained"]
+}

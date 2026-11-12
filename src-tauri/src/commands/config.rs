@@ -497,18 +497,28 @@ mod tests {
     fn restart_failure_returns_err_and_restores_old_gateway() {
         let db = Db::new_in_memory().unwrap();
         let state = AppState::new(db);
+        // 不假定默认端口空闲；本机可同时运行用户自己的网关。
+        state.app.write().preferred_port = 8777;
         spawn_gateway(&state);
         let addr1 = wait_bound(&state).expect("gateway should bind within 5s");
-        assert_eq!(addr1.port(), 8779, "default preferred_port is 8779");
+        assert!(
+            addr1.port() < 8787,
+            "restart failure test needs a higher candidate port"
+        );
 
-        // 占住 8780..=8787,让 server::start(8780) 全范围扫描失败
+        // 占住旧端口以上的候选；已被其他程序占用的端口本来就不可绑定。
+        let next_port = addr1.port() + 1;
         let mut blockers = vec![];
-        for port in 8780..=8787 {
-            blockers.push(std::net::TcpListener::bind(("127.0.0.1", port)).unwrap());
+        for port in next_port..=8787 {
+            match std::net::TcpListener::bind(("127.0.0.1", port)) {
+                Ok(listener) => blockers.push(listener),
+                Err(error) if error.kind() == std::io::ErrorKind::AddrInUse => {}
+                Err(error) => panic!("cannot reserve test port {port}: {error}"),
+            }
         }
 
         // 重启应返回 Err 而非静默成功
-        state.app.write().preferred_port = 8780;
+        state.app.write().preferred_port = next_port;
         let err = restart_gateway_inner(&state).expect_err("restart should fail");
         assert!(err.contains("重启失败"), "unexpected err: {}", err);
 

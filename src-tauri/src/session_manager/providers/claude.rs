@@ -119,13 +119,20 @@ pub fn load_messages(path: &Path) -> Result<Vec<SessionMessage>, String> {
         }
 
         let content = message.get("content").map(extract_text).unwrap_or_default();
-        if content.trim().is_empty() {
+        let blocks = message
+            .get("content")
+            .map(super::utils::extract_blocks)
+            .unwrap_or_default();
+        if content.trim().is_empty() && blocks.is_empty() {
             continue;
         }
-
         let ts = value.get("timestamp").and_then(parse_timestamp_to_ms);
-
-        messages.push(SessionMessage { role, content, ts });
+        messages.push(SessionMessage {
+            role,
+            content,
+            ts,
+            blocks,
+        });
     }
 
     Ok(messages)
@@ -431,6 +438,24 @@ mod tests {
 
         let meta = parse_session(&path).unwrap();
         assert_eq!(meta.title.as_deref(), Some("my-project"));
+    }
+
+    #[test]
+    fn reader_preserves_tool_input_result_id_and_thinking() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("reader.jsonl");
+        write_session_lines(
+            &path,
+            &[
+                r#"{"message":{"role":"assistant","content":[{"type":"thinking","thinking":"reason"},{"type":"tool_use","id":"c1","name":"Read","input":{"path":"src/main.rs"}}]}}"#,
+                r#"{"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"c1","content":"denied","is_error":true}]}}"#,
+            ],
+        );
+        let json = serde_json::to_value(load_messages(&path).unwrap()).unwrap();
+        assert_eq!(json[0]["blocks"][0]["type"], "thinking");
+        assert_eq!(json[0]["blocks"][1]["input"]["path"], "src/main.rs");
+        assert_eq!(json[1]["blocks"][0]["id"], "c1");
+        assert_eq!(json[1]["blocks"][0]["status"], "error");
     }
 
     #[test]

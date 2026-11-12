@@ -90,6 +90,7 @@ export async function saveThemeMode(m: ThemeMode): Promise<void> {
       // 落入 localStorage 降级
     }
   }
+  cachedMode = m;
   mirrorToLocalStorage(m);
 }
 

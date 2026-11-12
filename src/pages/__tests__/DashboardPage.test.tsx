@@ -13,6 +13,7 @@ vi.mock("../../components/LogTrendChart", () => ({
 vi.mock("../../lib/api", () => ({
   api: {
     getStats: vi.fn(),
+    getAppConfig: vi.fn(),
     getLogTimeseries: vi.fn(),
     getLogStats: vi.fn(),
   },
@@ -55,6 +56,7 @@ describe("DashboardPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockedApi.getStats.mockResolvedValue(stats);
+    mockedApi.getAppConfig.mockResolvedValue({ preferred_port: 8777, bound_addr: "127.0.0.1:8777", minimize_to_tray: true });
     mockedApi.getLogTimeseries.mockResolvedValue([bucket]);
     mockedApi.getLogStats.mockResolvedValue(logStats);
   });
@@ -77,14 +79,14 @@ describe("DashboardPage", () => {
 
   it("渲染统计卡片与标题", async () => {
     render(<DashboardPage />);
-    expect(await screen.findByRole("heading", { name: "概览" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "运行概览" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("今日请求")).toBeInTheDocument());
     expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getByText("1000")).toBeInTheDocument();
-    expect(screen.getByText("99")).toBeInTheDocument();
-    expect(screen.getByText("5000")).toBeInTheDocument();
+    expect(screen.getByText("真实消耗 Token").parentElement?.nextElementSibling).toHaveTextContent("0");
+    expect(screen.getByText("累计 99 次")).toBeInTheDocument();
+    expect(screen.getByText("http://127.0.0.1:8777")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("123")).toBeInTheDocument();
+    expect(screen.getByText("123 ms")).toBeInTheDocument();
     expect(screen.getByText("活跃渠道")).toBeInTheDocument();
   });
 
@@ -161,7 +163,7 @@ describe("DashboardPage", () => {
       total_cost: 5.5,
     });
     render(<DashboardPage />);
-    await waitFor(() => expect(screen.getByText("真实消耗 Tokens")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("真实消耗 Token")).toBeInTheDocument());
     // 真实消耗 = input+output+cache_creation+cache_read = 200
     expect(screen.getByText("200")).toBeInTheDocument();
     expect(screen.getByText("30")).toBeInTheDocument(); // 今日缓存命中
@@ -173,7 +175,7 @@ describe("DashboardPage", () => {
 
   it("缓存/成本维度为 0 时命中率兜底显示 0.0%", async () => {
     render(<DashboardPage />);
-    await waitFor(() => expect(screen.getByText("真实消耗 Tokens")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("真实消耗 Token")).toBeInTheDocument());
     expect(screen.getByText("0.0%")).toBeInTheDocument();
   });
 
@@ -190,30 +192,17 @@ describe("DashboardPage", () => {
     );
   });
 
-  it("渲染 Top 渠道/Top 密钥两榜（数据源 get_log_stats）", async () => {
+  it("连接信息使用实际监听地址，不硬编码端口", async () => {
+    mockedApi.getAppConfig.mockResolvedValue({ preferred_port: 8780, bound_addr: "127.0.0.1:8780", minimize_to_tray: true });
     render(<DashboardPage />);
-    await waitFor(() =>
-      expect(mockedApi.getLogStats).toHaveBeenCalledWith({})
-    );
-    expect(await screen.findByText("Top 渠道")).toBeInTheDocument();
-    expect(screen.getByText("主渠道")).toBeInTheDocument();
-    expect(screen.getByText("50")).toBeInTheDocument();
-    expect(screen.getByText("Top 密钥")).toBeInTheDocument();
-    expect(screen.getByText("默认密钥")).toBeInTheDocument();
+    expect(await screen.findByText("http://127.0.0.1:8780")).toBeVisible();
+    expect(screen.getByRole("link", { name: /CLI 接入配置/ })).toHaveAttribute("href", "#/settings?section=cli");
   });
 
-  it("Top 榜为空时展示无数据兜底", async () => {
-    mockedApi.getLogStats.mockResolvedValue({
-      ...logStats,
-      top_channels: [],
-      top_api_keys: [],
-    });
+  it("监听地址读取失败时不声称网关在线", async () => {
+    mockedApi.getAppConfig.mockRejectedValue(new Error("offline"));
     render(<DashboardPage />);
-    await waitFor(() =>
-      expect(mockedApi.getLogStats).toHaveBeenCalled()
-    );
-    const emptyHints = await screen.findAllByText("无数据");
-    expect(emptyHints).toHaveLength(2);
+    expect(await screen.findByText("网关尚未连接")).toBeVisible();
   });
 
   it("手动刷新时 dispatch gateway-refresh 供顶栏同步网关状态", async () => {

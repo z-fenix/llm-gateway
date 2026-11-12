@@ -267,22 +267,28 @@ fn get_model_map_with_state(
 fn parse_models_response(protocol: &str, bytes: &[u8]) -> Result<Vec<String>, String> {
     let v: serde_json::Value =
         serde_json::from_slice(bytes).map_err(|e| format!("模型列表响应解析失败: {e}"))?;
-    let mut out: Vec<String> = vec![];
-    if protocol == "gemini-native" {
-        if let Some(arr) = v["models"].as_array() {
-            for m in arr {
-                if let Some(name) = m["name"].as_str() {
-                    out.push(name.trim_start_matches("models/").to_string());
-                }
-            }
-        }
-        return Ok(out);
-    }
-    if let Some(arr) = v["data"].as_array() {
-        for m in arr {
-            if let Some(id) = m["id"].as_str() {
-                out.push(id.to_string());
-            }
+    let (array_key, id_key) = if protocol == "gemini-native" {
+        ("models", "name")
+    } else {
+        ("data", "id")
+    };
+    let arr = v[array_key]
+        .as_array()
+        .ok_or_else(|| format!("模型列表响应缺少 {array_key} 数组，请检查上游协议和地址"))?;
+    let mut out = Vec::new();
+    for model in arr {
+        let id = model[id_key]
+            .as_str()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| format!("模型列表包含无效的 {id_key}"))?;
+        let id = if protocol == "gemini-native" {
+            id.strip_prefix("models/").unwrap_or(id)
+        } else {
+            id
+        };
+        if !out.iter().any(|value| value == id) {
+            out.push(id.to_string());
         }
     }
     Ok(out)
@@ -341,33 +347,88 @@ async fn list_channel_models_with_state(
     if api_key.is_empty() {
         return Err("渠道密钥为空（解密失败），请在编辑中重新填写 API Key".into());
     }
-    // Anthropic 无公开的“列模型”GET 接口，返回空让前端走静态清单。
-    if upstream_protocol == "anthropic-messages" {
-        return Ok(vec![]);
-    }
     let url = crate::provider::adapter::models_url(&upstream_protocol, &base_url, &api_key);
-    let timeout = if timeout_secs < 1 {
-        60usize
+    let mut url = reqwest::Url::parse(&url).map_err(|_| "Base URL 格式无效".to_string())?;
+    if !matches!(url.scheme(), "http" | "https") {
+        return Err("Base URL 必须是 http/https 地址".into());
+    }
+    let timeout = std::time::Duration::from_secs(if timeout_secs < 1 {
+        60
     } else {
-        timeout_secs as usize
-    };
-    let mut req = state
-        .http
-        .get(&url)
-        .timeout(std::time::Duration::from_secs(timeout as u64));
-    if let Some((hname, hval)) = crate::provider::adapter::auth_header(&upstream_protocol, &api_key)
-    {
-        req = req.header(hname, hval);
+        timeout_secs as u64
+    });
+    let deadline = tokio::time::Instant::now() + timeout;
+    let mut out = Vec::new();
+    let mut cursors = std::collections::HashSet::new();
+    // 不跟随响应内任意 URL：只在原端点追加游标，避免向其他主机发送凭据。
+    for _ in 0..100 {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("获取模型列表超时".into());
+        }
+        let mut req = state.http.get(url.clone()).timeout(remaining);
+        if let Some((name, value)) =
+            crate::provider::adapter::auth_header(&upstream_protocol, &api_key)
+        {
+            req = req.header(name, value);
+        }
+        if upstream_protocol == "anthropic-messages" {
+            req = req.header("anthropic-version", "2023-06-01");
+        }
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("请求上游失败: {}", e.without_url()))?;
+        if !resp.status().is_success() {
+            return Err(format!("上游返回状态码 {}", resp.status()));
+        }
+        let bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| format!("读取上游响应失败: {}", e.without_url()))?;
+        for id in parse_models_response(&upstream_protocol, &bytes)? {
+            if !out.contains(&id) {
+                out.push(id);
+            }
+        }
+        let value: serde_json::Value =
+            serde_json::from_slice(&bytes).map_err(|_| "模型列表响应解析失败".to_string())?;
+        let next = if upstream_protocol == "anthropic-messages"
+            && value["has_more"].as_bool() == Some(true)
+        {
+            Some((
+                "after_id",
+                value["last_id"]
+                    .as_str()
+                    .filter(|s| !s.is_empty())
+                    .ok_or("上游分页缺少 last_id")?
+                    .to_string(),
+            ))
+        } else if upstream_protocol == "gemini-native" {
+            value["nextPageToken"]
+                .as_str()
+                .filter(|s| !s.is_empty())
+                .map(|s| ("pageToken", s.to_string()))
+        } else {
+            None
+        };
+        let Some((key, cursor)) = next else {
+            return Ok(out);
+        };
+        if !cursors.insert(cursor.clone()) {
+            return Err("上游模型分页游标重复".into());
+        }
+        let pairs: Vec<_> = url
+            .query_pairs()
+            .filter(|(k, _)| k != key)
+            .map(|(k, v)| (k.into_owned(), v.into_owned()))
+            .collect();
+        url.set_query(None);
+        url.query_pairs_mut()
+            .extend_pairs(pairs)
+            .append_pair(key, &cursor);
     }
-    let resp = req.send().await.map_err(|e| format!("请求上游失败: {e}"))?;
-    if !resp.status().is_success() {
-        return Err(format!("上游返回状态码 {}", resp.status()));
-    }
-    let bytes = resp
-        .bytes()
-        .await
-        .map_err(|e| format!("读取上游响应失败: {e}"))?;
-    parse_models_response(&upstream_protocol, &bytes)
+    Err("上游模型分页超过 100 页，请缩小模型目录".into())
 }
 
 #[cfg(test)]
@@ -609,19 +670,114 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_channel_models_anthropic_returns_empty() {
+    async fn list_channel_models_anthropic_fetches_all_pages_with_headers() {
+        use axum::{extract::Query, http::HeaderMap, routing::get, Json, Router};
+        let app = Router::new().route("/v1/models", get(|headers: HeaderMap, Query(query): Query<std::collections::HashMap<String, String>>| async move {
+            assert_eq!(headers["x-api-key"], "sk-ant-synthetic");
+            assert_eq!(headers["anthropic-version"], "2023-06-01");
+            if query.get("after_id").map(String::as_str) == Some("model-a") {
+                Json(serde_json::json!({"data":[{"id":"model-b"},{"id":"model-a"}],"has_more":false}))
+            } else {
+                Json(serde_json::json!({"data":[{"id":"model-a"}],"has_more":true,"last_id":"model-a"}))
+            }
+        }));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
         let state = AppState::new(Db::new_in_memory().unwrap());
         let models = list_channel_models_with_state(
             &state,
-            "https://api.anthropic.com".into(),
+            base,
             "anthropic-messages".into(),
-            "sk-ant-test".into(),
+            "sk-ant-synthetic".into(),
             10,
             None,
         )
         .await
         .unwrap();
-        assert!(models.is_empty());
+        task.abort();
+        assert_eq!(models, vec!["model-a", "model-b"]);
+    }
+
+    #[test]
+    fn parse_models_response_rejects_wrong_schema_and_deduplicates() {
+        assert!(
+            parse_models_response("openai-chat", br#"{"error":{"message":"denied"}}"#).is_err()
+        );
+        assert!(parse_models_response("openai-chat", br#"{"data":[{"name":"wrong"}]}"#).is_err());
+        assert_eq!(
+            parse_models_response("openai-chat", br#"{"data":[{"id":" a "},{"id":"a"}]}"#).unwrap(),
+            vec!["a"]
+        );
+    }
+
+    #[tokio::test]
+    async fn list_channel_models_gemini_encodes_key_and_follows_page_token() {
+        use axum::{extract::Query, routing::get, Json, Router};
+        let app = Router::new().route("/v1beta/models", get(|Query(q): Query<std::collections::HashMap<String,String>>| async move {
+            assert_eq!(q.get("key").map(String::as_str), Some("synthetic&key"));
+            if q.get("pageToken").map(String::as_str) == Some("next+page") {
+                Json(serde_json::json!({"models":[{"name":"models/gemini-b"}]}))
+            } else {
+                Json(serde_json::json!({"models":[{"name":"models/gemini-a"}],"nextPageToken":"next+page"}))
+            }
+        }));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}/v1beta", listener.local_addr().unwrap());
+        let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let result = list_channel_models_with_state(
+            &state,
+            base,
+            "gemini-native".into(),
+            "synthetic&key".into(),
+            5,
+            None,
+        )
+        .await;
+        task.abort();
+        assert_eq!(result.unwrap(), vec!["gemini-a", "gemini-b"]);
+    }
+
+    #[tokio::test]
+    async fn list_channel_models_status_errors_and_repeated_cursor_are_not_empty_success() {
+        use axum::{http::StatusCode, routing::get, Router};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let app = Router::new().route(
+            "/v1/models",
+            get(|| async { (StatusCode::UNAUTHORIZED, "secret-synthetic-do-not-echo") }),
+        );
+        let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let error = list_channel_models_with_state(
+            &state,
+            base,
+            "openai-chat".into(),
+            "synthetic-key".into(),
+            5,
+            None,
+        )
+        .await
+        .unwrap_err();
+        task.abort();
+        assert!(error.contains("401"));
+        assert!(!error.contains("secret-synthetic"));
+        let base = spawn_models_mock(
+            serde_json::json!({"data":[{"id":"a"}],"has_more":true,"last_id":"a"}),
+        )
+        .await;
+        let error = list_channel_models_with_state(
+            &state,
+            base,
+            "anthropic-messages".into(),
+            "synthetic-key".into(),
+            5,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(error.contains("游标重复"));
     }
 
     #[tokio::test]

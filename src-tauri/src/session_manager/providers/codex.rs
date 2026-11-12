@@ -293,16 +293,32 @@ pub fn load_messages(path: &Path) -> Result<Vec<SessionMessage>, String> {
                     .to_string();
                 ("tool".to_string(), output)
             }
+            "reasoning" => ("assistant".to_string(), extract_text(&payload["summary"])),
+            "custom_tool_call" => (
+                "assistant".to_string(),
+                format!("[Tool: {}]", payload["name"].as_str().unwrap_or("unknown")),
+            ),
+            "custom_tool_call_output" => (
+                "tool".to_string(),
+                payload["output"].as_str().unwrap_or("").to_string(),
+            ),
             _ => continue,
         };
-
-        if content.trim().is_empty() {
+        let blocks = super::utils::extract_blocks(if payload_type == "message" {
+            &payload["content"]
+        } else {
+            payload
+        });
+        if content.trim().is_empty() && blocks.is_empty() {
             continue;
         }
-
         let ts = value.get("timestamp").and_then(parse_timestamp_to_ms);
-
-        messages.push(SessionMessage { role, content, ts });
+        messages.push(SessionMessage {
+            role,
+            content,
+            ts,
+            blocks,
+        });
     }
 
     Ok(messages)
@@ -689,6 +705,22 @@ mod tests {
             Some("11111111-2222-3333-4444-555555555555")
         );
         assert_eq!(find_uuid("no-uuid-here.jsonl"), None);
+    }
+
+    #[test]
+    fn reader_preserves_codex_arguments_and_call_ids() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("reader.jsonl");
+        std::fs::write(&path, concat!(
+            r#"{"type":"response_item","payload":{"type":"function_call","id":"fc-object-id","call_id":"c1","name":"exec","arguments":"{\"cmd\":\"pwd\"}"}}"#, "\n",
+            r#"{"type":"response_item","payload":{"type":"function_call_output","call_id":"c1","output":"/repo"}}"#, "\n",
+            r#"{"type":"response_item","payload":{"type":"reasoning","summary":[{"type":"summary_text","text":"checking"}]}}"#, "\n"
+        )).unwrap();
+        let json = serde_json::to_value(load_messages(&path).unwrap()).unwrap();
+        assert_eq!(json[0]["blocks"][0]["input"]["cmd"], "pwd");
+        assert_eq!(json[0]["blocks"][0]["id"], "c1");
+        assert_eq!(json[1]["blocks"][0]["id"], "c1");
+        assert_eq!(json[2]["blocks"][0]["type"], "thinking");
     }
 
     #[test]

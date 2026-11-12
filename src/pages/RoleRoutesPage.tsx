@@ -1,8 +1,16 @@
+import { DialogBody } from "../components/ui/dialog";
+import { FOCUS_RING } from "../lib/focusRing";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Edit3, Plus, Trash2 } from "lucide-react";
 import { ModelCombobox } from "../components/ModelCombobox";
 import { api } from "../lib/api";
+import { useFormValidation } from "../lib/useFormValidation";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
+import { roleName, roleLabel } from "../lib/roles";
+import { formatTokenAmount } from "../lib/tokenUnits";
+import { aggregateBreaker, BreakerIndicator } from "../components/BreakerIndicator";
 import { ROLE_ORDER, routesByRole } from "../lib/roleSort";
 import type {
   BreakerStatus,
@@ -50,40 +58,17 @@ const NONE = "__none__";
 
 // 角色卡色标（字面类名，Tailwind 内容扫描可见）
 const ROLE_COLORS: Record<string, string> = {
-  sonnet: "bg-sky-500",
-  opus: "bg-violet-500",
-  fable: "bg-amber-500",
-  haiku: "bg-emerald-500",
-  image: "bg-rose-500",
-  auto: "bg-slate-400",
+  sonnet: "bg-primary",
+  opus: "bg-primary",
+  fable: "bg-warning",
+  haiku: "bg-success",
+  image: "bg-destructive",
+  auto: "bg-muted",
 };
-
-const BREAKER_LABEL: Record<string, string> = {
-  closed: "正常",
-  open: "已熔断",
-  half_open: "半开",
-};
-
-function breakerBadgeVariant(state?: string): "default" | "destructive" | "secondary" {
-  switch (state) {
-    case "open":
-      return "destructive";
-    case "half_open":
-      return "secondary";
-    default:
-      return "default";
-  }
-}
 
 function intOr(v: string, fallback: number): number {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return String(n);
 }
 
 function successRate(stat?: RoleStats): string {
@@ -99,6 +84,8 @@ export default function RoleRoutesPage() {
   const [breakerStatus, setBreakerStatus] = useState<Record<string, BreakerStatus>>({});
   const [roleStats, setRoleStats] = useState<Record<string, RoleStats>>({});
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [routeOpen, setRouteOpen] = useState(false);
@@ -118,6 +105,8 @@ export default function RoleRoutesPage() {
   const [pPriority, setPPriority] = useState("0");
   const [pEnabled, setPEnabled] = useState(true);
   const [pending, setPending] = useState(false);
+  const routeValidation = useFormValidation({ channel: rChannelId ? undefined : "请选择渠道", model: rModel.trim() ? undefined : "上游模型不能为空" });
+  const patternValidation = useFormValidation({ pattern: pPattern.trim() ? undefined : "匹配模式不能为空" });
 
   const [deletingPattern, setDeletingPattern] = useState<RolePattern | null>(null);
   const [deletingRoute, setDeletingRoute] = useState<RoleRoute | null>(null);
@@ -162,6 +151,7 @@ export default function RoleRoutesPage() {
   };
 
   const openCreateRoute = (role: string) => {
+    routeValidation.reset();
     setEditingRoute(null);
     setRRole(role);
     setRChannelId("");
@@ -175,6 +165,7 @@ export default function RoleRoutesPage() {
   };
 
   const openEditRoute = (r: RoleRoute) => {
+    routeValidation.reset();
     setEditingRoute(r);
     setRRole(r.role);
     setRChannelId(r.channel_id);
@@ -188,6 +179,7 @@ export default function RoleRoutesPage() {
   };
 
   const createRoute = async () => {
+    if (pending || routeValidation.invalid) return;
     if (!rChannelId) {
       toast.error("请选择渠道");
       return;
@@ -293,6 +285,7 @@ export default function RoleRoutesPage() {
   };
 
   const openCreatePattern = () => {
+    patternValidation.reset();
     setEditingPattern(null);
     setPPattern("");
     setPRole("sonnet");
@@ -302,6 +295,7 @@ export default function RoleRoutesPage() {
   };
 
   const openEditPattern = (p: RolePattern) => {
+    patternValidation.reset();
     setEditingPattern(p);
     setPPattern(p.pattern);
     setPRole(p.role);
@@ -311,6 +305,7 @@ export default function RoleRoutesPage() {
   };
 
   const savePattern = async () => {
+    if (pending || patternValidation.invalid) return;
     const pattern = pPattern.trim();
     if (!pattern) {
       toast.error("匹配模式不能为空");
@@ -361,8 +356,9 @@ export default function RoleRoutesPage() {
   return (
     <div className="page-stack" id="role-routes">
       <PageHeader
-        title="角色路由"
-        description="同一角色可配置多个供应商/模型，按优先级+权重自动路由，失败自动切换并支持熔断"
+        title={selectedRole ? `${roleLabel(selectedRole)} 路由` : "角色路由"}
+        description="为模型角色配置首选渠道、多路由调度与回退策略。"
+        action={selectedRole ? <Button onClick={() => openCreateRoute(selectedRole)}><Plus />新增路由</Button> : <Button onClick={() => setRulesOpen(true)}><Plus />管理识别规则</Button>}
       />
 
       {error && (
@@ -373,33 +369,34 @@ export default function RoleRoutesPage() {
 
       {selectedRole === null ? (
         <>
-          <div className="table-shell mb-6">
+          <div className="page-toolbar text-xs text-muted-foreground"><span className="text-[13px]">6 个角色 · {ROLE_ORDER.filter((role) => routes.some((r) => r.role === role && r.enabled)).length} 个已配置</span><span>选择角色，管理多个优先级与权重路由</span></div>
+          <div className="table-shell">
             <table className="data-table min-w-[880px]">
               <thead><tr><th>角色 / 匹配</th><th>首选渠道</th><th>目标模型</th><th>路由数</th><th>熔断状态</th><th>操作</th></tr></thead>
               <tbody>{ROLE_ORDER.map((role) => {
                 const roleRoutes = routesByRole(routes, role);
                 const preferred = roleRoutes.find((route) => route.enabled);
-                const hasOpenBreaker = roleRoutes.some((route) => breakerStatus[route.id]?.state === "open");
+                const breakerState = aggregateBreaker(roleRoutes, breakerStatus);
                 return <tr key={role}>
-                  <td><p className="font-semibold">{role}</p><p className="mt-1.5 font-mono text-[11px] text-muted-foreground">{patterns.filter((p) => p.role === role).map((p) => p.pattern).join(" / ") || (role === "auto" ? "未命中角色" : "尚未配置匹配规则")}</p></td>
+                  <td><p className="font-semibold"><span>{roleName(role)}</span><span className="ml-2 font-mono text-[11px] font-normal text-muted-foreground">{role}</span></p><p className="mt-1.5 font-mono text-[11px] text-muted-foreground">{patterns.filter((p) => p.role === role).map((p) => p.pattern).join(" / ") || (role === "auto" ? "未命中角色" : "尚未配置匹配规则")}</p></td>
                   <td>{channels.find((c) => c.id === preferred?.channel_id)?.name ?? "尚未配置"}</td>
                   <td className="max-w-[260px] break-all font-mono text-xs">{preferred?.target_model ?? "—"}</td>
                   <td>{roleRoutes.length} 条</td>
-                  <td><Badge variant={hasOpenBreaker ? "destructive" : "secondary"}>{hasOpenBreaker ? "存在已熔断路由" : roleRoutes.length ? "正常" : "未配置"}</Badge></td>
+                  <td><BreakerIndicator state={breakerState} /></td>
                   <td><Button variant="outline" size="sm" aria-label={`查看 ${role} 角色详情`} onClick={() => setSelectedRole(role)}>配置</Button></td>
                 </tr>;
               })}</tbody>
             </table>
           </div>
 
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">全局兜底模型</CardTitle>
-              <CardDescription>
-                角色路由失败或未匹配角色时，所有请求最终可走此渠道
-              </CardDescription>
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">全局回退</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setFallbackOpen(!fallbackOpen)}>{fallbackOpen ? "完成" : "编辑回退"}</Button>
             </CardHeader>
             <CardContent>
+              <p className="mb-4 text-[13px] text-muted-foreground">角色路由失败后，尝试以下备用渠道与模型。</p>
+              {!fallbackOpen ? <div className="flex flex-wrap items-center gap-3 rounded-xl bg-background p-4 text-[13px]"><span className="font-medium">角色路由</span><span className="text-muted-foreground">→ 失败时回退 →</span><span className="font-medium">{channels.find((c) => c.id === fallback?.[0])?.name ?? "尚未配置"}</span>{fallback?.[1] && <span className="font-mono text-xs">/ {fallback[1]}</span>}</div> :
               <div className="flex flex-wrap items-end gap-4">
                 <div className="min-w-[220px] space-y-1.5">
                   <Label htmlFor="fallback-channel">渠道</Label>
@@ -439,14 +436,16 @@ export default function RoleRoutesPage() {
                 <Button variant="outline" size="sm" onClick={clearFallback}>
                   清除
                 </Button>
-              </div>
+              </div>}
             </CardContent>
           </Card>
 
-          <Card>
+          <Dialog open={rulesOpen} onOpenChange={setRulesOpen}><DialogContent className="sm:max-w-3xl"><DialogHeader><DialogTitle>角色识别规则</DialogTitle><DialogDescription>通配符模式映射到模型角色，按优先级匹配。</DialogDescription></DialogHeader>
+
+<DialogBody className="space-y-5"><Card className="border-0 shadow-none">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
-                <CardTitle className="text-lg">角色识别规则</CardTitle>
+                <CardTitle className="text-base">匹配规则与路由</CardTitle>
                 <CardDescription>
                   通配符模式 → 角色映射；auto 是未匹配占位角色，可绑定渠道/模型
                 </CardDescription>
@@ -463,7 +462,7 @@ export default function RoleRoutesPage() {
                   description="还没有角色识别规则，添加规则让请求按角色路由"
                 >
                   <Button size="sm" onClick={openCreatePattern}>
-                    新增规则
+                    创建第一条规则
                   </Button>
                 </EmptyState>
               ) : (
@@ -488,7 +487,7 @@ export default function RoleRoutesPage() {
                             {p.pattern}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {p.role}
+                            {roleLabel(p.role)}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {p.priority}
@@ -501,13 +500,13 @@ export default function RoleRoutesPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <button
-                                className="text-primary hover:underline"
+                                className={`text-primary hover:underline ${FOCUS_RING}`}
                                 onClick={() => openEditPattern(p)}
                               >
                                 编辑
                               </button>
                               <button
-                                className="inline-flex items-center gap-1 text-destructive hover:underline"
+                                className={`inline-flex items-center gap-1 text-destructive hover:underline ${FOCUS_RING}`}
                                 onClick={() => setDeletingPattern(p)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -522,42 +521,20 @@ export default function RoleRoutesPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card></DialogBody>
+
+          </DialogContent></Dialog>
         </>
       ) : (
         /* 角色详情面板 */
-        <Card className="mb-6">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedRole(null)}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回
-              </Button>
-              <div>
-                <CardTitle className="text-lg">{selectedRole} 路由</CardTitle>
-                <CardDescription>
-                  {selectedRole === "auto"
-                    ? "未匹配角色模式的占位路由；请求按优先级降序、同优先级按权重随机选取，熔断中的路由自动跳过"
-                    : `「${selectedRole}」角色可配置多条路由；按优先级降序、同优先级按权重随机选取，熔断中的路由自动跳过`}
-                </CardDescription>
-              </div>
-            </div>
-            <Button size="sm" onClick={() => openCreateRoute(selectedRole)}>
-              <Plus className="h-4 w-4" />
-              新增路由
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <dl className="mb-6 grid grid-cols-2 gap-4 rounded-xl bg-background p-5 lg:grid-cols-4">
-              {[ ["请求数", roleStats[selectedRole]?.requests ?? 0], ["Token", formatTokens(roleStats[selectedRole]?.tokens ?? 0)], ["成功率", successRate(roleStats[selectedRole])], ["平均延迟", `${roleStats[selectedRole]?.avg_latency_ms ?? 0}ms`] ].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold">{value}</dd></div>)}
+        <>
+          <div className="page-toolbar"><Button variant="outline" size="sm" onClick={() => setSelectedRole(null)}><ArrowLeft />返回角色概览</Button><p className="font-mono text-xs text-muted-foreground">匹配模式 {patterns.filter((p) => p.role === selectedRole).map((p) => p.pattern).join(" / ") || "未命中角色模式"}</p></div>
+            <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {[ ["请求数", roleStats[selectedRole]?.requests ?? 0], ["Token", formatTokenAmount(roleStats[selectedRole]?.tokens ?? 0)], ["成功率", successRate(roleStats[selectedRole])], ["平均延迟", `${roleStats[selectedRole]?.avg_latency_ms ?? 0}ms`] ].map(([label, value]) => <div key={label} className="rounded-2xl bg-card p-5"><dt className="text-xs text-muted-foreground">{label}</dt><dd title={label === "Token" ? (roleStats[selectedRole]?.tokens ?? 0).toLocaleString() : undefined} className="mt-3 text-[28px] font-semibold">{value}</dd></div>)}
             </dl>
             {detailRoutes.length === 0 ? (
               <EmptyState
-                title={`暂无「${selectedRole}」路由`}
+                title={`暂无「${roleLabel(selectedRole)}」路由`}
                 description="添加路由让角色请求固定走指定供应商，失败自动切换/熔断"
               >
                 <Button size="sm" onClick={() => openCreateRoute(selectedRole)}>
@@ -565,159 +542,20 @@ export default function RoleRoutesPage() {
                 </Button>
               </EmptyState>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="data-table w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="w-44 px-4 py-3 font-medium">渠道</th>
-                      <th className="px-4 py-3 font-medium">上游模型</th>
-                      <th className="w-20 px-4 py-3 font-medium">优先级</th>
-                      <th className="w-20 px-4 py-3 font-medium">权重</th>
-                      <th className="px-4 py-3 font-medium">熔断（失败/冷却s）</th>
-                      <th className="px-4 py-3 font-medium">状态</th>
-                      <th className="w-14 px-4 py-3 font-medium">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailRoutes.map((r) => {
-                      const breaker = breakerStatus[r.id];
-                      return (
-                        <tr
-                          key={r.id}
-                          className="border-b border-border last:border-0 hover:bg-accent/50"
-                        >
-                          <td className="px-4 py-3">
-                            <Select
-                              value={r.channel_id}
-                              onValueChange={(v) => saveRoute(r, { channel_id: v })}
-                            >
-                              <SelectTrigger className="h-8" aria-label={`${r.role} 渠道`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {channels.map((c) => (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Input
-                              className="h-8"
-                              key={r.target_model}
-                              defaultValue={r.target_model}
-                              onBlur={(e) => {
-                                const v = e.target.value.trim();
-                                if (v && v !== r.target_model) {
-                                  saveRoute(r, { target_model: v });
-                                }
-                              }}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <Input
-                              className="h-8 w-16"
-                              type="number"
-                              key={r.priority}
-                              defaultValue={r.priority}
-                              onBlur={(e) => {
-                                const v = intOr(e.target.value, r.priority);
-                                if (v !== r.priority) saveRoute(r, { priority: v });
-                              }}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <Input
-                              className="h-8 w-16"
-                              type="number"
-                              key={r.weight}
-                              defaultValue={r.weight}
-                              onBlur={(e) => {
-                                const v = intOr(e.target.value, r.weight);
-                                if (v !== r.weight) saveRoute(r, { weight: v });
-                              }}
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <Input
-                                className="h-8 w-16"
-                                type="number"
-                                key={r.breaker_max_failures}
-                                defaultValue={r.breaker_max_failures}
-                                onBlur={(e) => {
-                                  const v = intOr(
-                                    e.target.value,
-                                    r.breaker_max_failures,
-                                  );
-                                  if (v !== r.breaker_max_failures)
-                                    saveRoute(r, { breaker_max_failures: v });
-                                }}
-                              />
-                              <span className="text-muted-foreground">/</span>
-                              <Input
-                                className="h-8 w-16"
-                                type="number"
-                                key={r.breaker_cooldown_secs}
-                                defaultValue={r.breaker_cooldown_secs}
-                                onBlur={(e) => {
-                                  const v = intOr(
-                                    e.target.value,
-                                    r.breaker_cooldown_secs,
-                                  );
-                                  if (v !== r.breaker_cooldown_secs)
-                                    saveRoute(r, { breaker_cooldown_secs: v });
-                                }}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={breakerBadgeVariant(breaker?.state)}>
-                                {BREAKER_LABEL[breaker?.state ?? "closed"]}
-                              </Badge>
-                              {breaker && breaker.failures > 0 && (
-                                <span className="text-xs text-muted-foreground">
-                                  连续失败 {breaker.failures}
-                                </span>
-                              )}
-                              <Switch
-                                checked={r.enabled}
-                                onCheckedChange={(v) => saveRoute(r, { enabled: v })}
-                                aria-label={`${r.role} 路由启用`}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <button
-                                className="text-primary hover:underline"
-                                aria-label="编辑路由"
-                                title="编辑"
-                                onClick={() => openEditRoute(r)}
-                              >
-                                <Edit3 className="h-3 w-3" />
-                              </button>
-                              <button
-                                className="inline-flex items-center gap-1 text-destructive hover:underline"
-                                aria-label="删除路由"
-                                onClick={() => setDeletingRoute(r)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-6">
+                <Card className="space-y-4 p-6"><h3 className="text-base font-semibold">优先尝试高优先级路由</h3>
+                {detailRoutes.map((r, index) => {
+                  const breaker = breakerStatus[r.id];
+                  return <article key={r.id} className="rounded-xl bg-background p-5">
+                    <div className="page-toolbar"><div className="flex flex-wrap items-center gap-3"><h3 className="text-sm font-semibold">{channels.find((c) => c.id === r.channel_id)?.name ?? "渠道已移除"}</h3>{index === 0 && <Badge variant="secondary">首选路由</Badge>}<BreakerIndicator state={breaker?.state} /></div><div className="flex items-center gap-2"><Button variant="ghost" size="sm" aria-label="编辑路由" onClick={() => openEditRoute(r)}>编辑</Button><Button variant="ghost" size="icon" aria-label="删除路由" className="text-destructive" onClick={() => setDeletingRoute(r)}><Trash2 /></Button><Switch checked={r.enabled} onCheckedChange={(enabled) => saveRoute(r, { enabled })} aria-label={`${r.role} 路由启用`} /></div></div>
+                    <p className="mt-3 break-all font-mono text-xs">{r.target_model}</p>
+                    <p className="mt-3 text-xs text-muted-foreground">优先级 {r.priority} · 权重 {r.weight} · 连续失败 {breaker?.failures ?? 0} 次</p>
+                  </article>;
+                })}
+                </Card><Card className="space-y-4 p-6"><h3 className="text-base font-semibold">熔断策略</h3><div className="grid gap-4 sm:grid-cols-2">{detailRoutes.map((r) => <div key={r.id} className="rounded-xl bg-background p-4"><p className="mb-3 text-xs font-medium">{channels.find((c) => c.id === r.channel_id)?.name ?? r.channel_id}</p><div className="flex flex-wrap gap-4"><label className="space-y-2 text-xs text-muted-foreground">连续失败阈值<Input aria-label={`${r.id} 熔断阈值`} type="number" min={1} key={r.breaker_max_failures} defaultValue={r.breaker_max_failures} className="w-24" onBlur={(e) => { const value = intOr(e.target.value, r.breaker_max_failures); if (value !== r.breaker_max_failures) void saveRoute(r, { breaker_max_failures: value }); }} /></label><label className="space-y-2 text-xs text-muted-foreground">冷却时间（秒）<Input aria-label={`${r.id} 冷却时间`} type="number" min={1} key={r.breaker_cooldown_secs} defaultValue={r.breaker_cooldown_secs} className="w-24" onBlur={(e) => { const value = intOr(e.target.value, r.breaker_cooldown_secs); if (value !== r.breaker_cooldown_secs) void saveRoute(r, { breaker_cooldown_secs: value }); }} /></label></div></div>)}</div><p className="text-xs leading-relaxed text-muted-foreground">达到阈值后暂时跳过此路由；冷却结束进入半开状态。路由失败后仍可继续尝试全局回退。</p></Card>
               </div>
             )}
-          </CardContent>
-        </Card>
+        </>
       )}
 
       <Dialog
@@ -733,7 +571,8 @@ export default function RoleRoutesPage() {
               同一角色可配置多个供应商，请求自动路由，失败切换并熔断
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+
+<DialogBody className="space-y-5"><div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="route-role">角色</Label>
               <Select value={rRole} onValueChange={setRRole}>
@@ -743,8 +582,7 @@ export default function RoleRoutesPage() {
                 <SelectContent>
                   {PATTERN_ROLES.map((role) => (
                     <SelectItem key={role} value={role}>
-                      {role}
-                      {role === "auto" ? "（未匹配占位）" : ""}
+                      {roleLabel(role)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -753,7 +591,7 @@ export default function RoleRoutesPage() {
             <div className="space-y-1.5">
               <Label htmlFor="route-channel">渠道</Label>
               <Select value={rChannelId} onValueChange={handleRouteChannelChange}>
-                <SelectTrigger id="route-channel" aria-label="路由渠道">
+                <SelectTrigger id="route-channel" aria-label="路由渠道" onBlur={() => routeValidation.touch("channel")} aria-invalid={!!routeValidation.errors.channel}>
                   <SelectValue placeholder="选择渠道" />
                 </SelectTrigger>
                 <SelectContent>
@@ -765,19 +603,8 @@ export default function RoleRoutesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="route-model">上游模型</Label>
-              <Select value={rModel} onValueChange={setRModel}>
-                <SelectTrigger id="route-model" aria-label="上游模型">
-                  <SelectValue placeholder="选择模型" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rChannelModels.map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {routeValidation.errors.channel && <p role="alert" className="text-xs text-destructive">{routeValidation.errors.channel}</p>}
+            <FormField label="上游模型" htmlFor="route-model" error={routeValidation.errors.model}><ModelCombobox id="route-model" ariaLabel="上游模型" value={rModel} onChange={setRModel} options={rChannelModels} onBlur={() => routeValidation.touch("model")} error={!!routeValidation.errors.model} /></FormField>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="route-priority">优先级</Label>
@@ -816,19 +643,9 @@ export default function RoleRoutesPage() {
                 />
               </div>
             </div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => setRouteOpen(false)}
-              disabled={pending}
-            >
-              取消
-            </Button>
-            <Button onClick={createRoute} disabled={pending}>
-              {pending ? "保存中..." : editingRoute ? "保存" : "创建"}
-            </Button>
-          </DialogFooter>
+          </div></DialogBody>
+
+          <FormFooter onCancel={() => setRouteOpen(false)} onSubmit={createRoute} busy={pending} submitDisabled={routeValidation.invalid} />
         </DialogContent>
       </Dialog>
 
@@ -848,16 +665,16 @@ export default function RoleRoutesPage() {
               通配符模式（如 *sonnet*）匹配请求模型，映射到对应角色
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="pattern-value">匹配模式</Label>
-              <Input
-                id="pattern-value"
+
+<DialogBody className="space-y-5"><div className="space-y-4">
+            <FormField label="匹配模式" htmlFor="pattern-value" error={patternValidation.errors.pattern}>
+<Input
+                id="pattern-value" onBlur={() => patternValidation.touch("pattern")} aria-invalid={!!patternValidation.errors.pattern}
                 placeholder="*sonnet*"
                 value={pPattern}
                 onChange={(e) => setPPattern(e.target.value)}
               />
-            </div>
+</FormField>
             <div className="space-y-1.5">
               <Label htmlFor="pattern-role">角色</Label>
               <Select value={pRole} onValueChange={setPRole}>
@@ -867,8 +684,7 @@ export default function RoleRoutesPage() {
                 <SelectContent>
                   {PATTERN_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
-                      {r}
-                      {r === "auto" ? "（未匹配占位）" : ""}
+                      {roleLabel(r)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -892,19 +708,9 @@ export default function RoleRoutesPage() {
                 onCheckedChange={setPEnabled}
               />
             </div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button
-              variant="outline"
-              onClick={() => setPatternOpen(false)}
-              disabled={pending}
-            >
-              取消
-            </Button>
-            <Button onClick={savePattern} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          </div></DialogBody>
+
+          <FormFooter onCancel={() => setPatternOpen(false)} onSubmit={savePattern} busy={pending} submitDisabled={patternValidation.invalid} />
         </DialogContent>
       </Dialog>
 
@@ -926,7 +732,7 @@ export default function RoleRoutesPage() {
         title="删除路由"
         message={
           deletingRoute
-            ? `确定删除角色「${deletingRoute.role}」的这条路由吗？`
+            ? `确定删除角色「${roleLabel(deletingRoute.role)}」的这条路由吗？`
             : undefined
         }
         pending={pending}

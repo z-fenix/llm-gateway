@@ -1,7 +1,12 @@
+import { DialogBody } from "../components/ui/dialog";
+import { FOCUS_RING } from "../lib/focusRing";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Download, Plus, RefreshCw, Server, Sparkles } from "lucide-react";
 import { api } from "../lib/api";
+import { useFormValidation } from "../lib/useFormValidation";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import type { InstalledSkill, Skill, SkillView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
@@ -40,8 +45,10 @@ export default function SkillsPage() {
   const [directory, setDirectory] = useState("");
   const [content, setContent] = useState("");
   const [pending, setPending] = useState(false);
+  const formValidation = useFormValidation({ name: name.trim() ? undefined : "名称不能为空", directory: directory.trim() ? undefined : "目录不能为空", content: content.trim() ? undefined : "内容不能为空" });
 
   const [deleting, setDeleting] = useState<Skill | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<SkillView | null>(null);
 
   const handleError = (err: unknown) => {
     console.error(err);
@@ -83,6 +90,7 @@ export default function SkillsPage() {
   };
 
   const resetForm = () => {
+    formValidation.reset();
     setName("");
     setDescription("");
     setDirectory("");
@@ -110,6 +118,7 @@ export default function SkillsPage() {
   };
 
   const handleSave = async () => {
+    if (pending || formValidation.invalid) return;
     const trimmedName = name.trim();
     const trimmedDirectory = directory.trim();
     const trimmedContent = content.trim();
@@ -193,7 +202,7 @@ export default function SkillsPage() {
       )}
 
       <div className="info-banner"><Sparkles className="h-4 w-4 shrink-0 text-primary" /><p>本地 Skills，按需启用。文件写入 ~/.claude/skills/&lt;目录&gt;/SKILL.md，已有内容自动备份。</p></div>
-      <Card className="mb-6">
+      <details className="rounded-2xl bg-card p-4"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">发现本地 Skills · {installed.length} 个（导入与 MCP 同步）</summary><Card className="mt-4 border-0 shadow-none">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="text-lg">已安装 Skills</CardTitle>
@@ -240,10 +249,10 @@ export default function SkillsPage() {
                         {s.version ?? "-"}
                       </td>
                       <td className="px-4 py-3">
-                        {s.mcp_servers.length > 0 ? (
+                        {s.mcpServers.length > 0 ? (
                           <Badge variant="secondary" className="gap-1">
                             <Server className="h-3 w-3" />
-                            {s.mcp_servers.length}
+                            {s.mcpServers.length}
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">-</span>
@@ -254,7 +263,7 @@ export default function SkillsPage() {
                           className={cn(
                             s.in_db
                               ? s.enabled
-                                ? "border-transparent bg-emerald-500/10 text-green-700"
+                                ? "border-transparent bg-success/10 text-success"
                                 : "bg-secondary text-muted-foreground"
                               : "border-dashed bg-transparent text-muted-foreground"
                           )}
@@ -266,16 +275,16 @@ export default function SkillsPage() {
                         <div className="flex items-center gap-3">
                           {!s.in_db && (
                             <button
-                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              className={`inline-flex items-center gap-1 text-primary hover:underline ${FOCUS_RING}`}
                               onClick={() => handleImport(s.directory)}
                             >
                               <Download className="h-3 w-3" />
                               导入
                             </button>
                           )}
-                          {s.mcp_servers.length > 0 && (
+                          {s.mcpServers.length > 0 && (
                             <button
-                              className="text-primary hover:underline"
+                              className={`text-primary hover:underline ${FOCUS_RING}`}
                               onClick={() => handleSyncMcp(s.directory)}
                             >
                               同步 MCP
@@ -290,10 +299,10 @@ export default function SkillsPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card></details>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && !pending && closeDialog()}>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? "编辑 Skill" : "新增 Skill"}</DialogTitle>
             <DialogDescription>
@@ -302,16 +311,16 @@ export default function SkillsPage() {
                 : "填写名称、目录与 SKILL.md 内容"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-name">名称</Label>
-              <Input
-                id="skill-name"
+
+<DialogBody className="space-y-5"><div className="space-y-4">
+            <FormField label="名称" htmlFor="skill-name" error={formValidation.errors.name}>
+<Input
+                id="skill-name" onBlur={() => formValidation.touch("name")} aria-invalid={!!formValidation.errors.name}
                 placeholder="例如：代码审查"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-            </div>
+</FormField>
             <div className="space-y-1.5">
               <Label htmlFor="skill-description">描述</Label>
               <Input
@@ -321,35 +330,27 @@ export default function SkillsPage() {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-directory">目录</Label>
-              <Input
-                id="skill-directory"
+            <FormField label="目录" htmlFor="skill-directory" error={formValidation.errors.directory}>
+<Input
+                id="skill-directory" onBlur={() => formValidation.touch("directory")} aria-invalid={!!formValidation.errors.directory}
                 placeholder="仅允许字母、数字、_ 和 -"
                 className="font-mono"
                 value={directory}
                 onChange={(e) => setDirectory(e.target.value)}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="skill-content">内容</Label>
-              <textarea
-                id="skill-content"
+</FormField>
+            <FormField label="内容" htmlFor="skill-content" error={formValidation.errors.content}>
+<textarea
+                id="skill-content" onBlur={() => formValidation.touch("content")} aria-invalid={!!formValidation.errors.content}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="在此输入 SKILL.md 内容..."
                 className="min-h-[320px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20"
               />
-            </div>
-          </div>
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={closeDialog} disabled={pending}>
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+</FormField>
+          </div></DialogBody>
+
+          <FormFooter onCancel={closeDialog} onSubmit={handleSave} busy={pending} submitDisabled={formValidation.invalid} />
         </DialogContent>
       </Dialog>
 
@@ -362,76 +363,11 @@ export default function SkillsPage() {
           <Button onClick={openCreate}>新增 Skill</Button>
         </EmptyState>
       ) : (
-        <Card className="overflow-x-auto">
-          <table className="data-table w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">名称</th>
-                <th className="px-4 py-3 font-medium">描述</th>
-                <th className="px-4 py-3 font-medium">目录</th>
-                <th className="px-4 py-3 font-medium">同步</th>
-                <th className="px-4 py-3 font-medium">启用</th>
-                <th className="px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((v) => (
-                <tr
-                  key={v.skill.id}
-                  className="border-b border-border last:border-0 hover:bg-accent/50"
-                >
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    {v.skill.name}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {v.skill.description ?? "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {v.skill.directory}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      className={cn(
-                        v.synced
-                          ? "border-transparent bg-emerald-500/10 text-green-700"
-                          : "bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      {v.synced ? "已同步" : "未同步"}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Switch
-                      checked={v.skill.enabled}
-                      onCheckedChange={() => handleToggle(v)}
-                      aria-label={`启用 ${v.skill.name}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="text-primary hover:underline"
-                        onClick={() => openEdit(v.skill)}
-                      >
-                        编辑
-                      </button>
-                      <button
-                        className="text-destructive hover:underline"
-                        onClick={() => setDeleting(v.skill)}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+        <Card className="divide-y divide-border/60 overflow-hidden"><div className="page-toolbar p-6"><h2 className="text-base font-semibold">已安装 Skills</h2><span className="text-xs text-muted-foreground">{list.length} 个 Skill · {list.filter((v) => v.skill.enabled).length} 个已启用</span></div>{list.map((v) => <article key={v.skill.id} className="flex flex-wrap items-center gap-4 px-6 py-[22px]"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-background"><Sparkles className="h-5 w-5 text-muted-foreground" /></div><div className="min-w-0 flex-1 basis-[240px]"><h3 className="text-sm font-semibold">{v.skill.name}</h3><p className="mt-1.5 text-xs text-muted-foreground">{v.skill.description ?? "暂无描述"}</p><p className="mt-2 break-all font-mono text-[11px] text-muted-foreground">~/.claude/skills/{v.skill.directory}/SKILL.md</p></div><Badge variant="secondary" className={v.synced ? "bg-success/10 text-success" : "text-muted-foreground"}>{v.synced ? "已同步" : "未同步"}</Badge><Switch checked={v.skill.enabled} onCheckedChange={() => setToggleTarget(v)} aria-label={`启用 ${v.skill.name}`} /><Button variant="ghost" size="sm" onClick={() => openEdit(v.skill)}>编辑</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleting(v.skill)}>删除</Button></article>)}</Card>
       )}
 
+      <p className="text-xs text-muted-foreground">启用、更新与删除均会写入对应的本地目录；删除前需再次确认。</p>
+      <ConfirmDialog open={!!toggleTarget} title={toggleTarget?.skill.enabled ? "停用 Skill？" : "启用 Skill？"} message={toggleTarget ? `将${toggleTarget.skill.enabled ? "移除同步的" : "写入"} ~/.claude/skills/${toggleTarget.skill.directory}/SKILL.md；已有文件按网关规则备份。` : undefined} onCancel={() => setToggleTarget(null)} onConfirm={() => { if (toggleTarget) handleToggle(toggleTarget); setToggleTarget(null); }} />
       <ConfirmDialog
         open={deleting !== null}
         title="删除 Skill"

@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
   --background: 0 0% 96%;
   --foreground: 240 6% 10%;
   --card: 0 0% 100%;
@@ -22,12 +23,47 @@
   --border: 240 5% 88%;
   --input: 240 5% 87%;
   --ring: 221 83% 53%;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
+  --surface: 0 0% 100%;
+  --info: 221 83% 53%;
+  --faint: 240 5% 45%;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   --success: 142 72% 29%;
   --warning: 32 81% 29%;
   --chart-1: #2563eb;
   --chart-2: #c2410c;
   --chart-3: #7c3aed;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: 240 8% 3%;
+  --foreground: 0 0% 99%;
+  --card: 240 6% 10%;
+  --card-foreground: 0 0% 99%;
+  --popover: 240 6% 10%;
+  --popover-foreground: 0 0% 99%;
+  --primary: 210 100% 65%;
+  --primary-foreground: 240 8% 3%;
+  --secondary: 240 3% 15%;
+  --secondary-foreground: 0 0% 99%;
+  --muted: 240 4% 15%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 210 95% 15%;
+  --accent-foreground: 210 100% 80%;
+  --destructive: 359 72% 65%;
+  --destructive-foreground: 240 8% 3%;
+  --border: 240 5% 20%;
+  --input: 240 5% 25%;
+  --ring: 210 100% 65%;
+  --surface: 240 6% 10%;
+  --info: 210 100% 65%;
+  --faint: 240 5% 65%;
+  --success: 146 79% 55%;
+  --warning: 37 91% 64%;
+  --chart-1: #3983d5;
+  --chart-2: #c57e36;
+  --chart-3: #9770d5;
 }
 
 @layer base {
@@ -65,6 +101,21 @@
   .setting-row { @apply flex items-center justify-between gap-4 border-b border-border/60 py-4 last:border-0; }
   .mono-value { @apply break-all font-mono text-xs; }
   .usage-range-popover { container-type: inline-size; }
+  .session-markdown > :first-child { margin-top: 0; }
+  .session-markdown > :last-child { margin-bottom: 0; }
+  .session-markdown p { @apply my-2; }
+  .session-markdown h1, .session-markdown h2, .session-markdown h3 { @apply mb-2 mt-4 font-semibold leading-snug; }
+  .session-markdown h1 { @apply text-lg; }
+  .session-markdown h2 { @apply text-base; }
+  .session-markdown h3 { @apply text-sm; }
+  .session-markdown ul { @apply my-2 list-disc pl-5; }
+  .session-markdown ol { @apply my-2 list-decimal pl-5; }
+  .session-markdown li { @apply my-1; }
+  .session-markdown blockquote { @apply my-3 border-l-2 border-border pl-3 text-muted-foreground; }
+  .session-markdown :not(pre) > code { @apply rounded bg-muted px-1 py-0.5 font-mono text-xs; }
+  .session-markdown th, .session-markdown td { @apply border border-border px-3 py-2 text-left text-xs; }
+  .session-markdown th { @apply bg-muted font-medium; }
+  .session-markdown hr { @apply my-4 border-border; }
   .usage-meter { appearance: none; background: none; border: 0; }
   .usage-meter::-webkit-meter-bar { background: hsl(var(--muted)); border: 0; border-radius: 999px; }
   .usage-meter::-webkit-meter-optimum-value { background: hsl(var(--primary)); border-radius: 999px; }

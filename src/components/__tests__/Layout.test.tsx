@@ -60,4 +60,12 @@ describe("Layout", () => {
     expect(await screen.findByRole("heading", { name: "密钥内容" })).toBeInTheDocument();
     await waitFor(() => expect(opener).toHaveAttribute("aria-expanded", "false"));
   });
+  it("手动刷新后同步网关连接状态", async () => {
+    render(<Workspace />);
+    await screen.findByText("网关运行中");
+    vi.mocked(api.getAppConfig).mockRejectedValueOnce(new Error("offline"));
+    window.dispatchEvent(new Event("gateway-refresh"));
+    expect(await screen.findByText("网关未连接")).toBeInTheDocument();
+  });
+
 });

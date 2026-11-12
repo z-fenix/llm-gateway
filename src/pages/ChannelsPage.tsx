@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
+import { formatTokenAmount } from "../lib/tokenUnits";
+import { NEUTRAL_TAG } from "../lib/tagStyles";
 import type { Channel } from "../types";
 import ChannelForm from "../components/ChannelForm";
 import PageHeader from "../components/PageHeader";
@@ -29,7 +31,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 
-const STATUS_OPTIONS = [
+export const STATUS_OPTIONS = [
   { label: "全部", value: "all" },
   { label: "启用", value: "enabled" },
   { label: "禁用", value: "disabled" },
@@ -181,10 +183,10 @@ export default function ChannelsPage() {
             <thead><tr><th>渠道</th><th>上游协议</th><th>优先级 / 权重</th><th>支持模型</th><th>调用 / 平均延迟</th><th>启用</th><th className="text-right">操作</th></tr></thead>
             <tbody>{filtered.map((c) => <tr key={c.id}>
               <td><div className="max-w-[250px]"><p className="truncate font-medium" title={c.name}>{c.name}</p><p className="mt-1.5 truncate text-[11px] text-muted-foreground" title={c.base_url}>{c.base_url}</p></div></td>
-              <td><Badge variant="secondary">{c.upstream_protocol}</Badge><p className="mt-1.5 text-[11px] text-muted-foreground">{c.supplier}</p></td>
+              <td><span className={NEUTRAL_TAG}>{({ "anthropic-messages": "Anthropic Messages", "openai-chat": "OpenAI Chat", "openai-responses": "OpenAI Responses", "gemini-native": "Gemini Native" } as Record<string, string>)[c.upstream_protocol] ?? c.upstream_protocol}</span><p className="mt-1.5 text-[11px] text-muted-foreground">{c.supplier}</p></td>
               <td className="tabular-nums">{c.priority} / {c.weight}</td>
               <td><span title={c.models.join(", ")} className="cursor-help text-muted-foreground">{c.models.length} 个模型</span></td>
-              <td className="tabular-nums"><p>{c.total_calls.toLocaleString()} / {c.avg_latency_ms} ms</p><p className="mt-1.5 text-[11px] text-muted-foreground">成功率 {(c.success_rate * 100).toFixed(1)}% · {c.total_tokens.toLocaleString()} Token</p></td>
+              <td className="tabular-nums"><p>{c.total_calls.toLocaleString()} / {c.avg_latency_ms} ms</p><p className="mt-1.5 text-[11px] text-muted-foreground">成功率 {(c.success_rate * 100).toFixed(1)}% · <span title={c.total_tokens.toLocaleString()}>{formatTokenAmount(c.total_tokens)} Token</span></p></td>
               <td><Switch checked={c.enabled} aria-label={`启用 ${c.name}`} onCheckedChange={(enabled) => { void api.updateChannel({ ...c, enabled }).then(load).catch(handleError); }} /></td>
               <td><div className="flex justify-end gap-1">
                 <Button variant="ghost" size="sm" aria-label="连通检测" onClick={() => test(c.id)} disabled={testingId === c.id}>{testingId === c.id ? <Loader2 className="animate-spin" /> : <Activity />}测试</Button>
@@ -199,8 +201,8 @@ export default function ChannelsPage() {
       <div className="page-toolbar text-xs text-muted-foreground"><span>共 {list.length} 个渠道 · {list.filter((c) => c.enabled).length} 个已启用</span><span>Ctrl + F 搜索</span></div>
       <div className="info-banner"><Activity className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><div><h2 className="font-medium">调度如何选择渠道？</h2><p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。</p></div></div>
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditing(null); }}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader><DialogTitle>{editing ? "编辑渠道" : "新建渠道"}</DialogTitle><DialogDescription>{editing ? "修改渠道信息并保存" : "配置上游服务；保存后可在列表测试连通性。"}</DialogDescription></DialogHeader>
+        <DialogContent className="gap-5 p-5 sm:max-w-2xl sm:p-7">
+          <DialogHeader><DialogTitle className="text-[23px]">{editing ? "编辑渠道" : "新建渠道"}</DialogTitle><DialogDescription>{editing ? "修改渠道信息并保存" : "配置上游服务；保存后可在列表测试连通性。"}</DialogDescription></DialogHeader>
           {error && <ErrorBanner message={error} />}
           <ChannelForm initial={editing ?? undefined} onSubmit={save} onCancel={() => setDialogOpen(false)} />
         </DialogContent>

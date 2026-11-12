@@ -1,13 +1,18 @@
+import { DialogBody } from "../components/ui/dialog";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Cable, Plus, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
+import { useFormValidation } from "../lib/useFormValidation";
+import { FormField } from "../components/form/FormField";
+import { FormFooter } from "../components/form/FormFooter";
 import type { McpServer, McpServerView } from "../types";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { StatusBadge } from "../components/StatusBadge";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -65,6 +70,14 @@ function pairsToObject(pairs: Pair[]): Record<string, string> {
 
 export default function McpServersPage() {
   const [list, setList] = useState<McpServerView[]>([]);
+  const [endpointOpen, setEndpointOpen] = useState(false);
+  const [endpoint, setEndpoint] = useState<string | null>(null);
+  useEffect(() => {
+    if (!endpointOpen) return;
+    let cancelled = false;
+    api.getAppConfig().then((config) => { if (!cancelled) setEndpoint(config.bound_addr ? `http://${config.bound_addr}/mcp` : "网关尚未启动"); }).catch(() => { if (!cancelled) setEndpoint("无法读取本地监听地址"); });
+    return () => { cancelled = true; };
+  }, [endpointOpen]);
   const [error, setError] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,6 +91,7 @@ export default function McpServersPage() {
   const [url, setUrl] = useState("");
   const [headerPairs, setHeaderPairs] = useState<Pair[]>([]);
   const [pending, setPending] = useState(false);
+  const formValidation = useFormValidation({ name: name.trim() ? undefined : "名称不能为空", command: serverType !== "stdio" || command.trim() ? undefined : "命令不能为空", url: serverType !== "http" || url.trim() ? undefined : "URL 不能为空" });
 
   const [deleting, setDeleting] = useState<McpServer | null>(null);
 
@@ -98,6 +112,7 @@ export default function McpServersPage() {
   }, []);
 
   const resetForm = () => {
+    formValidation.reset();
     setName("");
     setDescription("");
     setServerType("stdio");
@@ -169,6 +184,7 @@ export default function McpServersPage() {
   };
 
   const handleSave = async () => {
+    if (pending || formValidation.invalid) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
       toast.error("名称不能为空");
@@ -311,8 +327,8 @@ export default function McpServersPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && !pending && closeDialog()}>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editing ? "编辑 MCP 服务器" : "新增 MCP 服务器"}</DialogTitle>
             <DialogDescription>
@@ -321,16 +337,16 @@ export default function McpServersPage() {
                 : "填写上游 MCP server 配置，保存后可启用连接"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="mcp-name">名称</Label>
-              <Input
-                id="mcp-name"
+
+<DialogBody className="space-y-5"><div className="space-y-4">
+            <FormField label="名称" htmlFor="mcp-name" error={formValidation.errors.name}>
+<Input
+                id="mcp-name" onBlur={() => formValidation.touch("name")} aria-invalid={!!formValidation.errors.name}
                 placeholder="例如：本地 Python 服务"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-            </div>
+</FormField>
             <div className="space-y-1.5">
               <Label htmlFor="mcp-description">描述</Label>
               <Input
@@ -358,15 +374,14 @@ export default function McpServersPage() {
 
             {serverType === "stdio" ? (
               <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="mcp-command">命令</Label>
-                  <Input
-                    id="mcp-command"
+                <FormField label="命令" htmlFor="mcp-command" error={formValidation.errors.command}>
+<Input
+                    id="mcp-command" onBlur={() => formValidation.touch("command")} aria-invalid={!!formValidation.errors.command}
                     placeholder="如 python（或可执行文件路径）"
                     value={command}
                     onChange={(e) => setCommand(e.target.value)}
                   />
-                </div>
+</FormField>
                 <div className="space-y-2">
                   <Label>参数</Label>
                   {args.map((a, i) => (
@@ -434,15 +449,14 @@ export default function McpServersPage() {
               </>
             ) : (
               <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="mcp-url">URL</Label>
-                  <Input
-                    id="mcp-url"
+                <FormField label="URL" htmlFor="mcp-url" error={formValidation.errors.url}>
+<Input
+                    id="mcp-url" onBlur={() => formValidation.touch("url")} aria-invalid={!!formValidation.errors.url}
                     placeholder="如 https://example.com/mcp"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                   />
-                </div>
+</FormField>
                 <div className="space-y-2">
                   <Label>请求头</Label>
                   {pairsRow(
@@ -475,18 +489,16 @@ export default function McpServersPage() {
                 </div>
               </>
             )}
-          </div>
-          <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={closeDialog} disabled={pending}>
-              取消
-            </Button>
-            <Button onClick={handleSave} disabled={pending}>
-              {pending ? "保存中..." : "保存"}
-            </Button>
-          </DialogFooter>
+          </div></DialogBody>
+
+          <FormFooter onCancel={closeDialog} onSubmit={handleSave} busy={pending} submitDisabled={formValidation.invalid} />
         </DialogContent>
       </Dialog>
 
+      <div className="page-toolbar text-[13px]"><p className="text-muted-foreground">{list.length} 个服务器 · {list.filter((v) => v.connected).length} 个连接成功</p><Button variant="outline" size="sm" onClick={() => setEndpointOpen(true)}>查看本地 MCP 端点</Button></div>
+      <Dialog open={endpointOpen} onOpenChange={setEndpointOpen}><DialogContent><DialogHeader><DialogTitle>本地 MCP 端点</DialogTitle><DialogDescription>网关向外提供知识库工具的 Streamable HTTP 端点。</DialogDescription></DialogHeader>
+<DialogBody className="space-y-5"><p className="break-all rounded-xl bg-background p-4 font-mono text-xs">{endpoint ?? "正在读取本地监听地址…"}</p><p className="text-xs text-muted-foreground">使用网关 API 密钥认证。上游 MCP 服务与此本地端点独立。</p></DialogBody>
+</DialogContent></Dialog>
       {list.length === 0 ? (
         <EmptyState
           icon={<Cable className="h-8 w-8" />}
@@ -514,8 +526,7 @@ export default function McpServersPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className={cn("h-2 w-2 rounded-full", v.connected ? "bg-green-700" : "bg-muted-foreground/40")} />
-                {v.connected ? "已连接" : "未连接"}
+                <StatusBadge semantic={v.connected ? "success" : "neutral"}>{v.connected ? "已连接" : "未连接"}</StatusBadge>
               </div>
               <Switch
                 checked={v.server.enabled}
@@ -535,6 +546,7 @@ export default function McpServersPage() {
         </Card>
       )}
 
+      <Card className="space-y-3 p-6"><h2 className="text-base font-semibold">连接成功，才代表可用</h2><p className="text-[13px] leading-relaxed text-muted-foreground">启用时启动 MCP client 并完成握手；失败时保留错误信息与重试入口。网关自己的 /mcp 端点用于向外提供知识库工具。</p></Card>
       <ConfirmDialog
         open={deleting !== null}
         title="删除 MCP 服务器"

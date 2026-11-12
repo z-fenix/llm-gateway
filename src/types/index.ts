@@ -338,10 +338,16 @@ export interface SessionMeta {
   resumeCommand?: string | null;
 }
 
+export type SessionBlock =
+  | { type: "text" | "thinking"; text: string }
+  | { type: "tool_call"; id?: string | null; name?: string | null; input: unknown }
+  | { type: "tool_result"; id?: string | null; output: string; status: string };
+
 export interface SessionMessage {
   role: string;
   content: string;
   ts?: number | null;
+  blocks?: SessionBlock[];
 }
 
 export interface McpServer {

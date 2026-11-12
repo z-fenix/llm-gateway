@@ -84,7 +84,7 @@ describe("LogsPage", () => {
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
     await waitFor(() => expect(mockedApi.listChannels).toHaveBeenCalled());
 
-    const keywordInput = screen.getByPlaceholderText("搜索 模型/渠道/TraceID/密钥");
+    const keywordInput = screen.getByPlaceholderText("模型、渠道、Trace ID 或密钥");
     fireEvent.change(keywordInput, { target: { value: "foo" } });
 
     fireEvent.click(screen.getByText("查询"));
@@ -106,15 +106,13 @@ describe("LogsPage", () => {
 
   it("角色筛选下拉包含 auto 选项", async () => {
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "角色" })).toBeInTheDocument()
-    );
-
-    fireEvent.click(screen.getByRole("combobox", { name: "角色" }));
-    expect(await screen.findByRole("option", { name: "auto" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "更多筛选" }));
+    expect(screen.getByRole("combobox", { name: "角色筛选" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: "角色筛选" }));
+    expect(await screen.findByRole("option", { name: "自动选择（auto）" })).toBeInTheDocument();
   });
 
-  it("统计带渲染 4 项（总调用/成功率/Token/费用）", async () => {
+  it("统计行渲染调用量、成功率、真实 Token、缓存命中率与费用", async () => {
     mockedApi.getLogStats.mockResolvedValue({
       total_calls: 128,
       total_input_tokens: 1000,
@@ -126,18 +124,18 @@ describe("LogsPage", () => {
     });
 
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    const strip = await screen.findByTestId("log-stat-strip");
-    expect(within(strip).getByText("总调用")).toBeInTheDocument();
+    const strip = await screen.findByLabelText("范围内统计");
+    expect(within(strip).getByText("调用量")).toBeInTheDocument();
     expect(within(strip).getByText("成功率")).toBeInTheDocument();
-    expect(within(strip).getByText("Token")).toBeInTheDocument();
-    expect(within(strip).getByText("费用")).toBeInTheDocument();
+    expect(within(strip).getByText("真实 Token")).toBeInTheDocument();
+    expect(within(strip).getByText("估算费用")).toBeInTheDocument();
     expect(within(strip).getByText("128")).toBeInTheDocument();
     expect(within(strip).getByText("78.1%")).toBeInTheDocument();
-    expect(within(strip).getByText("1,500")).toBeInTheDocument();
+    expect(within(strip).getByText("1.5K")).toBeInTheDocument();
     expect(within(strip).getByText("$0")).toBeInTheDocument();
   });
 
-  it("Top 渠道/Top 密钥不再渲染", async () => {
+  it("排行按需打开，不占用首屏", async () => {
     mockedApi.getLogStats.mockResolvedValue({
       total_calls: 10,
       total_input_tokens: 0,
@@ -152,8 +150,10 @@ describe("LogsPage", () => {
     await waitFor(() => expect(mockedApi.getLogStats).toHaveBeenCalled());
     expect(screen.queryByText("Top 渠道")).not.toBeInTheDocument();
     expect(screen.queryByText("Top 密钥")).not.toBeInTheDocument();
-    expect(screen.queryByText("Channel A")).not.toBeInTheDocument();
-    expect(screen.queryByText("Key A")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "趋势与分布" }));
+    const panel = within(screen.getByRole("dialog"));
+    expect(panel.getByText("Channel A")).toBeInTheDocument();
+    expect(panel.getByText("Key A")).toBeInTheDocument();
   });
 
   it("表格状态/风险徽章使用 StatusBadge 语义类", async () => {
@@ -168,16 +168,14 @@ describe("LogsPage", () => {
     expect(screen.getByText("200")).toHaveClass("text-success");
   });
 
-  it("seq 序号单元格使用 tabular-nums 等宽数字", async () => {
+  it("详情入口保留请求序号的可访问名称", async () => {
     mockedApi.listLogs.mockResolvedValue({
       total: 1,
       items: [makeLog({ id: "l1", seq: 4242 })],
     });
 
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    const seqCell = await screen.findByText("4242");
-    expect(seqCell).toHaveClass("tabular-nums");
-    expect(seqCell).toHaveClass("font-mono");
+    expect(await screen.findByRole("button", { name: "查看请求 4242 详情" })).toBeInTheDocument();
   });
 
   it("手动刷新 dispatch gateway-refresh 供顶栏同步网关状态", async () => {
@@ -206,6 +204,7 @@ describe("LogsPage", () => {
     ]);
 
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "趋势与分布" }));
     await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-dimension", "calls");
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
@@ -234,25 +233,17 @@ describe("LogsPage", () => {
     expect(mockedApi.getLogTimeseries).toHaveBeenCalledTimes(1);
   });
 
-  it("时间跨度 ≤48h 时 bucketSecs 为 3600，否则为 86400", async () => {
+  it("时间范围改变后趋势使用对应桶宽，弹窗可关闭后再次打开", async () => {
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
-    // 默认 7d(>48h) → 按天
+    await waitFor(() => expect(mockedApi.getLogTimeseries).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "趋势与分布" }));
     expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400");
-
-    // 打开选择器,选 1d(≤48h) → 3600
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "关闭" }));
     fireEvent.click(screen.getByRole("button", { name: /7d/ }));
     fireEvent.click(await screen.findByRole("button", { name: "1d" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "3600")
-    );
-
-    // 打开选择器,选 7d(>48h) → 86400
-    fireEvent.click(screen.getByRole("button", { name: /1d/ }));
-    fireEvent.click(await screen.findByRole("button", { name: "7d" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "86400")
-    );
+    await waitFor(() => expect(mockedApi.getLogTimeseries.mock.lastCall?.[1]).toBe(3600));
+    fireEvent.click(screen.getByRole("button", { name: "趋势与分布" }));
+    expect(screen.getByTestId("trend-chart")).toHaveAttribute("data-bucket-secs", "3600");
   });
 
   it("默认 7d 范围:listLogs 携带 after/before 且跨度约 7 天", async () => {
@@ -268,6 +259,7 @@ describe("LogsPage", () => {
   it("删除该日之前需确认并调 deleteLogsBefore", async () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "日志保留与清理" }));
     await waitFor(() => expect(screen.getByText("删除该日之前")).toBeInTheDocument());
 
     const dateInput = screen.getByLabelText("清理日期");
@@ -289,6 +281,7 @@ describe("LogsPage", () => {
 
   it("保留天数输入非负校验", async () => {
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "日志保留与清理" }));
     await waitFor(() => expect(screen.getByText("日志保留天数")).toBeInTheDocument());
 
     const retentionInput = screen.getByLabelText("日志保留天数");
@@ -341,7 +334,7 @@ describe("LogsPage", () => {
 
     const abcRow = screen.getByText("trace-abc").closest("tr")!;
     expect(within(abcRow).getByText("2")).toBeInTheDocument();
-    expect(within(abcRow).getByText("sonnet")).toBeInTheDocument();
+    expect(within(abcRow).getByText("均衡任务（sonnet）")).toBeInTheDocument();
     expect(within(abcRow).getByText("200")).toBeInTheDocument();
   });
 
@@ -420,7 +413,7 @@ describe("LogsPage", () => {
     expect(mockedApi.getLogStats.mock.calls[1][0].after).toBe(f2.after);
   });
 
-  it("统计带展示估算费用（缓存命中率不再展示）", async () => {
+  it("统计行展示估算费用与缓存命中率", async () => {
     mockedApi.getLogStats.mockResolvedValue({
       total_calls: 100,
       total_input_tokens: 100,
@@ -434,9 +427,9 @@ describe("LogsPage", () => {
       top_api_keys: [],
     });
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    const strip = await screen.findByTestId("log-stat-strip");
+    const strip = await screen.findByLabelText("范围内统计");
     expect(within(strip).getByText("$0.001500")).toBeInTheDocument();
-    expect(within(strip).queryByText(/命中率/)).not.toBeInTheDocument();
+    expect(within(strip).getByText("缓存命中率")).toBeInTheDocument();
   });
 
   it("详情抽屉展示缓存读取、缓存创建与估算费用", async () => {
@@ -445,7 +438,7 @@ describe("LogsPage", () => {
       items: [
         makeLog({
           id: "l1",
-          cache_read_tokens: 30,
+          cache_read_tokens: 1500000,
           cache_creation_tokens: 12,
           total_cost_usd: 0.000123,
         }),
@@ -454,8 +447,13 @@ describe("LogsPage", () => {
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
     fireEvent.click(await screen.findByRole("button", { name: "查看请求 1 详情" }));
     const drawer = await screen.findByRole("dialog", { name: "请求详情" });
-    expect(within(drawer).getByText("$0.000123")).toBeInTheDocument();
-    expect(within(drawer).getByText("30")).toBeInTheDocument();
+    const usage = within(drawer).getByLabelText("本次用量");
+    expect(within(usage).getByText("Token")).toBeInTheDocument();
+    expect(within(usage).getByText("总延迟")).toBeInTheDocument();
+    expect(within(usage).getByText("估算费用")).toBeInTheDocument();
+    expect(within(usage).getByText("$0.000123")).toBeInTheDocument();
+    fireEvent.click(within(drawer).getByText("更多请求信息"));
+    expect(within(drawer).getByText("1.5M")).toHaveAttribute("title", "1,500,000");
     expect(within(drawer).getByText("12")).toBeInTheDocument();
     fireEvent.click(within(drawer).getByRole("tab", { name: "响应内容" }));
     expect(within(drawer).getByText("(无响应体 / 流式)")).toBeInTheDocument();
@@ -482,6 +480,7 @@ describe("LogsPage", () => {
       { bucket: 1, calls: 1, input_tokens: 1, output_tokens: 1, error_count: 0, risk_counts: {} },
     ]);
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "趋势与分布" }));
     await waitFor(() => expect(screen.getByTestId("trend-chart")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("tab", { name: "缓存" }));
     await waitFor(() =>

@@ -1,5 +1,5 @@
-// 按供应商的内置模型清单：当无法从上游实时拉取（GET /v1/models 失败、
-// 上游为 Anthropic 无该接口、或未填写 Base URL）时作为下拉候选兜底。
+// 按供应商的内置参考清单：上游拉取失败或未填写 Base URL 时作为手动选择参考。
+// 不代表上游实际支持；Anthropic 同样支持通过 GET /v1/models 获取真实目录。
 // 仅供渠道表单「支持模型」下拉使用，实际可用模型以上游返回为准。
 export const STATIC_MODEL_CATALOG: Record<string, string[]> = {
   openai: [

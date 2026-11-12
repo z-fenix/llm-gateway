@@ -83,12 +83,9 @@ describe("ApiKeysPage 生成密钥", () => {
     ]);
     render(<ApiKeysPage />);
     await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
-    // 两个密钥分别有启用/禁用状态徽标
-    expect(screen.getAllByText("启用").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("禁用").length).toBeGreaterThan(0);
-
-    // k1 的启用开关（按钮文本为“禁用”）→ 调 setApiKeyEnabled(id, false)
-    fireEvent.click(screen.getAllByRole("button", { name: "禁用" })[0]);
+    expect(screen.getByRole("switch", { name: "启用 alice" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "启用 bob" })).not.toBeChecked();
+    fireEvent.click(screen.getByRole("switch", { name: "启用 alice" }));
     await waitFor(() =>
       expect(api.setApiKeyEnabled).toHaveBeenCalledWith("k1", false)
     );
@@ -99,10 +96,18 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await screen.findByText("keyk1");
     expect(screen.queryByText("sk-lgw-k1")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "管理密钥" }));
     fireEvent.click(screen.getByRole("button", { name: "查看 keyk1 密钥" }));
     expect(screen.getByText("sk-lgw-k1")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "隐藏 keyk1 密钥" }));
     expect(screen.queryByText("sk-lgw-k1")).not.toBeInTheDocument();
+  });
+
+  it("掩码保留真实密钥前缀，不伪造设计示例中的前缀", async () => {
+    mockedApi.listApiKeys.mockResolvedValue([key("k1", { key: "sk-lgw-synthetic-value-a7f2" })]);
+    render(<ApiKeysPage />);
+    expect(await screen.findByText("sk-lgw-••••••••a7f2")).toBeInTheDocument();
+    expect(screen.queryByText("sk-lgw-synthetic-value-a7f2")).not.toBeInTheDocument();
   });
 
   it("复制按钮写入剪贴板", async () => {
@@ -112,7 +117,8 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(screen.getByText("keyk1")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "复制" }));
+    fireEvent.click(screen.getByRole("button", { name: "管理密钥" }));
+    fireEvent.click(screen.getByRole("button", { name: "复制密钥" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("sk-lgw-k1"));
   });
 
@@ -123,9 +129,9 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    fireEvent.click(screen.getByRole("button", { name: "管理密钥" }));
     expect(
-      await screen.findByRole("heading", { name: "编辑密钥" })
+      await screen.findByRole("heading", { name: "管理密钥" })
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue("alice")).toBeInTheDocument();
     expect(screen.getByDisplayValue("100")).toBeInTheDocument();
@@ -148,7 +154,8 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(screen.getByText("keyk1")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    fireEvent.click(screen.getByRole("button", { name: "管理密钥" }));
+    fireEvent.click(screen.getByRole("button", { name: "删除密钥" }));
     expect(
       await screen.findByRole("heading", { name: "删除密钥" })
     ).toBeInTheDocument();
@@ -162,7 +169,8 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(api.listApiKeys).toHaveBeenCalled());
 
-    // DSH touched 语义：pristine 不喊错，仅按钮禁用（名称为空即无效）
+    fireEvent.click(screen.getByRole("button", { name: "创建密钥" }));
+    // Pristine 仅禁用提交，不显示尚未触碰字段的错误。
     expect(screen.getByRole("button", { name: "生成密钥" })).toBeDisabled();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
@@ -174,7 +182,8 @@ describe("ApiKeysPage 生成密钥", () => {
     fireEvent.change(screen.getByLabelText("Token 配额"), {
       target: { value: "-1" },
     });
-    expect(screen.getByText("请输入非负数字")).toHaveAttribute("role", "alert");
+    fireEvent.blur(screen.getByLabelText("Token 配额"));
+    expect(screen.getByText("请输入非负整数或有效单位，如 1.5M（不超过安全整数）")).toHaveAttribute("role", "alert");
     expect(screen.getByRole("button", { name: "生成密钥" })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText("Token 配额"), {
@@ -191,9 +200,9 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "编辑" }));
+    fireEvent.click(screen.getByRole("button", { name: "管理密钥" }));
     expect(
-      await screen.findByRole("heading", { name: "编辑密钥" })
+      await screen.findByRole("heading", { name: "管理密钥" })
     ).toBeInTheDocument();
 
     // 卡片与弹框各有「名称」字段，用 within(dialog) 限定弹框内查询

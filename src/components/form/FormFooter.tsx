@@ -1,4 +1,4 @@
-import { cn } from "../../lib/utils";
+import { Button } from "../ui/button";
 
 export interface FormFooterProps {
   onCancel: () => void;
@@ -25,31 +25,9 @@ export function FormFooter({
   busyLabel = "应用中",
 }: FormFooterProps) {
   return (
-    <div className="flex items-center justify-between gap-3 pt-1">
-      <button
-        type="button"
-        disabled={busy}
-        onClick={onCancel}
-        className={cn(
-          "inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors",
-          "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20",
-          "disabled:pointer-events-none disabled:opacity-50"
-        )}
-      >
-        {cancelLabel}
-      </button>
-      <button
-        type="button"
-        disabled={busy || submitDisabled}
-        onClick={onSubmit}
-        className={cn(
-          "inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors",
-          "hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20",
-          "disabled:pointer-events-none disabled:opacity-50"
-        )}
-      >
-        {busy ? busyLabel : submitLabel}
-      </button>
+    <div className="flex items-center justify-end gap-3 pt-2">
+      <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>{cancelLabel}</Button>
+      <Button type="button" disabled={busy || submitDisabled} onClick={onSubmit}>{busy ? busyLabel : submitLabel}</Button>
     </div>
   );
 }

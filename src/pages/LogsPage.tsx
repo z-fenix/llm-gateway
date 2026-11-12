@@ -1,10 +1,17 @@
+import { DialogBody } from "../components/ui/dialog";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Copy, Layers, List, Search, ShieldCheck } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
+import FilterSelect from "../components/FilterSelect";
+import { roleLabel } from "../lib/roles";
+import { formatTokenAmount } from "../lib/tokenUnits";
 import SegmentedControl from "../components/SegmentedControl";
 import { api } from "../lib/api";
+import { GATEWAY_REFRESH_EVENT } from "../lib/events";
+import { httpStatusSemantic } from "../lib/semantics";
+import { StatusBadge } from "../components/StatusBadge";
 import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
 import RefreshControls from "../components/RefreshControls";
@@ -40,11 +47,11 @@ function prettyJson(s?: string | null): string {
 function riskBadgeClass(level: string): string {
   switch (level) {
     case "clean": return "bg-muted text-muted-foreground";
-    case "info": return "bg-blue-100 text-blue-700";
-    case "low": return "bg-green-100 text-green-700";
-    case "medium": return "bg-yellow-100 text-yellow-700";
-    case "high": return "bg-orange-100 text-orange-700";
-    case "critical": return "bg-red-100 text-red-700";
+    case "info": return "bg-primary/10 text-primary";
+    case "low": return "bg-success/10 text-success";
+    case "medium": return "bg-warning/10 text-warning";
+    case "high": return "bg-warning/10 text-warning";
+    case "critical": return "bg-destructive/10 text-destructive";
     default: return "bg-muted text-muted-foreground";
   }
 }
@@ -52,10 +59,10 @@ function riskBadgeClass(level: string): string {
 function actionMarker(action: string, sanitized: boolean): React.ReactNode {
   const a = action.toLowerCase();
   if (a === "block") {
-    return (<span className="ml-1 text-xs text-red-600">已阻断</span>);
+    return (<span className="ml-1 text-xs text-destructive">已阻断</span>);
   }
   if (a === "redact" || a === "sanitize" || sanitized) {
-    return (<span className="ml-1 text-xs text-blue-600">已脱敏</span>);
+    return (<span className="ml-1 text-xs text-primary">已脱敏</span>);
   }
   return null;
 }
@@ -76,9 +83,9 @@ function sessionProviderLabel(p?: string | null): string {
 
 function sessionBadgeClass(p?: string | null): string {
   switch (p) {
-    case "claude": return "bg-purple-100 text-purple-700";
-    case "codex": return "bg-blue-100 text-blue-700";
-    case "gemini": return "bg-teal-100 text-teal-700";
+    case "claude": return "bg-primary/10 text-primary";
+    case "codex": return "bg-primary/10 text-primary";
+    case "gemini": return "bg-primary/10 text-primary";
     default: return "bg-muted text-muted-foreground";
   }
 }
@@ -165,9 +172,6 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
 
 const LOG_COLUMNS = ["时间 / Trace", "模型 / 角色", "渠道", "结果", "Token", "延迟", "安全", "详情"];
 
-const selectCls =
-  "h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20";
-
 function LogTableHeader() {
   return (
     <thead>
@@ -187,24 +191,28 @@ function LogRow({ log, open, onToggle }: { log: RequestLog; open: boolean; onTog
   return <Fragment>
     <tr className="cursor-pointer" onClick={onToggle}>
       <td className="whitespace-nowrap"><p className="text-xs">{new Date(log.created_at * 1000).toLocaleString()}</p><p className="mt-1.5 font-mono text-[11px] text-muted-foreground" title={log.trace_id}>{shortTrace(log.trace_id)}</p></td>
-      <td><p className="max-w-[220px] truncate font-mono text-xs" title={log.request_model ?? undefined}>{log.request_model ?? "-"}</p><p className="mt-1.5 text-[11px] text-muted-foreground">{log.role ?? "auto"}{log.fallback ? " · 已回退" : ""}{log.session_id ? ` · ${sessionProviderLabel(log.session_provider)} ${shortSessionId(log.session_id)}` : ""}</p></td>
+      <td><p className="max-w-[220px] truncate font-mono text-xs" title={log.request_model ?? undefined}>{log.request_model ?? "-"}</p><p className="mt-1.5 text-[11px] text-muted-foreground">{roleLabel(log.role ?? "auto")}{log.fallback ? " · 已回退" : ""}{log.session_id ? ` · ${sessionProviderLabel(log.session_provider)} ${shortSessionId(log.session_id)}` : ""}</p></td>
       <td className="text-xs">{log.channel_name ?? "-"}</td>
-      <td><Badge variant={log.status_code && log.status_code >= 200 && log.status_code < 300 ? "secondary" : "destructive"}>{log.status_code ?? "—"}</Badge></td>
-      <td className="whitespace-nowrap text-xs tabular-nums">{log.input_tokens}+{log.output_tokens}</td>
+      <td><StatusBadge semantic={httpStatusSemantic(log.status_code ?? 0)}>{log.status_code ?? "—"}</StatusBadge></td>
+      <td title={`输入 ${log.input_tokens.toLocaleString()} / 输出 ${log.output_tokens.toLocaleString()}`} className="whitespace-nowrap text-xs tabular-nums">{formatTokenAmount(log.input_tokens)} + {formatTokenAmount(log.output_tokens)}</td>
       <td className="whitespace-nowrap text-xs tabular-nums">{log.latency_ms}ms</td>
       <td><span className={cn("rounded-full px-2 py-1 text-[11px]", riskBadgeClass(log.risk_level))}>{log.risk_level}</span>{actionMarker(log.security_action, log.sanitized)}</td>
       <td><Button variant="ghost" size="sm" aria-label={`查看请求 ${log.seq} 详情`}>详情</Button></td>
     </tr>
     <Dialog open={open} onOpenChange={(next) => { if (!next && open) onToggle(); }}>
       <DialogContent className="left-auto right-0 top-0 h-dvh max-h-none w-full max-w-[620px] translate-x-0 translate-y-0 content-start rounded-none border-0 p-7 sm:max-w-[620px]">
-        <DialogHeader><DialogTitle>请求详情</DialogTitle><DialogDescription>TraceID: {log.trace_id}</DialogDescription></DialogHeader>
-        <div className="flex items-center justify-between gap-3"><Badge variant={log.error ? "destructive" : "secondary"}>{log.status_code ?? "未知状态"} · {log.is_stream ? "流式响应" : "非流式响应"}</Badge><Button variant="outline" size="sm" onClick={async () => { try { await navigator.clipboard.writeText(log.trace_id); toast.success("已复制 Trace ID"); } catch { toast.error("复制失败，请手动复制 Trace ID"); } }}><Copy />复制 ID</Button></div>
-        <dl className="space-y-4 text-xs">{[["请求时间", new Date(log.created_at * 1000).toLocaleString()], ["调用密钥", log.key_name ?? "-"], ["协议", log.protocol], ["角色", log.role ?? "auto"], ["请求模型", log.request_model ?? "-"], ["上游模型", log.upstream_model ?? "-"], ["渠道", log.channel_name ?? "-"], ["本地会话", log.session_id ?? "-"], ["缓存读取", log.cache_read_tokens ?? 0], ["缓存创建", log.cache_creation_tokens ?? 0], ["费用", formatUsd(log.total_cost_usd ?? 0)], ["延迟", `${log.latency_ms}ms`], ["兜底", log.fallback ? "是" : "否"]].map(([label, value]) => <div key={label} className="flex justify-between gap-6"><dt className="shrink-0 text-muted-foreground">{label}</dt><dd className="break-all text-right font-medium">{value}</dd></div>)}</dl>
+        <DialogHeader><DialogTitle className="text-2xl">请求详情</DialogTitle><DialogDescription className="break-all pr-6">TraceID: {log.trace_id}</DialogDescription></DialogHeader>
+
+<DialogBody className="space-y-5"><div className="flex items-center justify-between gap-3 rounded-xl bg-background p-4"><StatusBadge semantic={httpStatusSemantic(log.status_code ?? 0)}>{log.status_code ?? "未知状态"} · {log.is_stream ? "流式响应" : "非流式响应"}</StatusBadge><Button variant="outline" size="sm" onClick={async () => { try { await navigator.clipboard.writeText(log.trace_id); toast.success("已复制 Trace ID"); } catch { toast.error("复制失败，请手动复制 Trace ID"); } }}><Copy />复制 ID</Button></div>
+        <dl className="space-y-4 text-xs">{[["请求时间", new Date(log.created_at * 1000).toLocaleString()], ["客户端协议", log.protocol], ["调用密钥", log.key_name ?? "-"], ["请求模型", log.request_model ?? "-"], ["角色 / 上游", `${roleLabel(log.role ?? "auto")} → ${log.channel_name ?? "-"}`], ["上游模型", log.upstream_model ?? "-"]].map(([label, value]) => <div key={label} className="flex justify-between gap-6"><dt className="shrink-0 text-muted-foreground">{label}</dt><dd className="min-w-0 break-all text-right font-medium">{value}</dd></div>)}</dl>
+        <dl title={`Token: ${(log.input_tokens + log.output_tokens).toLocaleString()}`} aria-label="本次用量" className="grid grid-cols-3 gap-3">{[["Token", formatTokenAmount(log.input_tokens + log.output_tokens)], ["总延迟", `${log.latency_ms} ms`], ["估算费用", formatUsd(log.total_cost_usd ?? 0)]].map(([label, value]) => <div key={label} className="min-w-0 rounded-2xl bg-background p-4"><dt className="text-[11px] text-muted-foreground">{label}</dt><dd className="mt-2 break-all text-lg font-semibold tabular-nums">{value}</dd></div>)}</dl>
         {log.error && <p role="alert" className="rounded-xl bg-destructive/5 p-4 text-sm text-destructive">{log.error}</p>}
-        <div className="info-banner"><ShieldCheck className="h-4 w-4 shrink-0 text-primary" /><p className="text-xs leading-6">日志内容已经过凭据过滤。{log.sanitized ? "本次请求已执行安全脱敏。" : "请勿将业务日志公开分享。"}{log.risk_summary}</p></div>
         <SegmentedControl value={detailTab} onChange={setDetailTab} label="请求详情内容" options={[{ value: "request", label: "请求内容" }, { value: "response", label: "响应内容" }, { value: "security", label: "安全发现" }]} />
-        {detailTab === "security" ? <FindingsPanel logId={log.id} /> : <pre className="overflow-auto whitespace-pre-wrap break-all rounded-xl bg-background p-5 font-mono text-xs leading-7">{detailTab === "request" ? prettyJson(log.request_body) : log.response_body ? prettyJson(log.response_body) : "(无响应体 / 流式)"}</pre>}
-        {log.tool_calls && <details className="rounded-xl bg-background p-4 text-xs"><summary className="cursor-pointer font-medium">工具调用</summary><pre className="mt-3 overflow-auto whitespace-pre-wrap break-all">{prettyJson(log.tool_calls)}</pre></details>}
+        <div className="info-banner"><ShieldCheck className="h-4 w-4 shrink-0 text-primary" /><p className="text-xs leading-6">日志内容已经过凭据过滤。{log.sanitized ? "本次请求已执行安全脱敏。" : "请勿将业务日志公开分享。"}{log.risk_summary}</p></div>
+        {detailTab === "security" ? <FindingsPanel logId={log.id} /> : <pre className="max-h-[360px] overflow-auto whitespace-pre-wrap break-all rounded-xl bg-background p-5 font-mono text-xs leading-6">{detailTab === "request" ? prettyJson(log.request_body) : log.response_body ? prettyJson(log.response_body) : "(无响应体 / 流式)"}</pre>}
+        <details className="rounded-xl bg-background p-4 text-xs"><summary className="cursor-pointer font-medium">更多请求信息</summary><dl className="mt-4 space-y-3">{[["本地会话", log.session_id ?? "-"], ["输入 Token", log.input_tokens], ["输出 Token", log.output_tokens], ["缓存读取", log.cache_read_tokens ?? 0], ["缓存创建", log.cache_creation_tokens ?? 0], ["兜底", log.fallback ? "是" : "否"]].map(([label, value]) => <div key={label} className="flex justify-between gap-4"><dt className="shrink-0 text-muted-foreground">{label}</dt><dd title={typeof value === "number" ? value.toLocaleString() : undefined} className="min-w-0 break-all text-right">{typeof value === "number" ? formatTokenAmount(value) : value}</dd></div>)}</dl></details>
+        {log.tool_calls && <details className="rounded-xl bg-background p-4 text-xs"><summary className="cursor-pointer font-medium">工具调用</summary><pre className="mt-3 overflow-auto whitespace-pre-wrap break-all">{prettyJson(log.tool_calls)}</pre></details>}</DialogBody>
+
       </DialogContent>
     </Dialog>
   </Fragment>;
@@ -234,6 +242,9 @@ export default function LogsPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [openSession, setOpenSession] = useState<string | null>(null);
   const [view, setView] = useState<"flat" | "session">("flat");
+  const [moreFilters, setMoreFilters] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [trendOpen, setTrendOpen] = useState(false);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [secs, setSecs] = useRefreshInterval("logs-refresh");
   const [error, setError] = useState<string | null>(null);
@@ -416,11 +427,12 @@ export default function LogsPage() {
       <PageHeader
         title="请求日志"
         description="查看网关请求记录、安全风险与调用趋势，可按会话分组浏览"
+        navigationAction={<div className="flex flex-wrap items-center gap-2"><Button variant="outline" size="sm" onClick={() => setMaintenanceOpen(true)}>日志保留与清理</Button><Button variant="outline" size="sm" onClick={() => setView(view === "flat" ? "session" : "flat")}>{view === "flat" ? <List /> : <Layers />}{view === "flat" ? "按会话分组" : "平铺列表"}</Button><Button variant="outline" size="sm" onClick={() => setTrendOpen(true)}>趋势与分布</Button></div>}
         action={
           <RefreshControls
             secs={secs}
             onSecsChange={setSecs}
-            onRefresh={() => setRefreshNonce((n) => n + 1)}
+            onRefresh={() => { setRefreshNonce((n) => n + 1); window.dispatchEvent(new Event(GATEWAY_REFRESH_EVENT)); }}
           />
         }
       />
@@ -430,171 +442,36 @@ export default function LogsPage() {
         </div>
       )}
 
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">筛选</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap gap-2">
-            <Input
-              className="w-56"
-              placeholder="搜索 模型/渠道/TraceID/密钥"
-              value={filter.keyword || ""}
-              onChange={(e) => updateFilter({ keyword: e.target.value || undefined })}
-            />
-            <select
-              className={selectCls}
-              value={filter.channel_id || ""}
-              onChange={(e) => updateFilter({ channel_id: e.target.value || undefined })}
-            >
-              <option value="">全部渠道</option>
-              {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.api_key_id || ""}
-              onChange={(e) => updateFilter({ api_key_id: e.target.value || undefined })}
-            >
-              <option value="">全部密钥</option>
-              {apiKeys.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.role || ""}
-              onChange={(e) => updateFilter({ role: e.target.value || undefined })}
-            >
-              <option value="">全部角色</option>
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.risk_level || ""}
-              onChange={(e) => updateFilter({ risk_level: e.target.value || undefined })}
-            >
-              <option value="">全部风险</option>
-              {RISK_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.status || ""}
-              onChange={(e) => updateFilter({ status: e.target.value as LogFilter["status"] || undefined })}
-            >
-              {STATUS_OPTIONS.map((s) => <option key={s.label} value={s.value || ""}>{s.label}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.is_stream === undefined ? "" : String(filter.is_stream)}
-              onChange={(e) => {
-                const v = e.target.value;
-                updateFilter({ is_stream: v === "" ? undefined : v === "true" });
-              }}
-            >
-              {STREAM_OPTIONS.map((s) => <option key={s.label} value={s.value === undefined ? "" : String(s.value)}>{s.label}</option>)}
-            </select>
-            <select
-              className={selectCls}
-              value={filter.session_provider || ""}
-              onChange={(e) => updateFilter({ session_provider: e.target.value || undefined })}
-            >
-              {SESSION_PROVIDERS.map((p) => <option key={p.value || "all"} value={p.value}>{p.label}</option>)}
-            </select>
-            <Input
-              className="w-48"
-              placeholder="Session ID"
-              value={filter.session_id || ""}
-              onChange={(e) => updateFilter({ session_id: e.target.value || undefined })}
-            />
-            <UsageDateRangePicker
-              selection={rangeSel}
-              onApply={onRangeApply}
-              triggerLabel={rangeLabel}
-            />
-            <Button onClick={() => onSearch()}>
-              <Search className="h-4 w-4" />
-              查询
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {stats && (
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">总调用</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{stats.total_calls}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">总 Token</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{totalTokens.toLocaleString()}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">成功率</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{successRate !== null ? `${successRate}%` : "—"}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">风险分布</div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {stats.risk_distribution.length === 0 && <span className="text-xs text-muted-foreground">无</span>}
-              {stats.risk_distribution.map(([level, count]) => (
-                <span key={level} className={cn("rounded px-1 text-xs", riskBadgeClass(level))}>{level}: {count}</span>
-              ))}
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">估算费用</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{formatUsd(stats.cost ?? 0)}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">缓存命中率</div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{cacheHitRate.toFixed(1)}%</div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${Math.min(100, cacheHitRate)}%` }}
-              />
-            </div>
-          </Card>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-2.5" aria-label="日志筛选">
+        <UsageDateRangePicker selection={rangeSel} onApply={onRangeApply} triggerLabel={rangeLabel} />
+        <div className="relative w-full sm:w-[310px]"><Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" aria-label="搜索日志" placeholder="模型、渠道、Trace ID 或密钥" value={filter.keyword || ""} onChange={(e) => updateFilter({ keyword: e.target.value || undefined })} onKeyDown={(e) => e.key === "Enter" && onSearch()} /></div>
+        <FilterSelect label="渠道筛选" value={filter.channel_id || ""} onChange={value => updateFilter({ channel_id: value || undefined })} options={[{ value: "", label: "全部渠道" }, ...channels.map(c => ({ value: c.id, label: c.name }))]} />
+        <FilterSelect label="状态筛选" value={filter.status || ""} onChange={value => updateFilter({ status: value as LogFilter["status"] || undefined })} options={STATUS_OPTIONS.map(v => ({ value: v.value || "", label: v.label }))} />
+        <Button variant="outline" size="sm" aria-expanded={moreFilters} aria-controls="advanced-log-filters" onClick={() => setMoreFilters(!moreFilters)}>更多筛选</Button>
+        <Button size="sm" onClick={() => onSearch()}><Search />查询</Button>
+      </div>
+      {moreFilters && <div id="advanced-log-filters" className="flex flex-wrap gap-3 rounded-xl bg-card p-4">
+        <FilterSelect label="密钥筛选" value={filter.api_key_id || ""} onChange={value => updateFilter({ api_key_id: value || undefined })} options={[{ value: "", label: "全部密钥" }, ...apiKeys.map(k => ({ value: k.id, label: k.name }))]} />
+        <FilterSelect label="角色筛选" value={filter.role || ""} onChange={value => updateFilter({ role: value || undefined })} options={[{ value: "", label: "全部角色" }, ...ROLES.map(r => ({ value: r, label: roleLabel(r) }))]} />
+        <FilterSelect label="风险筛选" value={filter.risk_level || ""} onChange={value => updateFilter({ risk_level: value || undefined })} options={[{ value: "", label: "全部风险" }, ...RISK_LEVELS.map(r => ({ value: r, label: r }))]} />
+        <FilterSelect label="流式筛选" value={filter.is_stream === undefined ? "" : String(filter.is_stream)} onChange={value => updateFilter({ is_stream: value === "" ? undefined : value === "true" })} options={STREAM_OPTIONS.map(v => ({ value: v.value === undefined ? "" : String(v.value), label: v.label }))} />
+        <FilterSelect label="会话来源" value={filter.session_provider || ""} onChange={value => updateFilter({ session_provider: value || undefined })} options={SESSION_PROVIDERS} />
+        <Input className="w-full sm:w-48" aria-label="会话 ID" placeholder="Session ID" value={filter.session_id || ""} onChange={(e) => updateFilter({ session_id: e.target.value || undefined })} />
+        {stats && <p className="w-full text-xs text-muted-foreground">风险分布：{stats.risk_distribution.map(([level, count]) => `${level} ${count}`).join(" · ") || "无"}</p>}
+      </div>}
+      {stats && <dl aria-label="范围内统计" className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+        {[["调用量", stats.total_calls.toLocaleString()], ["成功率", successRate !== null ? `${successRate}%` : "—"], ["真实 Token", formatTokenAmount(totalTokens)], ["缓存命中率", `${cacheHitRate.toFixed(1)}%`], ["估算费用", formatUsd(stats.cost ?? 0)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd title={label === "真实 Token" ? totalTokens.toLocaleString() : undefined} className="mt-2 text-[28px] font-semibold tracking-tight tabular-nums">{value}</dd></div>)}
+      </dl>}
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base">日志列表</CardTitle>
-          <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
-            <button
-              onClick={() => setView("flat")}
-              className={cn(
-                "flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors",
-                view === "flat"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <List className="h-3.5 w-3.5" />
-              平铺列表
-            </button>
-            <button
-              onClick={() => setView("session")}
-              className={cn(
-                "flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors",
-                view === "session"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Layers className="h-3.5 w-3.5" />
-              按会话分组
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="p-0">
           {data.items.length === 0 ? (
             <EmptyState
               title="暂无日志"
               description="当前筛选条件下没有请求日志，调整筛选条件后点击「查询」"
             />
           ) : view === "flat" ? (
-            <div className="overflow-x-auto overflow-x-auto rounded-xl border border-border/60">
+            <div className="overflow-x-auto">
               <table className="data-table w-full text-sm">
                 <LogTableHeader />
                 <tbody>
@@ -610,7 +487,7 @@ export default function LogsPage() {
               </table>
             </div>
           ) : (
-            <div className="overflow-x-auto overflow-x-auto rounded-xl border border-border/60">
+            <div className="overflow-x-auto">
               <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
@@ -671,7 +548,7 @@ export default function LogsPage() {
                             {new Date(last.created_at * 1000).toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {roles.length ? roles.join(" / ") : "-"}
+                            {roles.length ? roles.map(roleLabel).join(" / ") : "-"}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {statuses.length ? statuses.join(" / ") : "-"}
@@ -685,7 +562,7 @@ export default function LogsPage() {
                         {expanded && (
                           <tr className="border-b border-border bg-muted/30">
                             <td colSpan={7} className="px-4 py-3">
-                              <div className="overflow-x-auto overflow-x-auto rounded-xl border border-border/60 bg-card">
+                              <div className="overflow-x-auto bg-card">
                                 <table className="data-table w-full text-sm">
                                   <LogTableHeader />
                                   <tbody>
@@ -711,7 +588,7 @@ export default function LogsPage() {
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/60 p-4 text-xs text-muted-foreground">
             <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
               上一页
             </Button>
@@ -729,7 +606,8 @@ export default function LogsPage() {
           </div>
         </CardContent>
       </Card>
-      <details className="rounded-2xl bg-card p-5"><summary className="cursor-pointer text-sm font-semibold">趋势与分布</summary><div className="mt-5">
+      <Dialog open={trendOpen} onOpenChange={setTrendOpen}><DialogContent className="sm:max-w-4xl"><DialogHeader><DialogTitle>趋势与分布</DialogTitle><DialogDescription>当前筛选范围内的调用趋势与排行。</DialogDescription></DialogHeader>
+<DialogBody className="space-y-5"><div>
       {stats && (
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           <Card className="p-4">
@@ -782,11 +660,13 @@ export default function LogsPage() {
         </CardContent>
       </Card>
 
-      </div></details>
-      <details className="rounded-2xl bg-card p-5"><summary className="cursor-pointer text-sm font-semibold">日志保留与清理</summary><div className="mt-5">
+      </div></DialogBody>
+</DialogContent></Dialog>
+      <Dialog open={maintenanceOpen} onOpenChange={setMaintenanceOpen}><DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle>日志清理</DialogTitle><DialogDescription>设置保留天数，或在二次确认后清理已有记录。</DialogDescription></DialogHeader>
+<DialogBody className="space-y-5"><div>
       <Card className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">日志清理</CardTitle>
+          <CardTitle className="text-base">保留策略</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -803,7 +683,7 @@ export default function LogsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="text-orange-600"
+              className="text-warning"
               onClick={onDeleteBefore}
             >
               删除该日之前
@@ -835,7 +715,9 @@ export default function LogsPage() {
         </CardContent>
       </Card>
 
-      </div></details>
+      </div></DialogBody>
+</DialogContent></Dialog>
+      <p className="text-xs leading-relaxed text-muted-foreground">更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。</p>
     </div>
   );
 }

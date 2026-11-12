@@ -75,9 +75,8 @@ describe("KnowledgePage", () => {
     ]);
     render(<KnowledgePage />);
     fireEvent.click(screen.getByRole("button", { name: "创建知识库" }));
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("知识库名称")).toBeInTheDocument()
-    );
+    expect(await screen.findByPlaceholderText("知识库名称")).toBeInTheDocument();
+    expect(screen.getByRole("dialog").querySelector("[data-dialog-body]")).not.toContainElement(screen.getByRole("button", { name: "新建" }));
     fireEvent.change(screen.getByPlaceholderText("知识库名称"), {
       target: { value: "新库" },
     });
@@ -202,6 +201,7 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
     );
+    fireEvent.click(screen.getByText("知识库设置"));
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     expect(
       await screen.findByRole("heading", { name: "编辑知识库" })
@@ -232,6 +232,7 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
     );
+    fireEvent.click(screen.getByText("知识库设置"));
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     await screen.findByRole("heading", { name: "编辑知识库" });
     fireEvent.change(screen.getByDisplayValue("text-embedding-3-small"), {
@@ -255,6 +256,7 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument()
     );
+    fireEvent.click(screen.getByText("知识库设置"));
     fireEvent.click(screen.getByRole("button", { name: "删除" }));
     expect(
       await screen.findByRole("heading", { name: "删除知识库" })
@@ -265,41 +267,23 @@ describe("KnowledgePage", () => {
     );
   });
 
-  it("行内子元素上的 Enter 不触发行选中，行自身的 Enter 仍选中", async () => {
-    mockedApi.listKbs.mockResolvedValue([
-      kb(),
-      kb({ id: "kb2", name: "第二库" }),
-    ]);
+  it("知识库使用独立选择按钮，切换库不触发设置操作", async () => {
+    mockedApi.listKbs.mockResolvedValue([kb(), kb({ id: "kb2", name: "第二库" })]);
     render(<KnowledgePage />);
-    // 首库在列表加载后自动选中
-    await waitFor(() =>
-      expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb1")
-    );
-
-    const row2 = screen.getByText("第二库").closest("tr") as HTMLTableRowElement;
-    const editBtn = within(row2).getByRole("button", { name: "编辑" });
-
-    // 编辑按钮上的 Enter：行处理器不得接管（否则 preventDefault 吞掉按钮的键盘激活）
-    const ev = createEvent.keyDown(editBtn, { key: "Enter" });
-    const preventDefault = vi.spyOn(ev, "preventDefault");
-    fireEvent(editBtn, ev);
-    expect(preventDefault).not.toHaveBeenCalled();
-    expect(mockedApi.listDocuments).not.toHaveBeenCalledWith("kb2");
-    expect(screen.queryByText("上传文档到「第二库」")).not.toBeInTheDocument();
-
-    // 正向对照：行自身接收 Enter 仍触发选中
-    fireEvent.keyDown(row2, { key: "Enter" });
-    await waitFor(() =>
-      expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb2")
-    );
+    await waitFor(() => expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb1"));
+    const second = screen.getByRole("button", { name: /第二库/ });
+    expect(second).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(second);
+    await waitFor(() => expect(mockedApi.listDocuments).toHaveBeenCalledWith("kb2"));
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    expect(mockedApi.renameKb).not.toHaveBeenCalled();
     expect(screen.getByText("上传文档到「第二库」")).toBeInTheDocument();
   });
 
   it("新建卡片 pristine：新建禁用且无行内错误（role=alert）", async () => {
     render(<KnowledgePage />);
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("知识库名称")).toBeInTheDocument()
-    );
+    fireEvent.click(screen.getByRole("button", { name: "创建知识库" }));
+    expect(await screen.findByPlaceholderText("知识库名称")).toBeInTheDocument();
 
     // DSH touched 语义：pristine 不喊错，仅新建禁用
     expect(screen.getByRole("button", { name: "新建" })).toBeDisabled();
@@ -308,9 +292,8 @@ describe("KnowledgePage", () => {
 
   it("新建卡片名称失焦出现行内错误；补全后新建恢复可用", async () => {
     render(<KnowledgePage />);
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("知识库名称")).toBeInTheDocument()
-    );
+    fireEvent.click(screen.getByRole("button", { name: "创建知识库" }));
+    expect(await screen.findByPlaceholderText("知识库名称")).toBeInTheDocument();
 
     fireEvent.blur(screen.getByPlaceholderText("知识库名称"));
     expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
@@ -329,6 +312,7 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
     );
+    fireEvent.click(screen.getByText("知识库设置"));
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     await screen.findByRole("heading", { name: "编辑知识库" });
 
@@ -337,6 +321,7 @@ describe("KnowledgePage", () => {
 
     const nameInput = screen.getByDisplayValue("文档库");
     fireEvent.change(nameInput, { target: { value: "" } });
+    fireEvent.blur(nameInput);
     expect(screen.getByText("名称不能为空")).toHaveAttribute("role", "alert");
     expect(screen.getByRole("button", { name: "应用" })).toBeDisabled();
 
@@ -356,6 +341,7 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑" })).toBeInTheDocument()
     );
+    fireEvent.click(screen.getByText("知识库设置"));
     fireEvent.click(screen.getByRole("button", { name: "编辑" }));
     await screen.findByRole("heading", { name: "编辑知识库" });
 

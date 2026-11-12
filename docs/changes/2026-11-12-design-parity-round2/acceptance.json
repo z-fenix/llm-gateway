@@ -1,0 +1,3026 @@
+[
+  {
+    "name": "overview-light-1440",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 00:00\n11-12 03:00\n11-12 06:00\n11-12 09:00\n11-12 12:00\n11-12 15:00\n11-12 18:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "channels-light-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "keys-light-1440",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "logs-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "sessions-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 24 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "knowledge-light-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "security-light-1440",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "settings-light-1440",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "overview-dark-1440",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 00:00\n11-12 03:00\n11-12 06:00\n11-12 09:00\n11-12 12:00\n11-12 15:00\n11-12 18:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "channels-dark-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "keys-dark-1440",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "logs-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "sessions-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 25 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "knowledge-dark-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "security-dark-1440",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "settings-dark-1440",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "overview-light-1024",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 01:00\n11-12 04:00\n11-12 07:00\n11-12 10:00\n11-12 13:00\n11-12 16:00\n11-12 19:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "channels-light-1024",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "keys-light-1024",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "logs-light-1024",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "sessions-light-1024",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 26 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "knowledge-light-1024",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "security-light-1024",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "settings-light-1024",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "overview-dark-1024",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 01:00\n11-12 04:00\n11-12 07:00\n11-12 10:00\n11-12 13:00\n11-12 16:00\n11-12 19:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "channels-dark-1024",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "keys-dark-1024",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "logs-dark-1024",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "sessions-dark-1024",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 26 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "knowledge-dark-1024",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "security-dark-1024",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "settings-dark-1024",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "overview-light-768",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 02:00\n11-12 07:00\n11-12 12:00\n11-12 17:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "channels-light-768",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "keys-light-768",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "logs-light-768",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "sessions-light-768",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 27 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "knowledge-light-768",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "security-light-768",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "settings-light-768",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "overview-dark-768",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 02:00\n11-12 07:00\n11-12 12:00\n11-12 17:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "channels-dark-768",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "keys-dark-768",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "logs-dark-768",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "sessions-dark-768",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 27 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "knowledge-dark-768",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "security-dark-768",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "settings-dark-768",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "overview-light-390",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 01:00\n11-12 11:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "channels-light-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "keys-light-390",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "logs-light-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "sessions-light-390",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 27 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "knowledge-light-390",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "security-light-390",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "settings-light-390",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "overview-dark-390",
+    "url": "http://127.0.0.1:5174/#/",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "运行概览"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "运行概览\n\n一处掌握本地网关的运行状态与今日用量。\n\n刷新\n关闭\n当天\n今日统计 · 2026/11/12 · 00:00 起\n手动刷新\n今日请求\n\n42,608\n\n累计 142,608 次\n\n真实消耗 Token\n\n31.6M\n\n已去重输入中的缓存消耗\n\n平均延迟\n\n842 ms\n\n全量请求平均响应延迟\n\n今日估算费用\n\n$68.2400\n\n累计估算 $287.5600\n\n请求趋势\n调用量\nToken\n成功率\n风险分布\n缓存\n成本\n\n趋势范围独立于上方今日统计，可切换日期与维度。\n\n11-12 01:00\n11-12 11:00\n11-12 22:00\n0\n300\n600\n900\n1.2k\n查看数据\n运行摘要\n\n今日缓存命中率\n\n38.4%\n\n按输入与缓存 Token 计算\n\n活跃渠道\n4\n今日缓存命中\n14.98M\n累计估算费用\n$287.5600\n查看安全检测配置\n连接你的开发工具\nCLI 接入配置\n网关地址\nhttp://127.0.0.1:8777\n兼容协议\nOpenAI Chat / Responses · Anthropic · MCP\n\n使用本地 API 密钥访问网关；上游渠道凭据保持加密存储。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "channels-dark-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "keys-dark-390",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "logs-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "sessions-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 28 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "knowledge-dark-390",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "security-dark-390",
+    "url": "http://127.0.0.1:5174/#/security",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "安全审计"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "安全审计\n\n配置内容安全检测规则、扫描范围与处置模式。\n\n管理自定义规则\n安全策略\n开启安全审计后，网关将对进出请求执行内容安全检测\n启用安全审计\n工作模式\n审计模式\n告警模式\n脱敏模式\n阻断模式\n阻断严重风险\n扫描请求\n扫描响应\n扫描 Unicode 编码\n扫描工具调用\n扫描网络相关\n自动脱敏密钥\n高级扫描设置\n明确保护边界\n\n扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。\n\n严重风险强制阻断当前已启用。规则动作与全局模式取严后生效。\n查看风险日志\n检测规则\n内置检测规则可单独启停，并调整风险级别\n重置默认\n敏感凭据\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n提示词注入\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh\n危险命令\n\n检测请求与响应中的潜在风险\n\nhigh\nhigh",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "settings-dark-390",
+    "url": "http://127.0.0.1:5174/#/settings",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "设置"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "设置\n\n管理本地网关、CLI 接入、协议兼容与配置备份。\n\n常规\nCLI 接入\n协议整流\n模型定价\n配置备份\n全部设置\n本地网关\n修改首选端口后点击“立即重启”可让网关即刻改用新端口，无需重启应用；有效范围为 8777-8787\n当前绑定地址:\n127.0.0.1:8777\n首选端口\n保存\n应用行为\n关闭时最小化到托盘\n\n保持网关在后台运行，不中断本地工具连接。\n\n更多配置\n\n协议整流\n\nThinking 修复、图片降级与文本模型兼容\n\n配置\n\n模型定价\n\n输入、输出、缓存读取与写入的估算单价\n\n配置\n\n配置备份\n\n导入导出前预览影响范围，避免覆盖现有配置\n\n配置",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "filter-open-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "options": 6,
+      "menuVisible": true,
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "filter-select-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\nOpenAI 官方\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "selection": "OpenAI 官方"
+    }
+  },
+  {
+    "name": "model-fetch-light-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模",
+      "claude-sonnet-4-5gpt-4.1deepseek-chatgemini-2.5-protest-modelclaude-opus-4-1claude-haiku-4-5claude-3"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "options": 9,
+      "visible": true,
+      "bodyScroll": false
+    }
+  },
+  {
+    "name": "model-select-light-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "value": "gpt-4.1"
+    }
+  },
+  {
+    "name": "session-message-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 28 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/12 22:12:32\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\nUSER\n22:12\n请检查角色路由配置，确保失败后能自动回退。\nTOOL\n22:12\nsrc/router/config.ts\n读取完成：priority = 100, cooldown = 60s\n这是合成工具输出，不会读取真实本地文件。\nASSISTANT\n22:12\n已检查路由优先级与回退配置。接下来验证熔断阈值和冷却时间，并补充相关测试。\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "完善角色路由与自动回退",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ],
+      "path": "D:/workspace/llm-gateway"
+    }
+  },
+  {
+    "name": "filter-open-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "options": 6,
+      "menuVisible": true,
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "filter-select-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\nOpenAI 官方\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "selection": "OpenAI 官方"
+    }
+  },
+  {
+    "name": "model-fetch-dark-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模",
+      "claude-sonnet-4-5gpt-4.1deepseek-chatgemini-2.5-protest-modelclaude-opus-4-1claude-haiku-4-5claude-3"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "options": 9,
+      "visible": true,
+      "bodyScroll": false
+    }
+  },
+  {
+    "name": "model-select-dark-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "value": "gpt-4.1"
+    }
+  },
+  {
+    "name": "session-message-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 28 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/12 22:12:32\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\nUSER\n22:12\n请检查角色路由配置，确保失败后能自动回退。\nTOOL\n22:12\nsrc/router/config.ts\n读取完成：priority = 100, cooldown = 60s\n这是合成工具输出，不会读取真实本地文件。\nASSISTANT\n22:12\n已检查路由优先级与回退配置。接下来验证熔断阈值和冷却时间，并补充相关测试。\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "完善角色路由与自动回退",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ],
+      "path": "D:/workspace/llm-gateway"
+    }
+  },
+  {
+    "name": "filter-open-light-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "options": 6,
+      "menuVisible": true,
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "filter-select-light-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\nOpenAI 官方\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "selection": "OpenAI 官方"
+    }
+  },
+  {
+    "name": "model-fetch-light-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模",
+      "claude-sonnet-4-5gpt-4.1deepseek-chatgemini-2.5-protest-modelclaude-opus-4-1claude-haiku-4-5claude-3"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "options": 9,
+      "visible": true,
+      "bodyScroll": true
+    }
+  },
+  {
+    "name": "model-select-light-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "value": "gpt-4.1"
+    }
+  },
+  {
+    "name": "session-message-light-390",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 28 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/12 22:12:32\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\nUSER\n22:12\n请检查角色路由配置，确保失败后能自动回退。\nTOOL\n22:12\nsrc/router/config.ts\n读取完成：priority = 100, cooldown = 60s\n这是合成工具输出，不会读取真实本地文件。\nASSISTANT\n22:12\n已检查路由优先级与回退配置。接下来验证熔断阈值和冷却时间，并补充相关测试。\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "完善角色路由与自动回退",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ],
+      "path": "D:/workspace/llm-gateway"
+    }
+  },
+  {
+    "name": "filter-open-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "options": 6,
+      "menuVisible": true,
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "filter-select-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\nOpenAI 官方\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "selection": "OpenAI 官方"
+    }
+  },
+  {
+    "name": "model-fetch-dark-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模",
+      "claude-sonnet-4-5gpt-4.1deepseek-chatgemini-2.5-protest-modelclaude-opus-4-1claude-haiku-4-5claude-3"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "options": 9,
+      "visible": true,
+      "bodyScroll": true
+    }
+  },
+  {
+    "name": "model-select-dark-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "value": "gpt-4.1"
+    }
+  },
+  {
+    "name": "session-message-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 29 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/12 22:12:32\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\nUSER\n22:12\n请检查角色路由配置，确保失败后能自动回退。\nTOOL\n22:12\nsrc/router/config.ts\n读取完成：priority = 100, cooldown = 60s\n这是合成工具输出，不会读取真实本地文件。\nASSISTANT\n22:12\n已检查路由优先级与回退配置。接下来验证熔断阈值和冷却时间，并补充相关测试。\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "完善角色路由与自动回退",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ],
+      "path": "D:/workspace/llm-gateway"
+    }
+  },
+  {
+    "name": "long-dialog-light-1440",
+    "url": "http://127.0.0.1:5174/?state=long#/channels",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表内置模型清单，"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "scrollTop": 1067,
+      "headerMoved": 0,
+      "footerBottom": 545,
+      "outerOverflow": "hidden"
+    }
+  },
+  {
+    "name": "long-session-light-1440",
+    "url": "http://127.0.0.1:5174/?state=long#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 29 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "messageScroll": true,
+      "title": "完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ]
+    }
+  },
+  {
+    "name": "long-dialog-dark-1440",
+    "url": "http://127.0.0.1:5174/?state=long#/channels",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表内置模型清单，"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "scrollTop": 1067,
+      "headerMoved": 0,
+      "footerBottom": 545,
+      "outerOverflow": "hidden"
+    }
+  },
+  {
+    "name": "long-session-dark-1440",
+    "url": "http://127.0.0.1:5174/?state=long#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 29 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "messageScroll": true,
+      "title": "完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ]
+    }
+  },
+  {
+    "name": "long-dialog-light-390",
+    "url": "http://127.0.0.1:5174/?state=long#/channels",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表内置模型清单，"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "scrollTop": 1427,
+      "headerMoved": 0,
+      "footerBottom": 545,
+      "outerOverflow": "hidden"
+    }
+  },
+  {
+    "name": "long-session-light-390",
+    "url": "http://127.0.0.1:5174/?state=long#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 29 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "messageScroll": true,
+      "title": "完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ]
+    }
+  },
+  {
+    "name": "long-dialog-dark-390",
+    "url": "http://127.0.0.1:5174/?state=long#/channels",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表内置模型清单，"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t16 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t16 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t16 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t16 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道 · long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-long-channel-\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t16 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "scrollTop": 1427,
+      "headerMoved": 0,
+      "footerBottom": 545,
+      "outerOverflow": "hidden"
+    }
+  },
+  {
+    "name": "long-session-dark-390",
+    "url": "http://127.0.0.1:5174/?state=long#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 29 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "messageScroll": true,
+      "title": "完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-",
+      "roles": [
+        "USER",
+        "TOOL",
+        "ASSISTANT"
+      ]
+    }
+  },
+  {
+    "name": "dialog-prompt-light-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=prompts",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Prompt填写名称与 CLAUDE.md 模板内容名称描述内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n全局模板 · 仅启用一套\n\n启用后写入 ~/.claude/CLAUDE.md，原文件会自动备份。\n\n我的模板\n\n默认开发模板\n\n适用于日常开发与协作\n\n编辑\n删除\n\n代码审查\n\n适用于日常开发与协作\n\n编辑\n删除\n\n技术写作\n\n适用于日常开发与协作\n\n编辑\n删除\n默认开发模板\n\nCLAUDE.md · 修改后保存，不会自动启用\n\n模板设置\n模板内容已保存\n已启用\n保存模板",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Prompt",
+      "scrollHeight": 524,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-mcp-light-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=mcp",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 MCP 服务器填写上游 MCP server 配置，保存后可启用连接名称描述类型stdio命令参数 添加参数环境变量 添加环境变量取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n3 个服务器 · 2 个连接成功\n\n查看本地 MCP 端点\nFilesystem\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nDocumentation\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nBrowser tools\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n未连接\n连接\n测试\n编辑\n删除\n连接成功，才代表可用\n\n启用时启动 MCP client 并完成握手；失败时保留错误信息与重试入口。网关自己的 /mcp 端点用于向外提供知识库工具。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 MCP 服务器",
+      "scrollHeight": 432,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-skill-light-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=skills",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Skill填写名称、目录与 SKILL.md 内容名称描述目录内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n本地 Skills，按需启用。文件写入 ~/.claude/skills/<目录>/SKILL.md，已有内容自动备份。\n\n发现本地 Skills · 0 个（导入与 MCP 同步）\n已安装 Skills\n4 个 Skill · 2 个已启用\n代码审查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-0/SKILL.md\n\n已同步\n编辑\n删除\n前端设计\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-1/SKILL.md\n\n已同步\n编辑\n删除\n知识库检索\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-2/SKILL.md\n\n未同步\n编辑\n删除\n发布检查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-3/SKILL.md\n\n未同步\n编辑\n删除\n\n启用、更新与删除均会写入对应的本地目录；删除前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Skill",
+      "scrollHeight": 608,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-knowledge-light-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "创建知识库配置名称与 Embedding 模型后创建知识库。名称描述Embedding 渠道不指定Embedding 模型取消新建关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "title": "创建知识库",
+      "scrollHeight": 214,
+      "bodyHeight": 214,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-role-light-1440",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "均衡任务（sonnet） 路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增角色路由同一角色可配置多个供应商，请求自动路由，失败切换并熔断角色均衡任务（sonnet）渠道选择渠道上游模型优先级权重熔断阈值（连续失败）冷却时间（秒）取消应用关闭"
+    ],
+    "text": "均衡任务（sonnet） 路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n新增路由\n返回角色概览\n\n匹配模式 *sonnet*\n\n请求数\n12480\nToken\n9.4M\n成功率\n99%\n平均延迟\n842ms\n优先尝试高优先级路由\nAnthropic 主线路\n首选路由\n正常\n编辑\n\nclaude-sonnet-4-5\n\n优先级 100 · 权重 3 · 连续失败 0 次\n\n熔断策略\n\nAnthropic 主线路\n\n连续失败阈值\n冷却时间（秒）\n\n达到阈值后暂时跳过此路由；冷却结束进入半开状态。路由失败后仍可继续尝试全局回退。",
+    "errors": [],
+    "interaction": {
+      "title": "新增角色路由",
+      "scrollHeight": 400,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-rules-light-1440",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "角色识别规则通配符模式映射到模型角色，按优先级匹配。匹配规则与路由通配符模式 → 角色映射；auto 是未匹配占位角色，可绑定渠道/模型新增规则模式角色优先级状态操作*sonnet*均衡任务（sonn",
+      "新增规则通配符模式（如 *sonnet*）匹配请求模型，映射到对应角色匹配模式角色均衡任务（sonnet）优先级启用取消应用关闭"
+    ],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "title": "新增规则",
+      "scrollHeight": 276,
+      "bodyHeight": 276,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-log-drawer-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 22:12:32客户端协议openai调用密钥Claude Code请求模型"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "title": "请求详情",
+      "scrollHeight": 869,
+      "bodyHeight": 466,
+      "headerMoved": 0,
+      "footerVisible": null
+    }
+  },
+  {
+    "name": "all-log-filters-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n测试渠道\n5xx\n更多筛选\n查询\n团队工具\n自动选择（auto）\ncritical\n非流式\nGemini\n\n风险分布：clean 42000 · medium 608\n\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "渠道筛选": "测试渠道",
+      "状态筛选": "5xx",
+      "密钥筛选": "团队工具",
+      "角色筛选": "自动选择（auto）",
+      "风险筛选": "critical",
+      "流式筛选": "非流式",
+      "会话来源": "Gemini"
+    }
+  },
+  {
+    "name": "model-keyboard-light-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "selected": "claude-3-5-haiku-latest",
+      "focused": true,
+      "visible": true
+    }
+  },
+  {
+    "name": "session-refresh-light-1440",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 30 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "labels": [
+        "关闭",
+        "5s",
+        "10s",
+        "30s",
+        "60s"
+      ],
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "dialog-prompt-dark-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=prompts",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Prompt填写名称与 CLAUDE.md 模板内容名称描述内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n全局模板 · 仅启用一套\n\n启用后写入 ~/.claude/CLAUDE.md，原文件会自动备份。\n\n我的模板\n\n默认开发模板\n\n适用于日常开发与协作\n\n编辑\n删除\n\n代码审查\n\n适用于日常开发与协作\n\n编辑\n删除\n\n技术写作\n\n适用于日常开发与协作\n\n编辑\n删除\n默认开发模板\n\nCLAUDE.md · 修改后保存，不会自动启用\n\n模板设置\n模板内容已保存\n已启用\n保存模板",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Prompt",
+      "scrollHeight": 524,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-mcp-dark-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=mcp",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 MCP 服务器填写上游 MCP server 配置，保存后可启用连接名称描述类型stdio命令参数 添加参数环境变量 添加环境变量取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n3 个服务器 · 2 个连接成功\n\n查看本地 MCP 端点\nFilesystem\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nDocumentation\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nBrowser tools\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n未连接\n连接\n测试\n编辑\n删除\n连接成功，才代表可用\n\n启用时启动 MCP client 并完成握手；失败时保留错误信息与重试入口。网关自己的 /mcp 端点用于向外提供知识库工具。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 MCP 服务器",
+      "scrollHeight": 432,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-skill-dark-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=skills",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Skill填写名称、目录与 SKILL.md 内容名称描述目录内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n本地 Skills，按需启用。文件写入 ~/.claude/skills/<目录>/SKILL.md，已有内容自动备份。\n\n发现本地 Skills · 0 个（导入与 MCP 同步）\n已安装 Skills\n4 个 Skill · 2 个已启用\n代码审查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-0/SKILL.md\n\n已同步\n编辑\n删除\n前端设计\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-1/SKILL.md\n\n已同步\n编辑\n删除\n知识库检索\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-2/SKILL.md\n\n未同步\n编辑\n删除\n发布检查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-3/SKILL.md\n\n未同步\n编辑\n删除\n\n启用、更新与删除均会写入对应的本地目录；删除前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Skill",
+      "scrollHeight": 608,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-knowledge-dark-1440",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "创建知识库配置名称与 Embedding 模型后创建知识库。名称描述Embedding 渠道不指定Embedding 模型取消新建关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "title": "创建知识库",
+      "scrollHeight": 214,
+      "bodyHeight": 214,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-role-dark-1440",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "均衡任务（sonnet） 路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增角色路由同一角色可配置多个供应商，请求自动路由，失败切换并熔断角色均衡任务（sonnet）渠道选择渠道上游模型优先级权重熔断阈值（连续失败）冷却时间（秒）取消应用关闭"
+    ],
+    "text": "均衡任务（sonnet） 路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n新增路由\n返回角色概览\n\n匹配模式 *sonnet*\n\n请求数\n12480\nToken\n9.4M\n成功率\n99%\n平均延迟\n842ms\n优先尝试高优先级路由\nAnthropic 主线路\n首选路由\n正常\n编辑\n\nclaude-sonnet-4-5\n\n优先级 100 · 权重 3 · 连续失败 0 次\n\n熔断策略\n\nAnthropic 主线路\n\n连续失败阈值\n冷却时间（秒）\n\n达到阈值后暂时跳过此路由；冷却结束进入半开状态。路由失败后仍可继续尝试全局回退。",
+    "errors": [],
+    "interaction": {
+      "title": "新增角色路由",
+      "scrollHeight": 400,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-rules-dark-1440",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "角色识别规则通配符模式映射到模型角色，按优先级匹配。匹配规则与路由通配符模式 → 角色映射；auto 是未匹配占位角色，可绑定渠道/模型新增规则模式角色优先级状态操作*sonnet*均衡任务（sonn",
+      "新增规则通配符模式（如 *sonnet*）匹配请求模型，映射到对应角色匹配模式角色均衡任务（sonnet）优先级启用取消应用关闭"
+    ],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "title": "新增规则",
+      "scrollHeight": 276,
+      "bodyHeight": 276,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-log-drawer-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 600,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 22:12:32客户端协议openai调用密钥Claude Code请求模型"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "title": "请求详情",
+      "scrollHeight": 869,
+      "bodyHeight": 466,
+      "headerMoved": 0,
+      "footerVisible": null
+    }
+  },
+  {
+    "name": "all-log-filters-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n测试渠道\n5xx\n更多筛选\n查询\n团队工具\n自动选择（auto）\ncritical\n非流式\nGemini\n\n风险分布：clean 42000 · medium 608\n\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "渠道筛选": "测试渠道",
+      "状态筛选": "5xx",
+      "密钥筛选": "团队工具",
+      "角色筛选": "自动选择（auto）",
+      "风险筛选": "critical",
+      "流式筛选": "非流式",
+      "会话来源": "Gemini"
+    }
+  },
+  {
+    "name": "model-keyboard-dark-1440",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "selected": "claude-3-5-haiku-latest",
+      "focused": true,
+      "visible": true
+    }
+  },
+  {
+    "name": "session-refresh-dark-1440",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 30 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "labels": [
+        "关闭",
+        "5s",
+        "10s",
+        "30s",
+        "60s"
+      ],
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "dialog-prompt-light-390",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=prompts",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Prompt填写名称与 CLAUDE.md 模板内容名称描述内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n全局模板 · 仅启用一套\n\n启用后写入 ~/.claude/CLAUDE.md，原文件会自动备份。\n\n我的模板\n\n默认开发模板\n\n适用于日常开发与协作\n\n编辑\n删除\n\n代码审查\n\n适用于日常开发与协作\n\n编辑\n删除\n\n技术写作\n\n适用于日常开发与协作\n\n编辑\n删除\n默认开发模板\n\nCLAUDE.md · 修改后保存，不会自动启用\n\n模板设置\n模板内容已保存\n已启用\n保存模板",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Prompt",
+      "scrollHeight": 524,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-mcp-light-390",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=mcp",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 MCP 服务器填写上游 MCP server 配置，保存后可启用连接名称描述类型stdio命令参数 添加参数环境变量 添加环境变量取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n3 个服务器 · 2 个连接成功\n\n查看本地 MCP 端点\nFilesystem\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nDocumentation\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nBrowser tools\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n未连接\n连接\n测试\n编辑\n删除\n连接成功，才代表可用\n\n启用时启动 MCP client 并完成握手；失败时保留错误信息与重试入口。网关自己的 /mcp 端点用于向外提供知识库工具。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 MCP 服务器",
+      "scrollHeight": 432,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-skill-light-390",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=skills",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Skill填写名称、目录与 SKILL.md 内容名称描述目录内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n本地 Skills，按需启用。文件写入 ~/.claude/skills/<目录>/SKILL.md，已有内容自动备份。\n\n发现本地 Skills · 0 个（导入与 MCP 同步）\n已安装 Skills\n4 个 Skill · 2 个已启用\n代码审查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-0/SKILL.md\n\n已同步\n编辑\n删除\n前端设计\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-1/SKILL.md\n\n已同步\n编辑\n删除\n知识库检索\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-2/SKILL.md\n\n未同步\n编辑\n删除\n发布检查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-3/SKILL.md\n\n未同步\n编辑\n删除\n\n启用、更新与删除均会写入对应的本地目录；删除前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Skill",
+      "scrollHeight": 608,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-knowledge-light-390",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "创建知识库配置名称与 Embedding 模型后创建知识库。名称描述Embedding 渠道不指定Embedding 模型取消新建关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "title": "创建知识库",
+      "scrollHeight": 380,
+      "bodyHeight": 322,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-role-light-390",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "均衡任务（sonnet） 路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增角色路由同一角色可配置多个供应商，请求自动路由，失败切换并熔断角色均衡任务（sonnet）渠道选择渠道上游模型优先级权重熔断阈值（连续失败）冷却时间（秒）取消应用关闭"
+    ],
+    "text": "均衡任务（sonnet） 路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n新增路由\n返回角色概览\n\n匹配模式 *sonnet*\n\n请求数\n12480\nToken\n9.4M\n成功率\n99%\n平均延迟\n842ms\n优先尝试高优先级路由\nAnthropic 主线路\n首选路由\n正常\n编辑\n\nclaude-sonnet-4-5\n\n优先级 100 · 权重 3 · 连续失败 0 次\n\n熔断策略\n\nAnthropic 主线路\n\n连续失败阈值\n冷却时间（秒）\n\n达到阈值后暂时跳过此路由；冷却结束进入半开状态。路由失败后仍可继续尝试全局回退。",
+    "errors": [],
+    "interaction": {
+      "title": "新增角色路由",
+      "scrollHeight": 424,
+      "bodyHeight": 342,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-rules-light-390",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "角色识别规则通配符模式映射到模型角色，按优先级匹配。匹配规则与路由通配符模式 → 角色映射；auto 是未匹配占位角色，可绑定渠道/模型新增规则模式角色优先级状态操作*sonnet*均衡任务（sonn",
+      "新增规则通配符模式（如 *sonnet*）匹配请求模型，映射到对应角色匹配模式角色均衡任务（sonnet）优先级启用取消应用关闭"
+    ],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "title": "新增规则",
+      "scrollHeight": 276,
+      "bodyHeight": 276,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-log-drawer-light-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 22:12:32客户端协议openai调用密钥Claude Code请求模型"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "title": "请求详情",
+      "scrollHeight": 917,
+      "bodyHeight": 466,
+      "headerMoved": 0,
+      "footerVisible": null
+    }
+  },
+  {
+    "name": "all-log-filters-light-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n测试渠道\n5xx\n更多筛选\n查询\n团队工具\n自动选择（auto）\ncritical\n非流式\nGemini\n\n风险分布：clean 42000 · medium 608\n\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "渠道筛选": "测试渠道",
+      "状态筛选": "5xx",
+      "密钥筛选": "团队工具",
+      "角色筛选": "自动选择（auto）",
+      "风险筛选": "critical",
+      "流式筛选": "非流式",
+      "会话来源": "Gemini"
+    }
+  },
+  {
+    "name": "model-keyboard-light-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "selected": "claude-3-5-haiku-latest",
+      "focused": true,
+      "visible": true
+    }
+  },
+  {
+    "name": "session-refresh-light-390",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 30 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "labels": [
+        "关闭",
+        "5s",
+        "10s",
+        "30s",
+        "60s"
+      ],
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "dialog-prompt-dark-390",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=prompts",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Prompt填写名称与 CLAUDE.md 模板内容名称描述内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n全局模板 · 仅启用一套\n\n启用后写入 ~/.claude/CLAUDE.md，原文件会自动备份。\n\n我的模板\n\n默认开发模板\n\n适用于日常开发与协作\n\n编辑\n删除\n\n代码审查\n\n适用于日常开发与协作\n\n编辑\n删除\n\n技术写作\n\n适用于日常开发与协作\n\n编辑\n删除\n默认开发模板\n\nCLAUDE.md · 修改后保存，不会自动启用\n\n模板设置\n模板内容已保存\n已启用\n保存模板",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Prompt",
+      "scrollHeight": 524,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-mcp-dark-390",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=mcp",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 MCP 服务器填写上游 MCP server 配置，保存后可启用连接名称描述类型stdio命令参数 添加参数环境变量 添加环境变量取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n3 个服务器 · 2 个连接成功\n\n查看本地 MCP 端点\nFilesystem\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nDocumentation\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n已连接\n断开\n测试\n编辑\n删除\nBrowser tools\n\n供开发工具使用的上游 MCP 服务\n\nstdio · npx\n未连接\n连接\n测试\n编辑\n删除\n连接成功，才代表可用\n\n启用时启动 MCP client 并完成握手；失败时保留错误信息与重试入口。网关自己的 /mcp 端点用于向外提供知识库工具。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 MCP 服务器",
+      "scrollHeight": 432,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-skill-dark-390",
+    "url": "http://127.0.0.1:5174/#/knowledge?tab=skills",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增 Skill填写名称、目录与 SKILL.md 内容名称描述目录内容取消应用关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n新增\n知识库\nPrompt\nMCP\nSkills\n\n本地 Skills，按需启用。文件写入 ~/.claude/skills/<目录>/SKILL.md，已有内容自动备份。\n\n发现本地 Skills · 0 个（导入与 MCP 同步）\n已安装 Skills\n4 个 Skill · 2 个已启用\n代码审查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-0/SKILL.md\n\n已同步\n编辑\n删除\n前端设计\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-1/SKILL.md\n\n已同步\n编辑\n删除\n知识库检索\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-2/SKILL.md\n\n未同步\n编辑\n删除\n发布检查\n\n让开发流程更清晰、更可靠\n\n~/.claude/skills/demo-skill-3/SKILL.md\n\n未同步\n编辑\n删除\n\n启用、更新与删除均会写入对应的本地目录；删除前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "title": "新增 Skill",
+      "scrollHeight": 608,
+      "bodyHeight": 362,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-knowledge-dark-390",
+    "url": "http://127.0.0.1:5174/#/knowledge",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "资源"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "创建知识库配置名称与 Embedding 模型后创建知识库。名称描述Embedding 渠道不指定Embedding 模型取消新建关闭"
+    ],
+    "text": "资源\n\n统一管理知识库、Prompt、MCP 服务与 Skills。\n\n创建知识库\n知识库\nPrompt\nMCP\nSkills\n我的知识库\n\n网关开发文档\n\n4 份文档 · 128 个分块\n\n团队 API 规范\n\n4 份文档 · 128 个分块\n\n故障知识库\n\n4 份文档 · 128 个分块\n\n知识库设置\n网关开发文档\n上传文档到「网关开发文档」\n上传文档\n\narchitecture.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\nrouting-guide.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ngateway-api.pdf\n\nPDF · 27.9 KB · 已就绪\n\n32 分块\n删除\n\ntroubleshooting.md\n\nMD · 27.9 KB · 已就绪\n\n32 分块\n删除\n检索测试\n对当前选中的知识库执行相似度检索，验证切片与 Embedding 效果\n检索\n自动注入 RAG\n\n默认知识库：网关开发文档\n将检索结果注入请求系统提示。\n\n配置 RAG",
+    "errors": [],
+    "interaction": {
+      "title": "创建知识库",
+      "scrollHeight": 380,
+      "bodyHeight": 322,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-role-dark-390",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "均衡任务（sonnet） 路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新增角色路由同一角色可配置多个供应商，请求自动路由，失败切换并熔断角色均衡任务（sonnet）渠道选择渠道上游模型优先级权重熔断阈值（连续失败）冷却时间（秒）取消应用关闭"
+    ],
+    "text": "均衡任务（sonnet） 路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n新增路由\n返回角色概览\n\n匹配模式 *sonnet*\n\n请求数\n12480\nToken\n9.4M\n成功率\n99%\n平均延迟\n842ms\n优先尝试高优先级路由\nAnthropic 主线路\n首选路由\n正常\n编辑\n\nclaude-sonnet-4-5\n\n优先级 100 · 权重 3 · 连续失败 0 次\n\n熔断策略\n\nAnthropic 主线路\n\n连续失败阈值\n冷却时间（秒）\n\n达到阈值后暂时跳过此路由；冷却结束进入半开状态。路由失败后仍可继续尝试全局回退。",
+    "errors": [],
+    "interaction": {
+      "title": "新增角色路由",
+      "scrollHeight": 424,
+      "bodyHeight": 342,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-rules-dark-390",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "角色识别规则通配符模式映射到模型角色，按优先级匹配。匹配规则与路由通配符模式 → 角色映射；auto 是未匹配占位角色，可绑定渠道/模型新增规则模式角色优先级状态操作*sonnet*均衡任务（sonn",
+      "新增规则通配符模式（如 *sonnet*）匹配请求模型，映射到对应角色匹配模式角色均衡任务（sonnet）优先级启用取消应用关闭"
+    ],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "title": "新增规则",
+      "scrollHeight": 276,
+      "bodyHeight": 276,
+      "headerMoved": 0,
+      "footerVisible": true
+    }
+  },
+  {
+    "name": "dialog-log-drawer-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 600,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "请求详情TraceID: demo-a7f2-0000-9c31200 · 流式响应复制 ID请求时间2026/11/12 22:12:32客户端协议openai调用密钥Claude Code请求模型"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n全部渠道\n全部状态\n更多筛选\n查询\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "title": "请求详情",
+      "scrollHeight": 917,
+      "bodyHeight": 466,
+      "headerMoved": 0,
+      "footerVisible": null
+    }
+  },
+  {
+    "name": "all-log-filters-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n日志保留与清理\n按会话分组\n趋势与分布\n7d\n测试渠道\n5xx\n更多筛选\n查询\n团队工具\n自动选择（auto）\ncritical\n非流式\nGemini\n\n风险分布：clean 42000 · medium 608\n\n调用量\n42,608\n成功率\n99.2%\n真实 Token\n31.6M\n缓存命中率\n38.4%\n估算费用\n$68.2400\n时间 / Trace\t模型 / 角色\t渠道\t结果\tToken\t延迟\t安全\t详情\n\n\n2026/11/12 22:12:32\n\ndemo-a7f2-0000-9…\n\n\t\n\nclaude-sonnet-4-5\n\n均衡任务（sonnet） · Claude session-demo\n\n\tAnthropic 主线路\t200\t1.34K + 342\t842ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:11:32\n\ndemo-a7f2-0001-9…\n\n\t\n\ngpt-4.1\n\n复杂任务（opus） · Claude session-demo\n\n\tOpenAI 官方\t200\t1.34K + 342\t1042ms\tmedium已脱敏\t详情\n\n\n2026/11/12 22:10:32\n\ndemo-a7f2-0002-9…\n\n\t\n\ndeepseek-chat\n\n通用任务（fable） · Claude session-demo\n\n\tDeepSeek 备用\t429\t1.34K + 342\t1242ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:09:32\n\ndemo-a7f2-0003-9…\n\n\t\n\ngemini-2.5-pro\n\n轻量任务（haiku） · Claude session-demo\n\n\tGemini 多模态\t200\t1.34K + 342\t1442ms\tclean已脱敏\t详情\n\n\n2026/11/12 22:08:32\n\ndemo-a7f2-0004-9…\n\n\t\n\ntest-model\n\n图像任务（image） · Claude session-demo\n\n\t测试渠道\t200\t1.34K + 342\t1642ms\tclean已脱敏\t详情\n上一页\n第 1 页 / 共 1 页（5 条）\n下一页\n\n更多筛选：角色、API 密钥、风险级别、流式模式、会话来源。点击请求查看脱敏后的请求与响应。",
+    "errors": [],
+    "interaction": {
+      "渠道筛选": "测试渠道",
+      "状态筛选": "5xx",
+      "密钥筛选": "团队工具",
+      "角色筛选": "自动选择（auto）",
+      "风险筛选": "critical",
+      "流式筛选": "非流式",
+      "会话来源": "Gemini"
+    }
+  },
+  {
+    "name": "model-keyboard-dark-390",
+    "url": "http://127.0.0.1:5174/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "编辑渠道修改渠道信息并保存名称供应商claude上游协议Anthropic MessagesBase URLAPI Key凭据将加密存储在本地，日志不会记录原始密钥。支持模型获取模型列表已从上游加载模"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "selected": "claude-3-5-haiku-latest",
+      "focused": true,
+      "visible": true
+    }
+  },
+  {
+    "name": "session-refresh-dark-390",
+    "url": "http://127.0.0.1:5174/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 31 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n选择一个会话\n\n在左侧选择会话，查看消息时间线与工具调用。",
+    "errors": [],
+    "interaction": {
+      "labels": [
+        "关闭",
+        "5s",
+        "10s",
+        "30s",
+        "60s"
+      ],
+      "tag": "BUTTON"
+    }
+  },
+  {
+    "name": "key-management-dark-1440",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "管理密钥查看使用情况，修改名称与 Token 配额。••••••••0000查看密钥复制密钥累计调用2,600累计 Token1.8M名称Token 配额支持 K / M / B / T、万 / 亿，"
+    ],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "quota": "1.5M",
+      "footer": true,
+      "masked": true
+    }
+  },
+  {
+    "name": "key-management-light-390",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "管理密钥查看使用情况，修改名称与 Token 配额。••••••••0000查看密钥复制密钥累计调用2,600累计 Token1.8M名称Token 配额支持 K / M / B / T、万 / 亿，"
+    ],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "quota": "1.5M",
+      "footer": true,
+      "masked": true
+    }
+  },
+  {
+    "name": "key-management-dark-390",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "管理密钥查看使用情况，修改名称与 Token 配额。••••••••0000查看密钥复制密钥累计调用2,600累计 Token1.8M名称Token 配额支持 K / M / B / T、万 / 亿，"
+    ],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "quota": "1.5M",
+      "footer": true,
+      "masked": true
+    }
+  },
+  {
+    "name": "roles-light-1440",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "roles-dark-1440",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "roles-light-1024",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "roles-dark-1024",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "roles-light-768",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "roles-dark-768",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "roles-light-390",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "light",
+      "surface": "rgb(245, 245, 245)"
+    }
+  },
+  {
+    "name": "roles-dark-390",
+    "url": "http://127.0.0.1:5174/#/roles",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "角色路由"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "角色路由\n\n为模型角色配置首选渠道、多路由调度与回退策略。\n\n管理识别规则\n6 个角色 · 5 个已配置\n选择角色，管理多个优先级与权重路由\n角色 / 匹配\t首选渠道\t目标模型\t路由数\t熔断状态\t操作\n\n\n均衡任务sonnet\n\n*sonnet*\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n正常\t配置\n\n\n复杂任务opus\n\n*opus*\n\n\tOpenAI 官方\tgpt-4.1\t1 条\t\n半开\t配置\n\n\n通用任务fable\n\n*fable*\n\n\t尚未配置\t—\t0 条\t\n未配置\t配置\n\n\n轻量任务haiku\n\n*haiku*\n\n\tDeepSeek 备用\tdeepseek-chat\t1 条\t\n已熔断\t配置\n\n\n图像任务image\n\n*image*\n\n\tGemini 多模态\tgemini-2.5-pro\t1 条\t\n正常\t配置\n\n\n自动选择auto\n\n未命中角色\n\n\tAnthropic 主线路\tclaude-sonnet-4-5\t1 条\t\n状态未知\t配置\n全局回退\n编辑回退\n\n角色路由失败后，尝试以下备用渠道与模型。\n\n角色路由\n→ 失败时回退 →\nDeepSeek 备用\n/ deepseek-chat",
+    "errors": [],
+    "interaction": {
+      "theme": "dark",
+      "surface": "rgb(7, 7, 8)"
+    }
+  },
+  {
+    "name": "key-management-light-1440",
+    "url": "http://127.0.0.1:5174/#/keys",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "API 密钥"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "管理密钥查看使用情况，修改名称与 Token 配额。••••••••0000查看密钥复制密钥累计调用2,600累计 Token1.8M名称Token 配额支持 K / M / B / T、万 / 亿，"
+    ],
+    "text": "API 密钥\n\n为本地开发工具分配访问凭据，控制 Token 配额与启用状态。\n\n创建密钥\n密钥总数\n3\n已启用\n2\n累计 Token\n5.4M\n\n密钥默认隐藏；在管理中复制或查看。请勿将密钥放入代码仓库或共享截图。\n\n名称 / 最近使用\tAPI 密钥\tToken 用量 / 配额\t启用\t操作\n\n\nClaude Code\n\n2026/11/12 22:12:32\n\n\t••••••••0000\t\n\n8.42M / 20M\n\n剩余 11.58M\n\n\t\n\t管理密钥\n\n\n开发测试\n\n2026/11/12 22:12:32\n\n\t••••••••0001\t\n\n1.23M / 1M\n\n已超出 234.57K\n\n\t\n\t管理密钥\n\n\n团队工具\n\n2026/11/12 22:12:32\n\n\t••••••••0002\t\n\n8.42M / 不限\n\n不限制用量\n\n\t\n\t管理密钥\n一个工具，一枚密钥\n\n分别创建密钥可独立查看调用记录与配额；停用密钥不影响其他工具连接。\n\n前往 CLI 接入配置",
+    "errors": [],
+    "interaction": {
+      "quota": "1.5M",
+      "footer": true,
+      "masked": true
+    }
+  }
+]

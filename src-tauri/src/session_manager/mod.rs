@@ -41,6 +41,30 @@ pub struct SessionMessage {
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ts: Option<i64>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub blocks: Vec<SessionBlock>,
+}
+
+/// 只保留本地记录中真实存在的信息，不执行工具或加载外部内容。
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum SessionBlock {
+    Text {
+        text: String,
+    },
+    Thinking {
+        text: String,
+    },
+    ToolCall {
+        id: Option<String>,
+        name: Option<String>,
+        input: serde_json::Value,
+    },
+    ToolResult {
+        id: Option<String>,
+        output: String,
+        status: String,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
