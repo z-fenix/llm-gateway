@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Layers, List, Search } from "lucide-react";
+import { Copy, Layers, List, Search, ShieldCheck } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
+import SegmentedControl from "../components/SegmentedControl";
 import { api } from "../lib/api";
 import { bucketSizeForRange, fillBuckets, localOffsetSecs } from "../lib/trend";
 import { useRefreshInterval } from "../lib/useRefreshInterval";
@@ -9,6 +12,7 @@ import type { ApiKey, Channel, LogFilter, LogStats, RequestLog, SecurityFinding,
 import LogTrendChart, { type Dimension } from "../components/LogTrendChart";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import ErrorBanner from "../components/ErrorBanner";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import {
@@ -81,11 +85,20 @@ function sessionBadgeClass(p?: string | null): string {
 
 function FindingsPanel({ logId }: { logId: string }) {
   const [findings, setFindings] = useState<SecurityFinding[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    api.getSecurityFindings(logId).then(setFindings).catch(console.error);
-  }, [logId]);
+    let cancelled = false;
+    setError(null);
+    setFindings(null);
+    api.getSecurityFindings(logId)
+      .then((value) => { if (!cancelled) setFindings(value); })
+      .catch((err) => { if (!cancelled) setError(String(err)); });
+    return () => { cancelled = true; };
+  }, [logId, attempt]);
 
-  if (findings === null) return <div className="text-xs text-muted-foreground">加载 findings...</div>;
+  if (error) return <ErrorBanner message={error} onRetry={() => setAttempt((n) => n + 1)} />;
+  if (findings === null) return <div role="status" className="text-xs text-muted-foreground">正在加载安全发现...</div>;
   if (findings.length === 0) return <div className="text-xs text-muted-foreground">无风险详情</div>;
 
   return (
@@ -122,7 +135,7 @@ function initialFilter(): LogFilter {
   return { after: r.startDate, before: r.endDate };
 }
 
-const ROLES = ["sonnet", "opus", "fable", "haiku", "auto"];
+const ROLES = ["sonnet", "opus", "fable", "haiku", "image", "auto"];
 const RISK_LEVELS = ["clean", "info", "low", "medium", "high", "critical"];
 const SESSION_PROVIDERS = [
   { label: "全部", value: "" },
@@ -150,10 +163,7 @@ const DIMENSION_TABS: { label: string; value: Dimension }[] = [
   { label: "成本", value: "cost" },
 ];
 
-const LOG_COLUMNS = [
-  "#", "时间", "密钥", "角色", "本地会话", "请求模型", "上游模型", "渠道", "状态", "风险",
-  "Token", "缓存读取", "缓存创建", "费用", "延迟", "兜底",
-];
+const LOG_COLUMNS = ["时间 / Trace", "模型 / 角色", "渠道", "结果", "Token", "延迟", "安全", "详情"];
 
 const selectCls =
   "h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20";
@@ -172,120 +182,32 @@ function LogTableHeader() {
   );
 }
 
-function LogRow({
-  log,
-  open,
-  onToggle,
-}: {
-  log: RequestLog;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <Fragment>
-      <tr
-        className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/50"
-        onClick={onToggle}
-      >
-        <td className="px-4 py-3 text-muted-foreground">{log.seq}</td>
-        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-          {new Date(log.created_at * 1000).toLocaleString()}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">{log.key_name ?? "-"}</td>
-        <td className="px-4 py-3">
-          {log.role ? (
-            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
-              {log.role}
-            </Badge>
-          ) : (
-            "-"
-          )}
-        </td>
-        <td className="px-4 py-3">
-          {log.session_id ? (
-            <div className="flex flex-col gap-0.5">
-              {log.session_provider && (
-                <span className={cn("w-fit rounded px-1 text-xs", sessionBadgeClass(log.session_provider))}>
-                  {sessionProviderLabel(log.session_provider)}
-                </span>
-              )}
-              <span className="font-mono text-xs text-muted-foreground" title={log.session_id}>
-                {shortSessionId(log.session_id)}
-              </span>
-            </div>
-          ) : (
-            "-"
-          )}
-        </td>
-        <td className="px-4 py-3 font-mono text-xs text-foreground">
-          {log.request_model ?? "-"}
-        </td>
-        <td className="px-4 py-3 font-mono text-xs text-foreground">
-          {log.upstream_model ?? "-"}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">{log.channel_name ?? "-"}</td>
-        <td
-          className={cn(
-            "px-4 py-3",
-            log.status_code === 200 ? "text-green-600" : "text-red-600"
-          )}
-        >
-          {log.status_code ?? "-"}
-        </td>
-        <td className="px-4 py-3">
-          <span className={cn("rounded px-1 text-xs", riskBadgeClass(log.risk_level))}>
-            {log.risk_level}
-          </span>
-          {actionMarker(log.security_action, log.sanitized)}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">
-          {log.input_tokens}+{log.output_tokens}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">
-          {log.cache_read_tokens ? log.cache_read_tokens.toLocaleString() : "-"}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">
-          {log.cache_creation_tokens ? log.cache_creation_tokens.toLocaleString() : "-"}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">
-          {log.total_cost_usd ? formatUsd(log.total_cost_usd) : "-"}
-        </td>
-        <td className="px-4 py-3 text-muted-foreground">{log.latency_ms}ms</td>
-        <td className="px-4 py-3 text-muted-foreground">
-          {log.fallback ? "是" : "-"}
-        </td>
-      </tr>
-      {open && (
-        <tr className="border-b border-border bg-muted/50">
-          <td colSpan={16} className="px-4 py-3">
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="font-mono">TraceID: {log.trace_id}</span>
-                {log.error && <span className="text-destructive">{log.error}</span>}
-                {log.risk_summary && <span className="text-orange-600">{log.risk_summary}</span>}
-              </div>
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-2 text-xs">
-                  {prettyJson(log.request_body)}
-                </pre>
-                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-2 text-xs">
-                  {log.response_body ? prettyJson(log.response_body) : "(无响应体 / 流式)"}
-                </pre>
-              </div>
-              {log.risk_level !== "clean" && (
-                <div>
-                  <div className="mb-1 text-xs font-medium text-muted-foreground">
-                    风险详情
-                  </div>
-                  <FindingsPanel logId={log.id} />
-                </div>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
-    </Fragment>
-  );
+function LogRow({ log, open, onToggle }: { log: RequestLog; open: boolean; onToggle: () => void }) {
+  const [detailTab, setDetailTab] = useState("request");
+  return <Fragment>
+    <tr className="cursor-pointer" onClick={onToggle}>
+      <td className="whitespace-nowrap"><p className="text-xs">{new Date(log.created_at * 1000).toLocaleString()}</p><p className="mt-1.5 font-mono text-[11px] text-muted-foreground" title={log.trace_id}>{shortTrace(log.trace_id)}</p></td>
+      <td><p className="max-w-[220px] truncate font-mono text-xs" title={log.request_model ?? undefined}>{log.request_model ?? "-"}</p><p className="mt-1.5 text-[11px] text-muted-foreground">{log.role ?? "auto"}{log.fallback ? " · 已回退" : ""}{log.session_id ? ` · ${sessionProviderLabel(log.session_provider)} ${shortSessionId(log.session_id)}` : ""}</p></td>
+      <td className="text-xs">{log.channel_name ?? "-"}</td>
+      <td><Badge variant={log.status_code && log.status_code >= 200 && log.status_code < 300 ? "secondary" : "destructive"}>{log.status_code ?? "—"}</Badge></td>
+      <td className="whitespace-nowrap text-xs tabular-nums">{log.input_tokens}+{log.output_tokens}</td>
+      <td className="whitespace-nowrap text-xs tabular-nums">{log.latency_ms}ms</td>
+      <td><span className={cn("rounded-full px-2 py-1 text-[11px]", riskBadgeClass(log.risk_level))}>{log.risk_level}</span>{actionMarker(log.security_action, log.sanitized)}</td>
+      <td><Button variant="ghost" size="sm" aria-label={`查看请求 ${log.seq} 详情`}>详情</Button></td>
+    </tr>
+    <Dialog open={open} onOpenChange={(next) => { if (!next && open) onToggle(); }}>
+      <DialogContent className="left-auto right-0 top-0 h-dvh max-h-none w-full max-w-[620px] translate-x-0 translate-y-0 content-start rounded-none border-0 p-7 sm:max-w-[620px]">
+        <DialogHeader><DialogTitle>请求详情</DialogTitle><DialogDescription>TraceID: {log.trace_id}</DialogDescription></DialogHeader>
+        <div className="flex items-center justify-between gap-3"><Badge variant={log.error ? "destructive" : "secondary"}>{log.status_code ?? "未知状态"} · {log.is_stream ? "流式响应" : "非流式响应"}</Badge><Button variant="outline" size="sm" onClick={async () => { try { await navigator.clipboard.writeText(log.trace_id); toast.success("已复制 Trace ID"); } catch { toast.error("复制失败，请手动复制 Trace ID"); } }}><Copy />复制 ID</Button></div>
+        <dl className="space-y-4 text-xs">{[["请求时间", new Date(log.created_at * 1000).toLocaleString()], ["调用密钥", log.key_name ?? "-"], ["协议", log.protocol], ["角色", log.role ?? "auto"], ["请求模型", log.request_model ?? "-"], ["上游模型", log.upstream_model ?? "-"], ["渠道", log.channel_name ?? "-"], ["本地会话", log.session_id ?? "-"], ["缓存读取", log.cache_read_tokens ?? 0], ["缓存创建", log.cache_creation_tokens ?? 0], ["费用", formatUsd(log.total_cost_usd ?? 0)], ["延迟", `${log.latency_ms}ms`], ["兜底", log.fallback ? "是" : "否"]].map(([label, value]) => <div key={label} className="flex justify-between gap-6"><dt className="shrink-0 text-muted-foreground">{label}</dt><dd className="break-all text-right font-medium">{value}</dd></div>)}</dl>
+        {log.error && <p role="alert" className="rounded-xl bg-destructive/5 p-4 text-sm text-destructive">{log.error}</p>}
+        <div className="info-banner"><ShieldCheck className="h-4 w-4 shrink-0 text-primary" /><p className="text-xs leading-6">日志内容已经过凭据过滤。{log.sanitized ? "本次请求已执行安全脱敏。" : "请勿将业务日志公开分享。"}{log.risk_summary}</p></div>
+        <SegmentedControl value={detailTab} onChange={setDetailTab} label="请求详情内容" options={[{ value: "request", label: "请求内容" }, { value: "response", label: "响应内容" }, { value: "security", label: "安全发现" }]} />
+        {detailTab === "security" ? <FindingsPanel logId={log.id} /> : <pre className="overflow-auto whitespace-pre-wrap break-all rounded-xl bg-background p-5 font-mono text-xs leading-7">{detailTab === "request" ? prettyJson(log.request_body) : log.response_body ? prettyJson(log.response_body) : "(无响应体 / 流式)"}</pre>}
+        {log.tool_calls && <details className="rounded-xl bg-background p-4 text-xs"><summary className="cursor-pointer font-medium">工具调用</summary><pre className="mt-3 overflow-auto whitespace-pre-wrap break-all">{prettyJson(log.tool_calls)}</pre></details>}
+      </DialogContent>
+    </Dialog>
+  </Fragment>;
 }
 
 type SessionGroup = { key: string; logs: RequestLog[] };
@@ -490,7 +412,7 @@ export default function LogsPage() {
   };
 
   return (
-    <div>
+    <div className="page-stack" id="request-logs">
       <PageHeader
         title="请求日志"
         description="查看网关请求记录、安全风险与调用趋势，可按会话分组浏览"
@@ -596,18 +518,18 @@ export default function LogsPage() {
       </Card>
 
       {stats && (
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">总调用</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{stats.total_calls}</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{stats.total_calls}</div>
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">总 Token</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{totalTokens.toLocaleString()}</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{totalTokens.toLocaleString()}</div>
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">成功率</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{successRate !== null ? `${successRate}%` : "—"}</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{successRate !== null ? `${successRate}%` : "—"}</div>
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">风险分布</div>
@@ -620,123 +542,20 @@ export default function LogsPage() {
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">估算费用</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{formatUsd(stats.cost ?? 0)}</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{formatUsd(stats.cost ?? 0)}</div>
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">缓存命中率</div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{cacheHitRate.toFixed(1)}%</div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{cacheHitRate.toFixed(1)}%</div>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-purple-500"
+                className="h-full rounded-full bg-primary"
                 style={{ width: `${Math.min(100, cacheHitRate)}%` }}
               />
             </div>
           </Card>
         </div>
       )}
-
-      {stats && (
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card className="p-4">
-            <div className="mb-1 text-xs font-medium text-muted-foreground">Top 渠道</div>
-            {stats.top_channels.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
-              <ul className="space-y-0.5">
-                {stats.top_channels.map(([name, count]) => (
-                  <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
-                ))}
-              </ul>
-            )}
-          </Card>
-          <Card className="p-4">
-            <div className="mb-1 text-xs font-medium text-muted-foreground">Top 密钥</div>
-            {stats.top_api_keys.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
-              <ul className="space-y-0.5">
-                {stats.top_api_keys.map(([name, count]) => (
-                  <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-      )}
-
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">趋势</CardTitle>
-          <div className="flex gap-1 text-sm" role="tablist" aria-label="趋势维度">
-            {DIMENSION_TABS.map((tab) => (
-              <button
-                key={tab.value}
-                role="tab"
-                aria-selected={dimension === tab.value}
-                onClick={() => setDimension(tab.value)}
-                className={cn(
-                  "rounded-md px-2 py-1 transition-colors",
-                  dimension === tab.value
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={bucketSize} />
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">日志清理</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Label htmlFor="cleanup-date" className="text-sm text-muted-foreground">
-              清理日期
-            </Label>
-            <Input
-              id="cleanup-date"
-              type="date"
-              className="w-40"
-              value={cleanupDate}
-              onChange={(e) => setCleanupDate(e.target.value)}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-orange-600"
-              onClick={onDeleteBefore}
-            >
-              删除该日之前
-            </Button>
-            <Button variant="destructive" size="sm" onClick={onClearAll}>
-              清空全部
-            </Button>
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <Label htmlFor="retention-days" className="text-sm text-muted-foreground">
-                日志保留天数
-              </Label>
-              <Input
-                id="retention-days"
-                type="number"
-                min={0}
-                className="w-20"
-                value={retentionInput}
-                onChange={(e) => setRetentionInput(e.target.value)}
-              />
-              <Button variant="secondary" size="sm" onClick={onSaveRetention}>
-                保存
-              </Button>
-              {retentionError && (
-                <span className="text-xs text-destructive">{retentionError}</span>
-              )}
-              <span className="text-xs text-muted-foreground">当前: {retentionDays} 天</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
@@ -747,7 +566,7 @@ export default function LogsPage() {
               className={cn(
                 "flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors",
                 view === "flat"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -759,7 +578,7 @@ export default function LogsPage() {
               className={cn(
                 "flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors",
                 view === "session"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -775,8 +594,8 @@ export default function LogsPage() {
               description="当前筛选条件下没有请求日志，调整筛选条件后点击「查询」"
             />
           ) : view === "flat" ? (
-            <div className="overflow-x-auto overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto overflow-x-auto rounded-xl border border-border/60">
+              <table className="data-table w-full text-sm">
                 <LogTableHeader />
                 <tbody>
                   {data.items.map((l) => (
@@ -791,8 +610,8 @@ export default function LogsPage() {
               </table>
             </div>
           ) : (
-            <div className="overflow-x-auto overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto overflow-x-auto rounded-xl border border-border/60">
+              <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="px-4 py-3 font-medium">会话</th>
@@ -866,8 +685,8 @@ export default function LogsPage() {
                         {expanded && (
                           <tr className="border-b border-border bg-muted/30">
                             <td colSpan={7} className="px-4 py-3">
-                              <div className="overflow-x-auto overflow-hidden rounded-lg border border-border bg-card">
-                                <table className="w-full text-sm">
+                              <div className="overflow-x-auto overflow-x-auto rounded-xl border border-border/60 bg-card">
+                                <table className="data-table w-full text-sm">
                                   <LogTableHeader />
                                   <tbody>
                                     {s.logs.map((l) => (
@@ -910,6 +729,113 @@ export default function LogsPage() {
           </div>
         </CardContent>
       </Card>
+      <details className="rounded-2xl bg-card p-5"><summary className="cursor-pointer text-sm font-semibold">趋势与分布</summary><div className="mt-5">
+      {stats && (
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Card className="p-4">
+            <div className="mb-1 text-xs font-medium text-muted-foreground">Top 渠道</div>
+            {stats.top_channels.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
+              <ul className="space-y-0.5">
+                {stats.top_channels.map(([name, count]) => (
+                  <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
+                ))}
+              </ul>
+            )}
+          </Card>
+          <Card className="p-4">
+            <div className="mb-1 text-xs font-medium text-muted-foreground">Top 密钥</div>
+            {stats.top_api_keys.length === 0 ? <div className="text-xs text-muted-foreground">无数据</div> : (
+              <ul className="space-y-0.5">
+                {stats.top_api_keys.map(([name, count]) => (
+                  <li key={name} className="flex justify-between text-xs"><span>{name}</span><span>{count}</span></li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
+
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">趋势</CardTitle>
+          <div className="flex gap-1 text-sm" role="tablist" aria-label="趋势维度">
+            {DIMENSION_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                role="tab"
+                aria-selected={dimension === tab.value}
+                onClick={() => setDimension(tab.value)}
+                className={cn(
+                  "rounded-md px-2 py-1 transition-colors",
+                  dimension === tab.value
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <LogTrendChart buckets={buckets} dimension={dimension} bucketSecs={bucketSize} />
+        </CardContent>
+      </Card>
+
+      </div></details>
+      <details className="rounded-2xl bg-card p-5"><summary className="cursor-pointer text-sm font-semibold">日志保留与清理</summary><div className="mt-5">
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">日志清理</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="cleanup-date" className="text-sm text-muted-foreground">
+              清理日期
+            </Label>
+            <Input
+              id="cleanup-date"
+              type="date"
+              className="w-40"
+              value={cleanupDate}
+              onChange={(e) => setCleanupDate(e.target.value)}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-orange-600"
+              onClick={onDeleteBefore}
+            >
+              删除该日之前
+            </Button>
+            <Button variant="destructive" size="sm" onClick={onClearAll}>
+              清空全部
+            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Label htmlFor="retention-days" className="text-sm text-muted-foreground">
+                日志保留天数
+              </Label>
+              <Input
+                id="retention-days"
+                type="number"
+                min={0}
+                className="w-20"
+                value={retentionInput}
+                onChange={(e) => setRetentionInput(e.target.value)}
+              />
+              <Button variant="secondary" size="sm" onClick={onSaveRetention}>
+                保存
+              </Button>
+              {retentionError && (
+                <span className="text-xs text-destructive">{retentionError}</span>
+              )}
+              <span className="text-xs text-muted-foreground">当前: {retentionDays} 天</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      </div></details>
     </div>
   );
 }

@@ -44,6 +44,7 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(api.listApiKeys).toHaveBeenCalled());
 
+    fireEvent.click(screen.getByRole("button", { name: "创建密钥" }));
     const btn = screen.getByRole("button", { name: "生成密钥" });
     // 空名称时按钮应禁用，给出明确的不可点击信号而不是“点了没反应”
     expect(btn).toBeDisabled();
@@ -55,6 +56,7 @@ describe("ApiKeysPage 生成密钥", () => {
     render(<ApiKeysPage />);
     await waitFor(() => expect(api.listApiKeys).toHaveBeenCalled());
 
+    fireEvent.click(screen.getByRole("button", { name: "创建密钥" }));
     const btn = screen.getByRole("button", { name: "生成密钥" });
     fireEvent.change(screen.getByPlaceholderText("用户/应用名"), {
       target: { value: "my-app" },
@@ -92,12 +94,23 @@ describe("ApiKeysPage 生成密钥", () => {
     );
   });
 
+  it("密钥默认隐藏，可显式查看后再次隐藏", async () => {
+    mockedApi.listApiKeys.mockResolvedValue([key("k1")]);
+    render(<ApiKeysPage />);
+    await screen.findByText("keyk1");
+    expect(screen.queryByText("sk-lgw-k1")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "查看 keyk1 密钥" }));
+    expect(screen.getByText("sk-lgw-k1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "隐藏 keyk1 密钥" }));
+    expect(screen.queryByText("sk-lgw-k1")).not.toBeInTheDocument();
+  });
+
   it("复制按钮写入剪贴板", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     mockedApi.listApiKeys.mockResolvedValue([key("k1")]);
     render(<ApiKeysPage />);
-    await waitFor(() => expect(screen.getByText("sk-lgw-k1")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("keyk1")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "复制" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("sk-lgw-k1"));
@@ -132,7 +145,7 @@ describe("ApiKeysPage 生成密钥", () => {
   it("删除密钥走确认对话框并调用 deleteApiKey", async () => {
     mockedApi.listApiKeys.mockResolvedValue([key("k1")]);
     render(<ApiKeysPage />);
-    await waitFor(() => expect(screen.getByText("sk-lgw-k1")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("keyk1")).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: "删除" }));
     expect(

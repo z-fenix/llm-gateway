@@ -43,6 +43,16 @@ describe("DashboardPage", () => {
     mockedApi.getLogTimeseries.mockResolvedValue([bucket]);
   });
 
+  it("统计加载失败后可重试恢复，不显示伪造数据", async () => {
+    mockedApi.getStats.mockRejectedValueOnce(new Error("网关暂不可用"));
+    render(<DashboardPage />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("网关暂不可用");
+    expect(screen.queryByText("今日请求")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    expect(await screen.findByText("今日请求")).toBeInTheDocument();
+    expect(mockedApi.getStats).toHaveBeenCalledTimes(2);
+  });
+
   it("统计数据未返回时展示加载状态", () => {
     mockedApi.getStats.mockReturnValue(new Promise(() => {}));
     render(<DashboardPage />);

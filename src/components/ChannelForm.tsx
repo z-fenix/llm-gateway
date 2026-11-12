@@ -56,7 +56,7 @@ function validateForm(f: Partial<Channel>): FieldErrors {
 
 export default function ChannelForm({ initial, onSubmit, onCancel }: {
   initial?: Partial<Channel>;
-  onSubmit: (c: Channel) => void;
+  onSubmit: (c: Channel) => void | Promise<void>;
   onCancel: () => void;
 }) {
   const [f, setF] = useState<Partial<Channel>>({
@@ -64,6 +64,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     timeout_secs: 60, models: [], ...initial,
   });
   const [attempted, setAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
   // 提交过一次后才展示错误，之后随输入实时更新
   const errors = attempted ? validateForm(f) : {};
   const set = (k: keyof Channel, v: any) => setF((p) => ({ ...p, [k]: v }));
@@ -196,16 +197,23 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
   const errMsg = (k: keyof Channel) =>
     errors[k] ? <p className="mt-1 text-xs text-destructive">{errors[k]}</p> : null;
 
-  const submit = () => {
+  const submit = async () => {
+    if (saving) return;
     setAttempted(true);
     if (Object.keys(validateForm(f)).length > 0) return;
     // 提交前 trim + 过滤空白模型，避免 "   " 之类的条目泄漏进 /v1/models 响应
     const models = (f.models ?? []).map((m) => m.trim()).filter(Boolean);
-    onSubmit({ ...f, models } as Channel);
+    setSaving(true);
+    try {
+      await onSubmit({ ...f, models } as Channel);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-1.5">
         <Label htmlFor="channel-name">名称</Label>
         <Input id="channel-name" className={inputCls("name")} placeholder="名称"
@@ -216,17 +224,19 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
       <div className="space-y-1.5">
         <Label>供应商</Label>
         <Select value={f.supplier} onValueChange={changeSupplier}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger aria-label="供应商"><SelectValue /></SelectTrigger>
           <SelectContent>
             {SUPPLIERS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-1.5">
         <Label>上游协议</Label>
         <Select value={f.upstream_protocol} onValueChange={(v) => set("upstream_protocol", v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger aria-label="上游协议"><SelectValue /></SelectTrigger>
           <SelectContent>
             {UPSTREAM_PROTOCOLS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
           </SelectContent>
@@ -241,9 +251,10 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
         {errMsg("base_url")}
       </div>
 
+      </div>
       <div className="space-y-1.5">
         <Label htmlFor="channel-api-key">API Key</Label>
-        <Input id="channel-api-key" className={inputCls("api_key")}
+        <Input type="password" autoComplete="new-password" id="channel-api-key" className={inputCls("api_key")}
           placeholder="真实上游 API Key"
           value={f.api_key ?? ""} onChange={(e) => set("api_key", e.target.value)} />
         {errMsg("api_key")}
@@ -352,7 +363,7 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>取消</Button>
-        <Button type="button" onClick={submit}>保存</Button>
+        <Button type="button" onClick={submit} disabled={saving}>{saving && <Loader2 className="animate-spin" />}保存</Button>
       </div>
     </div>
   );

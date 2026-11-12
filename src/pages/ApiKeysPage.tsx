@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Copy, KeyRound, Plus } from "lucide-react";
+import { Copy, Eye, EyeOff, KeyRound, Plus } from "lucide-react";
 import { api } from "../lib/api";
 import type { ApiKey } from "../types";
 import PageHeader from "../components/PageHeader";
@@ -30,6 +30,8 @@ type QuotaParse = number | null | "invalid";
 
 export default function ApiKeysPage() {
   const [list, setList] = useState<ApiKey[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
   const [quota, setQuota] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -74,14 +76,18 @@ export default function ApiKeysPage() {
       return;
     }
     setError(null);
+    setPending(true);
     try {
       await api.createApiKey(trimmed, q);
       setName("");
       setQuota("");
+      setCreateOpen(false);
       toast.success("密钥已生成");
       load();
     } catch (err) {
       handleError(err);
+    } finally {
+      setPending(false);
     }
   };
 
@@ -166,10 +172,11 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div>
+    <div className="page-stack" id="api-keys">
       <PageHeader
         title="API 密钥"
-        description="管理本地网关的 API 密钥：创建、配额、启用状态与复制"
+        description="为本地开发工具分配访问凭据，控制 Token 配额与启用状态。"
+        action={<Button onClick={() => setCreateOpen(true)}><Plus />创建密钥</Button>}
       />
 
       {error && (
@@ -178,21 +185,17 @@ export default function ApiKeysPage() {
         </div>
       )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <KeyRound className="h-4 w-4 text-muted-foreground" />
-            新建密钥
-          </CardTitle>
-          <CardDescription>
-            生成新的访问密钥，可设置 Token 配额（留空不限）
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="info-banner mb-6"><KeyRound className="h-4 w-4 shrink-0 text-primary" /><p>密钥默认隐藏；复制或查看时再展示。请勿将密钥放入代码仓库或共享截图。</p></div>
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>新建密钥</DialogTitle><DialogDescription>生成新的访问密钥，可设置 Token 配额（留空不限）</DialogDescription></DialogHeader>
+
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap items-end gap-4">
             <div className="min-w-[220px] space-y-1.5">
               <Label htmlFor="key-name">名称</Label>
               <Input
+                ref={nameRef}
                 id="key-name"
                 placeholder="用户/应用名"
                 value={name}
@@ -208,24 +211,25 @@ export default function ApiKeysPage() {
                 onChange={(e) => setQuota(e.target.value)}
               />
             </div>
-            <Button onClick={create} disabled={!name.trim()}>
+            <Button onClick={create} disabled={pending || !name.trim()}>
               <Plus className="h-4 w-4" />
               生成密钥
             </Button>
           </div>
-        </CardContent>
-      </Card>
+
+        </DialogContent>
+      </Dialog>
 
       {list.length === 0 ? (
         <EmptyState
           title="暂无密钥"
           description="还没有生成任何 API 密钥，先创建一个吧"
         >
-          <Button onClick={() => nameRef.current?.focus()}>新建密钥</Button>
+          <Button onClick={() => setCreateOpen(true)}>新建密钥</Button>
         </EmptyState>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-2xl bg-card">
+          <table className="data-table w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">名称</th>
@@ -248,8 +252,9 @@ export default function ApiKeysPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="font-mono text-xs text-muted-foreground">
-                      {k.key}
+                      {revealed.has(k.id) ? k.key : `••••••••${k.key.length > 8 ? k.key.slice(-4) : ""}`}
                     </span>
+                    <Button variant="ghost" size="icon" aria-label={`${revealed.has(k.id) ? "隐藏" : "查看"} ${k.name} 密钥`} onClick={() => setRevealed((prev) => { const next = new Set(prev); if (next.has(k.id)) next.delete(k.id); else next.add(k.id); return next; })}>{revealed.has(k.id) ? <EyeOff /> : <Eye />}</Button>
                     <button
                       className="ml-2 inline-flex items-center gap-1 text-primary hover:underline"
                       onClick={() => copyKey(k)}

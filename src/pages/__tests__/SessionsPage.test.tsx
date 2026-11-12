@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { act, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import SessionsPage from "../SessionsPage";
@@ -94,6 +94,24 @@ describe("SessionsPage", () => {
       expect(screen.getByText("登录问题排查")).toBeInTheDocument();
       expect(screen.queryByText("另一个会话")).not.toBeInTheDocument();
     });
+  });
+
+  it("快速切换会话后，旧请求不能覆盖当前消息", async () => {
+    let resolveFirst!: (messages: SessionMessage[]) => void;
+    mockedApi.listSessions.mockResolvedValue([
+      makeSession({ sessionId: "first", title: "会话一", sourcePath: "/first.jsonl" }),
+      makeSession({ sessionId: "second", title: "会话二", sourcePath: "/second.jsonl" }),
+    ]);
+    mockedApi.getSessionMessages
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce([makeMessage("assistant", "当前会话消息")]);
+    render(<MemoryRouter><SessionsPage /></MemoryRouter>);
+    fireEvent.click(await screen.findByText("会话一"));
+    fireEvent.click(screen.getByText("会话二"));
+    expect(await screen.findByText("当前会话消息")).toBeInTheDocument();
+    await act(async () => { resolveFirst([makeMessage("assistant", "过期会话消息")]); });
+    expect(screen.getByText("当前会话消息")).toBeInTheDocument();
+    expect(screen.queryByText("过期会话消息")).not.toBeInTheDocument();
   });
 
   it("点击会话请求消息并渲染", async () => {

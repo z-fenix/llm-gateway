@@ -156,7 +156,7 @@ export default function SecurityPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack" id="security">
       <PageHeader
         title="安全审计"
         description="配置内容安全检测规则、扫描范围与处置模式。"
@@ -168,6 +168,7 @@ export default function SecurityPage() {
         </div>
       )}
 
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -216,7 +217,7 @@ export default function SecurityPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <SettingRow
               label="阻断严重风险"
               checked={settings.block_on_critical}
@@ -274,6 +275,8 @@ export default function SecurityPage() {
         </CardContent>
       </Card>
 
+      <Card className="p-6"><ShieldCheck className="mb-5 h-7 w-7 text-primary" /><h2 className="text-lg font-semibold">明确保护边界</h2><p className="mt-3 text-[13px] leading-7 text-muted-foreground">扫描规则不能替代人工审核。处置结果、风险级别与脱敏状态均可在请求日志中追溯。</p><div className="mt-5 rounded-xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">严重风险强制阻断当前{settings.block_on_critical ? "已启用" : "未启用"}。规则动作与全局模式取严后生效。</div><a href="#/logs" className="mt-5 inline-flex rounded-full border px-4 py-2 text-xs font-medium hover:bg-muted">查看风险日志</a></Card>
+      </div>
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
@@ -286,8 +289,8 @@ export default function SecurityPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-xl border border-border/60">
+            <table className="data-table w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="px-4 py-3 font-medium">规则ID</th>
@@ -462,8 +465,8 @@ export default function SecurityPage() {
               description="还没有自定义黑白名单规则，在上方填写后点击「新增」"
             />
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto rounded-xl border border-border/60">
+              <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="px-4 py-3 font-medium">类型</th>

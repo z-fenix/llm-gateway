@@ -293,7 +293,7 @@ export default function McpServersPage() {
     ));
 
   return (
-    <div>
+    <div className="page-stack" id="mcp-servers">
       <PageHeader
         title="MCP 服务器"
         description="管理上游 MCP server，启用/连接即启动 client 握手"
@@ -496,101 +496,42 @@ export default function McpServersPage() {
           <Button onClick={openCreate}>新增 MCP 服务器</Button>
         </EmptyState>
       ) : (
-        <Card className="overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">名称</th>
-                <th className="px-4 py-3 font-medium">描述</th>
-                <th className="px-4 py-3 font-medium">类型</th>
-                <th className="px-4 py-3 font-medium">连接</th>
-                <th className="px-4 py-3 font-medium">启用</th>
-                <th className="px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((v) => (
-                <tr
-                  key={v.server.id}
-                  className="border-b border-border last:border-0 hover:bg-accent/50"
-                >
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    {v.server.name}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {v.server.description ?? "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {typeLabel(v.server)}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 text-xs",
-                        v.connected ? "text-emerald-600" : "text-muted-foreground"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          v.connected
-                            ? "bg-emerald-500"
-                            : "bg-muted-foreground/50"
-                        )}
-                      />
-                      {v.connected ? "已连接" : "未连接"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Switch
-                      checked={v.server.enabled}
-                      onCheckedChange={() => handleToggle(v)}
-                      aria-label={`启用 ${v.server.name}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="text-primary hover:underline"
-                        onClick={() => openEdit(v.server)}
-                      >
-                        编辑
-                      </button>
-                      <button
-                        className="text-emerald-600 hover:underline"
-                        onClick={() => handleTest(v)}
-                      >
-                        测试
-                      </button>
-                      {v.connected ? (
-                        <button
-                          className="text-muted-foreground hover:underline"
-                          onClick={() => handleDisconnect(v)}
-                        >
-                          断开
-                        </button>
-                      ) : (
-                        <button
-                          className="text-primary hover:underline"
-                          onClick={() => handleConnect(v)}
-                        >
-                          连接
-                        </button>
-                      )}
-                      <button
-                        className="text-destructive hover:underline"
-                        onClick={() => setDeleting(v.server)}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Card className="divide-y divide-border/60 overflow-hidden">
+          {list.map((v) => (
+            <article key={v.server.id} className="flex flex-wrap items-center gap-5 p-6">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-background">
+                <Cable className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1 basis-[260px]">
+                <h2 className="text-[15px] font-semibold">{v.server.name}</h2>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {v.server.description ?? "暂无描述"}
+                </p>
+                <div className="mt-2 break-all font-mono text-[11px] text-muted-foreground">
+                  <Badge variant="secondary">{typeLabel(v.server)}</Badge>
+                  {" · "}
+                  {v.server.server_config?.command ?? v.server.server_config?.url ?? "自定义服务"}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className={cn("h-2 w-2 rounded-full", v.connected ? "bg-green-700" : "bg-muted-foreground/40")} />
+                {v.connected ? "已连接" : "未连接"}
+              </div>
+              <Switch
+                checked={v.server.enabled}
+                onCheckedChange={() => handleToggle(v)}
+                aria-label={`启用 ${v.server.name}`}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => v.connected ? handleDisconnect(v) : handleConnect(v)}>
+                  {v.connected ? "断开" : "连接"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleTest(v)}>测试</Button>
+                <Button variant="ghost" size="sm" onClick={() => openEdit(v.server)}>编辑</Button>
+                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleting(v.server)}>删除</Button>
+              </div>
+            </article>
+          ))}
         </Card>
       )}
 

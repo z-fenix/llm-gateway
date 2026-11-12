@@ -57,6 +57,7 @@ export function formatBytes(bytes: number): string {
 }
 
 export default function KnowledgePage() {
+  const [createOpen, setCreateOpen] = useState(false);
   const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedKbId, setSelectedKbId] = useState<string | null>(null);
@@ -131,6 +132,7 @@ export default function KnowledgePage() {
       return;
     }
     setError(null);
+    setPending(true);
     api
       .createKb(
         name,
@@ -145,10 +147,12 @@ export default function KnowledgePage() {
           embedding_channel_id: "",
           embedding_model: "",
         });
+        setCreateOpen(false);
         toast.success("知识库已创建");
         loadKbs();
       })
-      .catch(handleError);
+      .catch(handleError)
+      .finally(() => setPending(false));
   };
 
   const openEdit = (kb: KnowledgeBase) => {
@@ -295,10 +299,11 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div>
+    <div className="page-stack" id="knowledge">
       <PageHeader
         title="知识库"
         description="管理知识库、上传文档、测试检索并配置 RAG 注入"
+        action={<Button onClick={() => setCreateOpen(true)}>创建知识库</Button>}
       />
 
       {error && (
@@ -307,17 +312,9 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {/* 库管理 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Library className="h-4 w-4 text-muted-foreground" />
-            库管理
-          </CardTitle>
-          <CardDescription>创建知识库并配置 Embedding 渠道与模型</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted/40 p-4 sm:grid-cols-2 lg:grid-cols-6">
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle>创建知识库</DialogTitle><DialogDescription>配置名称与 Embedding 模型后创建知识库。</DialogDescription></DialogHeader>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted/40 p-4 sm:grid-cols-2 lg:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="kb-name">名称</Label>
               <Input
@@ -374,103 +371,19 @@ export default function KnowledgePage() {
               />
             </div>
             <div className="flex items-end">
-              <Button className="w-full" onClick={createKb}>
+              <Button className="w-full" onClick={createKb} disabled={pending}>
                 新建
               </Button>
             </div>
           </div>
-
-          {kbs.length === 0 ? (
-            <EmptyState
-              title="暂无知识库"
-              description="还没有创建任何知识库，填写上方表单创建一个吧"
-            />
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">名称</th>
-                    <th className="px-4 py-3 font-medium">文档数</th>
-                    <th className="px-4 py-3 font-medium">分块数</th>
-                    <th className="px-4 py-3 font-medium">Embedding 渠道</th>
-                    <th className="px-4 py-3 font-medium">状态</th>
-                    <th className="px-4 py-3 font-medium">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kbs.map((kb) => (
-                    <tr
-                      key={kb.id}
-                      className={`cursor-pointer border-b border-border last:border-0 hover:bg-accent/50 ${
-                        selectedKbId === kb.id ? "bg-accent/60" : ""
-                      }`}
-                      onClick={() => setSelectedKbId(kb.id)}
-                    >
-                      <td className="px-4 py-3 font-medium text-foreground">
-                        {kb.name}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {kb.doc_count}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {kb.chunk_count}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {channelName(kb.embedding_channel_id)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div
-                          className="flex items-center gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Switch
-                            aria-label={`启用 ${kb.name}`}
-                            checked={kb.enabled}
-                            onCheckedChange={() => toggleKb(kb)}
-                          />
-                          <Badge variant={kb.enabled ? "default" : "secondary"}>
-                            {kb.enabled ? "启用" : "禁用"}
-                          </Badge>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div
-                          className="flex items-center gap-3"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            className="text-primary hover:underline"
-                            onClick={() => openEdit(kb)}
-                          >
-                            编辑
-                          </button>
-                          {kb.needs_reindex && (
-                            <button
-                              className="inline-flex items-center gap-1 text-amber-600 hover:underline"
-                              onClick={() => reindexKb(kb)}
-                            >
-                              <RefreshCw className="h-3 w-3" />
-                              重建索引
-                            </button>
-                          )}
-                          <button
-                            className="text-destructive hover:underline"
-                            onClick={() => setDeletingKb(kb)}
-                          >
-                            删除
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
+      </DialogContent></Dialog>
+      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <Card className="p-4"><h2 className="mb-4 px-1 text-sm font-semibold">我的知识库</h2>
+          {kbs.length === 0 ? <EmptyState title="暂无知识库" description="创建知识库后上传文档，开始测试检索。"><Button onClick={() => setCreateOpen(true)}>新建知识库</Button></EmptyState> : <div className="space-y-3">{kbs.map((kb) => <div key={kb.id} className={`rounded-xl p-4 ${selectedKbId === kb.id ? "bg-accent" : "bg-background"}`}>
+            <button className="w-full text-left" onClick={() => setSelectedKbId(kb.id)}><p className="text-sm font-medium">{kb.name}</p><p className="mt-2 text-[11px] text-muted-foreground">{kb.doc_count} 份文档 · {kb.chunk_count} 个分块</p><p className="mt-2 truncate text-[11px] text-muted-foreground">{channelName(kb.embedding_channel_id)}</p></button>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs"><Switch aria-label={`启用 ${kb.name}`} checked={kb.enabled} onCheckedChange={() => toggleKb(kb)} /><button className="text-primary" onClick={() => openEdit(kb)}>编辑</button>{kb.needs_reindex && <button className="text-amber-700" onClick={() => reindexKb(kb)}>重建索引</button>}<button className="text-destructive" onClick={() => setDeletingKb(kb)}>删除</button></div>
+          </div>)}</div>}
+        </Card>
       {/* 文档管理 */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
@@ -508,8 +421,8 @@ export default function KnowledgePage() {
               description="当前知识库还没有文档，点击右上角“上传文档”添加"
             />
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto rounded-2xl bg-card">
+              <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="px-4 py-3 font-medium">文件名</th>
@@ -568,6 +481,8 @@ export default function KnowledgePage() {
         </CardContent>
       </Card>
 
+      </div>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
       {/* 检索测试 */}
       <Card className="mb-6">
         <CardHeader>
@@ -691,6 +606,7 @@ export default function KnowledgePage() {
         </CardContent>
       </Card>
 
+      </div>
       {/* 编辑知识库对话框 */}
       <Dialog
         open={editOpen}

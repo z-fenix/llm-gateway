@@ -174,7 +174,7 @@ export default function SkillsPage() {
   };
 
   return (
-    <div>
+    <div className="page-stack" id="skills">
       <PageHeader
         title="Skills 管理"
         description="本地 skills 库，启用后写入 ~/.claude/skills/<目录>/SKILL.md（自动备份）"
@@ -192,6 +192,7 @@ export default function SkillsPage() {
         </div>
       )}
 
+      <div className="info-banner"><Sparkles className="h-4 w-4 shrink-0 text-primary" /><p>本地 Skills，按需启用。文件写入 ~/.claude/skills/&lt;目录&gt;/SKILL.md，已有内容自动备份。</p></div>
       <Card className="mb-6">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
@@ -212,7 +213,7 @@ export default function SkillsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
+              <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="px-4 py-3 font-medium">名称</th>
@@ -232,7 +233,7 @@ export default function SkillsPage() {
                       <td className="px-4 py-3 font-medium text-foreground">
                         {s.name ?? s.directory}
                       </td>
-                      <td className="max-w-[280px] truncate px-4 py-3 text-muted-foreground">
+                      <td title={s.description ?? undefined} className="max-w-[280px] truncate px-4 py-3 text-muted-foreground">
                         {s.description ?? "-"}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
@@ -253,7 +254,7 @@ export default function SkillsPage() {
                           className={cn(
                             s.in_db
                               ? s.enabled
-                                ? "border-transparent bg-emerald-500/10 text-emerald-600"
+                                ? "border-transparent bg-emerald-500/10 text-green-700"
                                 : "bg-secondary text-muted-foreground"
                               : "border-dashed bg-transparent text-muted-foreground"
                           )}
@@ -361,8 +362,8 @@ export default function SkillsPage() {
           <Button onClick={openCreate}>新增 Skill</Button>
         </EmptyState>
       ) : (
-        <Card className="overflow-hidden">
-          <table className="w-full text-sm">
+        <Card className="overflow-x-auto">
+          <table className="data-table w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">名称</th>
@@ -394,7 +395,7 @@ export default function SkillsPage() {
                     <Badge
                       className={cn(
                         v.synced
-                          ? "border-transparent bg-emerald-500/10 text-emerald-600"
+                          ? "border-transparent bg-emerald-500/10 text-green-700"
                           : "bg-secondary text-muted-foreground"
                       )}
                     >

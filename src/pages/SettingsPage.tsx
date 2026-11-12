@@ -50,6 +50,18 @@ const CLI_TARGET_LABELS: Record<string, string> = {
 };
 
 export default function SettingsPage() {
+  const sections = [
+    ["general", "常规"],
+    ["cli", "CLI 接入"],
+    ["rectifier", "协议整流"],
+    ["pricing", "模型定价"],
+    ["backup", "配置备份"],
+    ["all", "全部设置"],
+  ];
+  const [section, setSection] = useState(() => {
+    const initial = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("section");
+    return sections.some(([id]) => id === initial) ? initial! : "general";
+  });
   const [error, setError] = useState<string | null>(null);
 
   const [config, setConfig] = useState<AppConfigInfo | null>(null);
@@ -407,7 +419,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div>
+    <div className="page-stack" id="settings">
       <PageHeader
         title="设置"
         description="应用配置、CLI 配置编辑与配置导入导出"
@@ -426,6 +438,10 @@ export default function SettingsPage() {
         </div>
       )}
 
+      <div className="grid items-start gap-6 lg:grid-cols-[196px_minmax(0,1fr)]">
+        <nav aria-label="设置分组" className="flex gap-1 overflow-x-auto lg:sticky lg:top-0 lg:flex-col">{sections.map(([id, label]) => <button key={id} type="button" aria-current={section === id ? "page" : undefined} onClick={() => setSection(id)} className={`shrink-0 rounded-xl px-4 py-3 text-left text-sm transition-colors ${section === id ? "bg-secondary font-medium" : "text-muted-foreground hover:bg-muted"}`}>{label}</button>)}</nav>
+        <div className="min-w-0">
+        <section aria-label="常规设置" hidden={section !== "general" && section !== "all"}>
       {/* 端口配置 */}
       <Card className="mb-6">
         <CardHeader>
@@ -473,12 +489,12 @@ export default function SettingsPage() {
               )}
             </div>
             {portSaved && !restarted && (
-              <p className="text-sm text-emerald-600">
+              <p className="text-sm text-green-700">
                 已保存，点击“立即重启”使新端口生效。
               </p>
             )}
             {restarted && (
-              <p className="text-sm text-emerald-600">网关已重启。</p>
+              <p className="text-sm text-green-700">网关已重启。</p>
             )}
           </div>
         </CardContent>
@@ -496,7 +512,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+          <div className="setting-row">
             <div className="space-y-0.5">
               <Label>关闭时最小化到托盘</Label>
               <p className="text-xs text-muted-foreground">
@@ -512,6 +528,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      </section>
+      <section aria-label="协议整流配置" hidden={section !== "rectifier" && section !== "all"}>
       {/* 整流器 */}
       <Card className="mb-6">
         <CardHeader>
@@ -524,7 +542,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+          <div className="setting-row">
             <div className="space-y-0.5">
               <Label>启用整流器</Label>
               <p className="text-xs text-muted-foreground">
@@ -538,7 +556,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+          <div className="setting-row">
             <div className="space-y-0.5">
               <Label>修复 thinking signature 错误</Label>
               <p className="text-xs text-muted-foreground">
@@ -555,7 +573,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+          <div className="setting-row">
             <div className="space-y-0.5">
               <Label>修复 thinking budget 错误</Label>
               <p className="text-xs text-muted-foreground">
@@ -572,7 +590,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+          <div className="setting-row">
             <div className="space-y-0.5">
               <Label>图片降级（总开关）</Label>
               <p className="text-xs text-muted-foreground">
@@ -589,7 +607,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+          <div className="setting-row">
             <div className="space-y-0.5">
               <Label>发送前剥离图片（纯文本模型）</Label>
               <p className="text-xs text-muted-foreground">
@@ -608,6 +626,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      </section>
+      <section aria-label="模型定价配置" hidden={section !== "pricing" && section !== "all"}>
       {/* 模型定价（估算费用） */}
       <Card className="mb-6">
         <CardHeader>
@@ -625,7 +645,7 @@ export default function SettingsPage() {
             <p className="mb-3 text-sm text-muted-foreground">尚未配置模型定价</p>
           ) : (
             <div className="mb-4 overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
+              <table className="data-table w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="px-4 py-2 font-medium">模型</th>
@@ -763,6 +783,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      </section>
+      <section aria-label="CLI 接入配置" hidden={section !== "cli" && section !== "all"}>
       {/* CLI 配置编辑 */}
       <Card className="mb-6">
         <CardHeader>
@@ -908,6 +930,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      </section>
+      <section aria-label="配置备份与恢复" hidden={section !== "backup" && section !== "all"}>
       {/* 导出 */}
       <Card className="mb-6">
         <CardHeader>
@@ -933,13 +957,13 @@ export default function SettingsPage() {
               导出
             </Button>
           </div>
-          <p className="flex items-start gap-1.5 text-xs text-amber-600">
+          <p className="flex items-start gap-1.5 text-xs text-amber-800">
             <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             导出文件包含网关访问凭证（sk-lgw），请妥善保管；渠道 api_key
             已脱敏，导入后需重新补填。
           </p>
           {exportBytes !== null && (
-            <p className="mt-2 text-sm text-emerald-600">
+            <p className="mt-2 text-sm text-green-700">
               导出成功：{exportBytes} 字节
             </p>
           )}
@@ -1035,6 +1059,9 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+      </section>
+      </div>
+      </div>
     </div>
   );
 }

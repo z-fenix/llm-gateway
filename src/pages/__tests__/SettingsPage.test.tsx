@@ -70,8 +70,28 @@ describe("SettingsPage", () => {
     vi.clearAllMocks();
   });
 
+  it("默认展示常规设置，通过分组切换到 CLI 配置", async () => {
+    render(<SettingsPage />);
+    expect(await screen.findByLabelText("首选端口")).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "目标 CLI" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "CLI 接入" }));
+    expect(screen.getByRole("combobox", { name: "目标 CLI" })).toBeVisible();
+    expect(screen.getByLabelText("首选端口")).not.toBeVisible();
+  });
+
+  it("未知分组地址回退到常规设置", async () => {
+    window.location.hash = "#/settings?section=missing";
+    try {
+      render(<SettingsPage />);
+      expect(await screen.findByLabelText("首选端口")).toBeVisible();
+    } finally {
+      window.location.hash = "";
+    }
+  });
+
   it("渲染各分组卡片", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByText("端口配置")).toBeInTheDocument()
     );
@@ -83,6 +103,7 @@ describe("SettingsPage", () => {
 
   it("CLI target 下拉显示友好标签", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("combobox", { name: "目标 CLI" })).toBeInTheDocument()
     );
@@ -93,6 +114,7 @@ describe("SettingsPage", () => {
 
   it("保存端口调用 setPreferredPort", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByLabelText("首选端口")).toBeInTheDocument()
     );
@@ -112,6 +134,7 @@ describe("SettingsPage", () => {
       minimize_to_tray: true,
     });
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByLabelText("首选端口")).toBeInTheDocument()
     );
@@ -125,6 +148,7 @@ describe("SettingsPage", () => {
 
   it("整流器卡片渲染并显示子开关文案", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByText("整流器")).toBeInTheDocument()
     );
@@ -137,6 +161,7 @@ describe("SettingsPage", () => {
 
   it("点击启用整流器开关调用 setRectifierConfig('enabled', false)", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("switch", { name: "启用整流器" })).toBeInTheDocument()
     );
@@ -148,6 +173,7 @@ describe("SettingsPage", () => {
 
   it("点击编辑配置读取 readCliConfig 并填充 textarea", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
     );
@@ -162,6 +188,7 @@ describe("SettingsPage", () => {
 
   it("输入非法 JSON 显示 JSON 格式错误", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
     );
@@ -173,6 +200,7 @@ describe("SettingsPage", () => {
 
   it("格式化按钮将压缩 JSON 美化", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
     );
@@ -185,6 +213,7 @@ describe("SettingsPage", () => {
 
   it("保存调用 writeCliConfigContent(target, cliJson)", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
     );
@@ -202,6 +231,7 @@ describe("SettingsPage", () => {
 
   it("设置当前网关仅改写 env 变量并回填编辑框", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "编辑配置" })).toBeInTheDocument()
     );
@@ -226,6 +256,7 @@ describe("SettingsPage", () => {
 
   it("Codex 目标编辑器显示 config.toml 提示", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByRole("combobox", { name: "目标 CLI" })).toBeInTheDocument()
     );
@@ -242,6 +273,7 @@ describe("SettingsPage", () => {
 
   it("关闭行为卡片渲染且默认开启，点击调用 setMinimizeToTray", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(
         screen.getByRole("switch", { name: "关闭时最小化到托盘" })
@@ -268,6 +300,7 @@ describe("SettingsPage", () => {
       },
     ]);
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByText("模型定价（估算费用）")).toBeInTheDocument()
     );
@@ -278,6 +311,7 @@ describe("SettingsPage", () => {
 
   it("保存定价前归一化模型名并调用 upsertModelPrice", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() => expect(screen.getByLabelText("模型名")).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText("模型名"), {
       target: { value: "OpenRouter/Anthropic/Claude-Sonnet-4.5:free" },
@@ -308,6 +342,7 @@ describe("SettingsPage", () => {
 
   it("Anthropic 参考按钮按 1.25x/0.1x 填充缓存价格", async () => {
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() => expect(screen.getByLabelText("模型名")).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText("输入($/M)"), {
       target: { value: "3" },
@@ -331,6 +366,7 @@ describe("SettingsPage", () => {
       },
     ]);
     render(<SettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "全部设置" }));
     await waitFor(() =>
       expect(screen.getByText("claude-sonnet-4.5")).toBeInTheDocument()
     );

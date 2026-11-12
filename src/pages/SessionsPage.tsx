@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MessagesSquare, Search, Trash2, ScrollText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
@@ -88,6 +88,7 @@ function messageRoleLabel(role: string): string {
 }
 
 export default function SessionsPage() {
+  const messageRequest = useRef(0);
   const [sessions, setSessions] = useState<SessionMeta[] | null>(null);
   const [providerFilter, setProviderFilter] = useState<ProviderId>("all");
   const [search, setSearch] = useState("");
@@ -121,6 +122,7 @@ export default function SessionsPage() {
 
   useEffect(() => {
     loadSessions();
+    return () => { messageRequest.current += 1; };
   }, []);
 
   useEffect(() => {
@@ -148,6 +150,7 @@ export default function SessionsPage() {
   const sessionKey = (s: SessionMeta) => `${s.providerId}:${s.sessionId}:${s.sourcePath ?? ""}`;
 
   const toggleExpand = async (s: SessionMeta) => {
+    const request = ++messageRequest.current;
     const key = sessionKey(s);
     if (expandedKey === key) {
       setExpandedKey(null);
@@ -158,12 +161,12 @@ export default function SessionsPage() {
     setMessagesLoading(true);
     setMessages(null);
     try {
-      setMessages(await api.getSessionMessages(s.providerId, s.sourcePath ?? ""));
+      const next = await api.getSessionMessages(s.providerId, s.sourcePath ?? "");
+      if (messageRequest.current === request) setMessages(next);
     } catch (err) {
-      handleError(err);
-      setMessages(null);
+      if (messageRequest.current === request) { handleError(err); setMessages(null); }
     } finally {
-      setMessagesLoading(false);
+      if (messageRequest.current === request) setMessagesLoading(false);
     }
   };
 
@@ -181,6 +184,8 @@ export default function SessionsPage() {
         setSessions(sessions.filter((s) => sessionKey(s) !== sessionKey(pendingDelete)));
       }
       if (expandedKey === sessionKey(pendingDelete)) {
+        messageRequest.current += 1;
+        setMessagesLoading(false);
         setExpandedKey(null);
         setMessages(null);
       }
@@ -193,9 +198,10 @@ export default function SessionsPage() {
   };
 
   const activeCount = sessions?.length ?? 0;
+  const selected = filtered.find((s) => sessionKey(s) === expandedKey);
 
   return (
-    <div>
+    <div className="page-stack" id="sessions">
       <PageHeader
         title="会话"
         description="本地 CLI（Claude / Codex / Gemini）的会话记录"
@@ -210,15 +216,15 @@ export default function SessionsPage() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1 rounded-xl border bg-card p-1">
+        <div className="segmented-control">
           {PROVIDERS.map((p) => (
             <button
               key={p.id}
               onClick={() => setProviderFilter(p.id)}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                "segmented-item",
                 providerFilter === p.id
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -256,100 +262,28 @@ export default function SessionsPage() {
           }
         />
       ) : (
-        <div className="space-y-2">
-          {filtered.map((s) => {
+        <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[336px_minmax(0,1fr)]">
+          <Card className="p-4"><p className="mb-4 px-1 text-xs text-muted-foreground">最近会话 · {filtered.length} 条</p><div className="space-y-3">{filtered.map((s) => {
             const key = sessionKey(s);
-            const expanded = expandedKey === key;
-            return (
-              <Card key={key} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="flex w-full items-center">
-                    <button
-                      className="flex min-w-0 flex-1 items-center gap-3 p-4 text-left transition-colors hover:bg-muted/40"
-                      onClick={() => toggleExpand(s)}
-                    >
-                      <Badge variant={providerBadgeVariant(s.providerId)}>
-                        {PROVIDER_LABEL[s.providerId] ?? s.providerId}
-                      </Badge>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">
-                          {s.title || "（无标题）"}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {s.projectDir && (
-                            <span className="truncate font-mono">{s.projectDir}</span>
-                          )}
-                          <span className="font-mono">{shortId(s.sessionId)}</span>
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right text-xs text-muted-foreground">
-                        <div>{relativeTime(s.lastActiveAt ?? s.createdAt)}</div>
-                        {s.lastActiveAt ? (
-                          <div className="font-mono">{formatTime(s.lastActiveAt)}</div>
-                        ) : null}
-                      </div>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="查看日志"
-                      className="mr-2 shrink-0 text-muted-foreground hover:text-primary"
-                      onClick={() =>
-                        navigate(
-                          `/logs?tab=logs&session_id=${encodeURIComponent(s.sessionId)}&session_provider=${encodeURIComponent(s.providerId)}`
-                        )
-                      }
-                    >
-                      <ScrollText className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="删除会话"
-                      className="mr-2 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => setPendingDelete(s)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {expanded && (
-                    <div className="border-t px-4 py-3">
-                      {messagesLoading ? (
-                        <div className="py-4 text-center text-sm text-muted-foreground">
-                          加载中…
-                        </div>
-                      ) : messages && messages.length > 0 ? (
-                        <div className="space-y-3">
-                          {messages.map((m, i) => (
-                            <div key={i} className="text-sm">
-                              <div className="mb-1 flex items-center gap-2">
-                                <Badge variant={roleBadgeVariant(m.role)}>
-                                  {messageRoleLabel(m.role)}
-                                </Badge>
-                                {m.ts ? (
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatTime(m.ts)}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div className="whitespace-pre-wrap rounded-lg bg-muted/40 p-3 text-foreground/90">
-                                {m.content}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="py-4 text-center text-sm text-muted-foreground">
-                          无消息内容
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+            return <div key={key} className={cn("rounded-xl border border-border/60 p-3", expandedKey === key ? "border-primary/20 bg-accent" : "bg-card")}>
+              <button className="w-full text-left" onClick={() => toggleExpand(s)} aria-expanded={expandedKey === key}>
+                <p className="truncate text-sm font-medium">{s.title || "（无标题）"}</p>
+                <p className="mt-2 text-[11px] text-muted-foreground">{PROVIDER_LABEL[s.providerId] ?? s.providerId} · {relativeTime(s.lastActiveAt ?? s.createdAt)}</p>
+                <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground" title={s.projectDir ?? undefined}>{s.projectDir}</p>
+                <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{shortId(s.sessionId)}</p>
+              </button>
+              <div className="mt-2 flex justify-end gap-1">
+                <Button variant="ghost" size="icon" aria-label="查看日志" onClick={() => navigate(`/logs?tab=logs&session_id=${encodeURIComponent(s.sessionId)}&session_provider=${encodeURIComponent(s.providerId)}`)}><ScrollText /></Button>
+                <Button variant="ghost" size="icon" aria-label="删除会话" className="text-muted-foreground hover:text-destructive" onClick={() => setPendingDelete(s)}><Trash2 /></Button>
+              </div>
+            </div>;
+          })}</div></Card>
+          <Card className="min-h-[560px] p-6">
+            {!selected ? <EmptyState icon={<MessagesSquare className="h-7 w-7" />} title="选择一个会话" description="在左侧选择会话，查看消息时间线与工具调用。" /> : <>
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5"><div><h2 className="text-lg font-semibold">会话详情</h2><p className="mt-2 text-xs text-muted-foreground">{PROVIDER_LABEL[selected.providerId] ?? selected.providerId} · {selected.lastActiveAt ? formatTime(selected.lastActiveAt) : ""}</p></div><Button variant="outline" size="sm" onClick={() => navigate(`/logs?tab=logs&session_id=${encodeURIComponent(selected.sessionId)}&session_provider=${encodeURIComponent(selected.providerId)}`)}>查看关联日志</Button></div>
+              {messagesLoading ? <LoadingState /> : messages && messages.length > 0 ? <div className="space-y-5">{messages.map((m, i) => <article key={i} className={cn("rounded-xl border-b border-border/60 p-4", m.role === "user" && "bg-background")}><div className="mb-3 flex items-center justify-between gap-2"><Badge variant={roleBadgeVariant(m.role)}>{messageRoleLabel(m.role)}</Badge>{m.ts && <time className="text-[11px] text-muted-foreground">{formatTime(m.ts)}</time>}</div><div className="whitespace-pre-wrap break-words text-[13px] leading-7">{m.content}</div></article>)}</div> : <EmptyState title="无消息内容" />}
+            </>}
+          </Card>
         </div>
       )}
 

@@ -18,7 +18,9 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Input } from "../components/ui/input";
-import { cn } from "../lib/utils";
+import { Switch } from "../components/ui/switch";
+import SegmentedControl from "../components/SegmentedControl";
+import ErrorBanner from "../components/ErrorBanner";
 import {
   Dialog,
   DialogContent,
@@ -32,30 +34,6 @@ const STATUS_OPTIONS = [
   { label: "启用", value: "enabled" },
   { label: "禁用", value: "disabled" },
 ];
-
-function protocolBadgeVariant(protocol: string): string {
-  if (protocol.includes("openai"))
-    return "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300";
-  if (protocol.includes("anthropic"))
-    return "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300";
-  if (protocol.includes("gemini"))
-    return "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300";
-  return "bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200";
-}
-
-function supplierGradient(supplier: string): string {
-  const s = supplier.toLowerCase();
-  if (s.includes("openai")) return "from-blue-500 to-cyan-400";
-  if (s.includes("anthropic") || s.includes("claude")) return "from-purple-500 to-indigo-400";
-  if (s.includes("google") || s.includes("gemini")) return "from-teal-500 to-emerald-400";
-  if (s.includes("azure")) return "from-sky-600 to-blue-500";
-  if (s.includes("deepseek")) return "from-slate-600 to-slate-400";
-  return "from-muted to-muted-foreground";
-}
-
-function supplierInitials(supplier: string): string {
-  return supplier.slice(0, 2).toUpperCase();
-}
 
 export default function ChannelsPage() {
   const [list, setList] = useState<Channel[]>([]);
@@ -187,260 +165,47 @@ export default function ChannelsPage() {
   }, [list, keyword, statusFilter]);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <PageHeader
-        title="渠道管理"
-        description="配置上游渠道、优先级权重与模型映射"
-        action={
-          <Button onClick={openCreate}>
-            <Plus className="mr-1 h-4 w-4" />
-            新建渠道
-          </Button>
-        }
-      />
-
-      {error && (
-        <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
+    <div className="page-stack" id="channels">
+      <PageHeader title="渠道管理" description="连接上游服务，配置调度优先级与模型映射。" action={<Button onClick={openCreate}><Plus />新建渠道</Button>} />
+      {error && <ErrorBanner message={error} onRetry={load} />}
+      <div className="page-toolbar">
+        <div className="relative w-full sm:max-w-[400px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input ref={searchInputRef} className="pl-9" placeholder="搜索名称 / 供应商 / Base URL / 模型" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+        </div>
+        <SegmentedControl value={statusFilter} options={STATUS_OPTIONS} label="渠道状态" onChange={setStatusFilter} />
+      </div>
+      {list.length === 0 ? <EmptyState title="暂无渠道" description="还没有配置任何上游渠道，先创建一个吧"><Button onClick={openCreate}><Plus />新建渠道</Button></EmptyState> : filtered.length === 0 ? <EmptyState title="没有匹配的渠道" description="换个搜索词或筛选条件试试" /> : (
+        <div className="table-shell">
+          <table className="data-table min-w-[980px]">
+            <thead><tr><th>渠道</th><th>上游协议</th><th>优先级 / 权重</th><th>支持模型</th><th>调用 / 平均延迟</th><th>启用</th><th className="text-right">操作</th></tr></thead>
+            <tbody>{filtered.map((c) => <tr key={c.id}>
+              <td><div className="max-w-[250px]"><p className="truncate font-medium" title={c.name}>{c.name}</p><p className="mt-1.5 truncate text-[11px] text-muted-foreground" title={c.base_url}>{c.base_url}</p></div></td>
+              <td><Badge variant="secondary">{c.upstream_protocol}</Badge><p className="mt-1.5 text-[11px] text-muted-foreground">{c.supplier}</p></td>
+              <td className="tabular-nums">{c.priority} / {c.weight}</td>
+              <td><span title={c.models.join(", ")} className="cursor-help text-muted-foreground">{c.models.length} 个模型</span></td>
+              <td className="tabular-nums"><p>{c.total_calls.toLocaleString()} / {c.avg_latency_ms} ms</p><p className="mt-1.5 text-[11px] text-muted-foreground">成功率 {(c.success_rate * 100).toFixed(1)}% · {c.total_tokens.toLocaleString()} Token</p></td>
+              <td><Switch checked={c.enabled} aria-label={`启用 ${c.name}`} onCheckedChange={(enabled) => { void api.updateChannel({ ...c, enabled }).then(load).catch(handleError); }} /></td>
+              <td><div className="flex justify-end gap-1">
+                <Button variant="ghost" size="sm" aria-label="连通检测" onClick={() => test(c.id)} disabled={testingId === c.id}>{testingId === c.id ? <Loader2 className="animate-spin" /> : <Activity />}测试</Button>
+                <Button variant="ghost" size="icon" aria-label="编辑" title="编辑" onClick={() => openEdit(c)}><Edit /></Button>
+                <Button variant="ghost" size="icon" aria-label="复制" title="复制渠道" onClick={() => duplicate(c)}><Copy /></Button>
+                <Button variant="ghost" size="icon" aria-label="删除" title="删除" onClick={() => setDeleteTarget(c)} className="text-muted-foreground hover:text-destructive"><Trash2 /></Button>
+              </div></td>
+            </tr>)}</tbody>
+          </table>
         </div>
       )}
-
-      {/* 状态筛选胶囊 —— 跟随 cc-switch 供应商列表顶部布局 */}
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="搜索名称 / 供应商 / Base URL / 模型"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-1 rounded-xl border bg-card p-1">
-          {STATUS_OPTIONS.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setStatusFilter(s.value)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                statusFilter === s.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {list.length === 0 ? (
-          <EmptyState
-            title="暂无渠道"
-            description="还没有配置任何上游渠道，先创建一个吧"
-          >
-            <Button onClick={openCreate}>
-              <Plus className="mr-1 h-4 w-4" />
-              新建渠道
-            </Button>
-          </EmptyState>
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            title="没有匹配的渠道"
-            description="换个搜索词或筛选条件试试"
-          />
-        ) : (
-          <div className="space-y-3 pt-1">
-            {filtered.map((c) => (
-              <ChannelCard
-                key={c.id}
-                channel={c}
-                onEdit={() => openEdit(c)}
-                onDuplicate={() => duplicate(c)}
-                onTest={() => test(c.id)}
-                onDelete={() => setDeleteTarget(c)}
-                testingId={testingId}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setEditing(null);
-        }}
-      >
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? "编辑渠道" : "新建渠道"}</DialogTitle>
-            <DialogDescription>
-              {editing
-                ? "修改渠道信息并保存"
-                : "填写上游渠道信息，保存后即可开始转发请求"}
-            </DialogDescription>
-          </DialogHeader>
-          <ChannelForm
-            initial={editing ?? undefined}
-            onSubmit={save}
-            onCancel={() => setDialogOpen(false)}
-          />
+      <div className="page-toolbar text-xs text-muted-foreground"><span>共 {list.length} 个渠道 · {list.filter((c) => c.enabled).length} 个已启用</span><span>Ctrl + F 搜索</span></div>
+      <div className="info-banner"><Activity className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><div><h2 className="font-medium">调度如何选择渠道？</h2><p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。</p></div></div>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditing(null); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader><DialogTitle>{editing ? "编辑渠道" : "新建渠道"}</DialogTitle><DialogDescription>{editing ? "修改渠道信息并保存" : "配置上游服务；保存后可在列表测试连通性。"}</DialogDescription></DialogHeader>
+          {error && <ErrorBanner message={error} />}
+          <ChannelForm initial={editing ?? undefined} onSubmit={save} onCancel={() => setDialogOpen(false)} />
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        title="删除渠道"
-        message={
-          deleteTarget
-            ? `确定删除渠道「${deleteTarget.name}」?关联的角色路由与兜底引用可能失效。`
-            : undefined
-        }
-        variant="destructive"
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={confirmDelete}
-      />
-    </div>
-  );
-}
-
-function ChannelCard({
-  channel,
-  onEdit,
-  onDuplicate,
-  onTest,
-  onDelete,
-  testingId,
-}: {
-  channel: Channel;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onTest: () => void;
-  onDelete: () => void;
-  testingId: string | null;
-}) {
-  const isTesting = testingId === channel.id;
-
-  return (
-    <div
-      className={cn(
-        "group relative overflow-hidden rounded-xl border border-border p-4 transition-all duration-300",
-        "bg-card text-card-foreground",
-        "hover:border-border-active hover:shadow-sm",
-        !channel.enabled && "opacity-65"
-      )}
-    >
-      {/* 蓝色渐变左侧条，突出启用状态 */}
-      {channel.enabled && (
-        <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      )}
-
-      <div className="relative flex items-center gap-4">
-        {/* 左侧图标 */}
-        <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br text-xs font-bold text-white shadow-sm transition-transform duration-300 group-hover:scale-105",
-            supplierGradient(channel.supplier)
-          )}
-        >
-          {supplierInitials(channel.supplier)}
-        </div>
-
-        {/* 中间信息区 */}
-        <div className="min-w-0 flex-1 space-y-1">
-          {/* 第一行：名称 + 状态 + 协议 + 模型 */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="truncate font-semibold text-foreground">
-              {channel.name}
-            </h3>
-            <Badge variant={channel.enabled ? "default" : "secondary"} className="shrink-0">
-              {channel.enabled ? "启用" : "禁用"}
-            </Badge>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold shrink-0",
-                protocolBadgeVariant(channel.upstream_protocol)
-              )}
-            >
-              {channel.upstream_protocol}
-            </span>
-            <span className="inline-flex items-center rounded-md bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-700/60 dark:text-slate-200 shrink-0">
-              {channel.supplier}
-            </span>
-            {channel.models.map((m) => (
-              <Badge
-                key={m}
-                variant="outline"
-                className="font-mono text-[10px] font-normal shrink-0"
-              >
-                {m}
-              </Badge>
-            ))}
-          </div>
-
-          {/* 第二行：URL + 统计（统计右浮动） */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground truncate" title={channel.base_url}>
-              {channel.base_url}
-            </span>
-            <div className="text-right text-[11px] text-muted-foreground tabular-nums shrink-0 ml-3 flex-shrink-0">
-              调用 {channel.total_calls} · Token {channel.total_tokens.toLocaleString()} · 成功率 {(channel.success_rate * 100).toFixed(1)}% · 延迟 {channel.avg_latency_ms}ms
-            </div>
-          </div>
-        </div>
-
-        {/* 右侧操作按钮 —— hover 时显现 */}
-        <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onEdit}
-            aria-label="编辑"
-            title="编辑"
-            className="h-8 w-8 p-1"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onDuplicate}
-            aria-label="复制"
-            title="复制"
-            className="h-8 w-8 p-1"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onTest}
-            disabled={isTesting}
-            aria-label="连通检测"
-            title="连通检测"
-            className={cn("h-8 w-8 p-1", !isTesting && "hover:text-emerald-600 dark:hover:text-emerald-400")}
-          >
-            {isTesting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Activity className="h-4 w-4" />
-            )}
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onDelete}
-            aria-label="删除"
-            title="删除"
-            className="h-8 w-8 p-1 hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <ConfirmDialog open={Boolean(deleteTarget)} title="删除渠道" message={deleteTarget ? `确定删除渠道「${deleteTarget.name}」?关联的角色路由与兜底引用可能失效。` : undefined} variant="destructive" onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
     </div>
   );
 }

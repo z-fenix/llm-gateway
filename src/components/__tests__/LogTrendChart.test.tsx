@@ -13,6 +13,8 @@ vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="responsive">{children}</div>
   ),
+  Bar: () => <div data-testid="bar" />,
+  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="chart">{children}</div>,
   AreaChart: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="chart">{children}</div>
   ),
@@ -87,10 +89,10 @@ describe("LogTrendChart component (Recharts)", () => {
     expect(screen.queryByTestId("chart")).not.toBeInTheDocument();
   });
 
-  it("calls 维度渲染 1 个 Area", () => {
+  it("calls 维度渲染柱形图", () => {
     render(<LogTrendChart buckets={[baseBucket]} dimension="calls" bucketSecs={3600} />);
     expect(screen.getByTestId("chart")).toBeInTheDocument();
-    expect(screen.getAllByTestId("area")).toHaveLength(1);
+    expect(screen.getAllByTestId("bar")).toHaveLength(1);
   });
 
   it("tokens 维度渲染 2 个 Area(input/output)", () => {

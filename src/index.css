@@ -3,47 +3,80 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --background: 0 0% 96%;
+  --foreground: 240 6% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 240 6% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 210 100% 56%;
+  --popover-foreground: 240 6% 10%;
+  --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 210 100% 56%;
-  --radius: 0.5rem;
+  --secondary: 240 4% 93%;
+  --secondary-foreground: 240 6% 10%;
+  --muted: 240 4% 93%;
+  --muted-foreground: 240 5% 34%;
+  --accent: 214 95% 93%;
+  --accent-foreground: 224 76% 48%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 5% 88%;
+  --input: 240 5% 87%;
+  --ring: 221 83% 53%;
+  --radius: 0.75rem;
+  --success: 142 72% 29%;
+  --warning: 32 81% 29%;
+  --chart-1: #2563eb;
+  --chart-2: #c2410c;
+  --chart-3: #7c3aed;
 }
 
-body {
-  @apply bg-background text-foreground;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, select:focus-visible, textarea:focus-visible {
+    @apply outline-none ring-2 ring-ring/40 ring-offset-2;
+  }
+  select:not([aria-hidden="true"]), textarea {
+    @apply rounded-xl border border-input bg-card text-sm transition-colors;
+  }
+  select:not([aria-hidden="true"]) { @apply h-9 px-3; }
+  textarea { @apply p-3; }
+  ::selection { @apply bg-primary/15; }
 }
 
-.usage-range-popover {
-  container-type: inline-size;
+@layer components {
+  .page-stack { @apply min-w-0 space-y-6; }
+  .page-toolbar { @apply flex flex-wrap items-center justify-between gap-3; }
+  .segmented-control { @apply inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-muted p-1; }
+  .segmented-item { @apply shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground; }
+  .segmented-item[data-active="true"] { @apply bg-card text-foreground shadow-sm; }
+  .data-table { @apply w-full border-collapse text-left text-[13px]; }
+  .data-table thead { @apply bg-muted/75; }
+  .data-table th { @apply whitespace-nowrap px-4 py-3 text-xs font-medium text-muted-foreground; }
+  .data-table td { @apply px-4 py-4 align-middle; }
+  .data-table tbody > tr { @apply border-b border-border/60 transition-colors last:border-0; }
+  .data-table tbody > tr:hover { @apply bg-background/60; }
+  .table-shell { @apply min-w-0 overflow-x-auto rounded-2xl bg-card; }
+  .info-banner { @apply flex items-start gap-3 rounded-xl bg-accent/60 p-4 text-sm; }
+  .setting-row { @apply flex items-center justify-between gap-4 border-b border-border/60 py-4 last:border-0; }
+  .mono-value { @apply break-all font-mono text-xs; }
+  .usage-range-popover { container-type: inline-size; }
+  .usage-meter { appearance: none; background: none; border: 0; }
+  .usage-meter::-webkit-meter-bar { background: hsl(var(--muted)); border: 0; border-radius: 999px; }
+  .usage-meter::-webkit-meter-optimum-value { background: hsl(var(--primary)); border-radius: 999px; }
+  .usage-meter::-moz-meter-bar { background: hsl(var(--primary)); border-radius: 999px; }
 }
 
 @container (min-width: 500px) {
-  .usage-range-layout {
-    flex-direction: row;
-  }
-  .usage-range-fields {
-    width: 250px;
-    flex: none;
-  }
-  .usage-range-calendar {
-    min-width: 0;
-    flex: 1 1 0%;
-  }
+  .usage-range-layout { flex-direction: row; }
+  .usage-range-fields { width: 250px; flex: none; }
+  .usage-range-calendar { min-width: 0; flex: 1 1 0%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin, .animate-in, .animate-out { animation: none !important; }
 }

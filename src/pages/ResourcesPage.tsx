@@ -1,65 +1,26 @@
-import { useState } from "react";
-import { cn } from "../lib/utils";
+import { useSearchParams } from "react-router-dom";
+import SegmentedControl from "../components/SegmentedControl";
 import KnowledgePage from "./KnowledgePage";
 import PromptsPage from "./PromptsPage";
 import McpServersPage from "./McpServersPage";
 import SkillsPage from "./SkillsPage";
 
-const TABS = [
-  { id: "knowledge", label: "知识库" },
-  { id: "prompts", label: "Prompt" },
-  { id: "mcp", label: "MCP" },
-  { id: "skills", label: "Skills" },
-] as const;
-
-type TabId = (typeof TABS)[number]["id"];
-
-const tabCls = (active: boolean) =>
-  cn(
-    "inline-flex min-w-[120px] items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all",
-    active
-      ? "bg-blue-500 text-white shadow-sm"
-      : "text-muted-foreground opacity-60 hover:opacity-100 hover:bg-muted/50"
-  );
+const TABS = [{ value: "knowledge", label: "知识库" }, { value: "prompts", label: "Prompt" }, { value: "mcp", label: "MCP" }, { value: "skills", label: "Skills" }] as const;
 
 export default function ResourcesPage() {
-  const [tab, setTab] = useState<TabId>("knowledge");
-
+  const [params, setParams] = useSearchParams();
+  const value = params.get("tab");
+  const tab = TABS.find((item) => item.value === value)?.value ?? "knowledge";
   return (
-    // 复刻 cc-switch：tab 置顶固定，内容在下方独立滚动，避免滚动内容穿透 tab。
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 pb-4">
-        <div
-          role="tablist"
-          aria-orientation="horizontal"
-          className="grid w-full grid-cols-4 rounded-lg bg-muted p-1 text-muted-foreground"
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              aria-controls={`tab-${t.id}`}
-              onClick={() => setTab(t.id)}
-              className={tabCls(tab === t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === "knowledge" ? (
-          <KnowledgePage />
-        ) : tab === "prompts" ? (
-          <PromptsPage />
-        ) : tab === "mcp" ? (
-          <McpServersPage />
-        ) : (
-          <SkillsPage />
-        )}
-      </div>
+    <div className="min-w-0 space-y-6">
+      <SegmentedControl value={tab} options={TABS} label="资源类型" onChange={(id) => {
+        const next = new URLSearchParams(params);
+        next.set("tab", id);
+        setParams(next, { replace: true });
+      }} />
+      <section aria-label={TABS.find((item) => item.value === tab)?.label}>
+        {tab === "knowledge" ? <KnowledgePage /> : tab === "prompts" ? <PromptsPage /> : tab === "mcp" ? <McpServersPage /> : <SkillsPage />}
+      </section>
     </div>
   );
 }

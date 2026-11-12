@@ -359,7 +359,7 @@ export default function RoleRoutesPage() {
   const detailRoutes = selectedRole ? routesByRole(routes, selectedRole) : [];
 
   return (
-    <div>
+    <div className="page-stack" id="role-routes">
       <PageHeader
         title="角色路由"
         description="同一角色可配置多个供应商/模型，按优先级+权重自动路由，失败自动切换并支持熔断"
@@ -373,79 +373,23 @@ export default function RoleRoutesPage() {
 
       {selectedRole === null ? (
         <>
-          {/* 角色汇总卡总览 */}
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-            {ROLE_ORDER.map((role) => {
-              const roleRoutes = routes.filter((r) => r.role === role);
-              const stat = roleStats[role];
-              const hasOpenBreaker = roleRoutes.some(
-                (r) => breakerStatus[r.id]?.state === "open",
-              );
-              return (
-                <Card
-                  key={role}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`查看 ${role} 角色详情`}
-                  className="cursor-pointer transition-shadow hover:shadow-md"
-                  onClick={() => setSelectedRole(role)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelectedRole(role);
-                    }
-                  }}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`h-3 w-3 shrink-0 rounded-full ${
-                            ROLE_COLORS[role] ?? "bg-slate-400"
-                          }`}
-                        />
-                        <CardTitle className="text-base">{role}</CardTitle>
-                      </div>
-                      <Badge variant="secondary">配置 {roleRoutes.length} 条</Badge>
-                    </div>
-                    <CardDescription>
-                      {role === "auto"
-                        ? "未匹配角色模式的占位路由"
-                        : `${role} 角色路由与上游统计`}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {hasOpenBreaker && (
-                      <div className="mb-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive">
-                        存在已熔断路由
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-                      <div>
-                        <div className="text-xs text-muted-foreground">请求数</div>
-                        <div className="font-medium">{stat?.requests ?? 0}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Token</div>
-                        <div className="font-medium">
-                          {formatTokens(stat?.tokens ?? 0)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">成功率</div>
-                        <div className="font-medium">{successRate(stat)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">平均延迟</div>
-                        <div className="font-medium">
-                          {stat ? `${stat.avg_latency_ms}ms` : "-"}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="table-shell mb-6">
+            <table className="data-table min-w-[880px]">
+              <thead><tr><th>角色 / 匹配</th><th>首选渠道</th><th>目标模型</th><th>路由数</th><th>熔断状态</th><th>操作</th></tr></thead>
+              <tbody>{ROLE_ORDER.map((role) => {
+                const roleRoutes = routesByRole(routes, role);
+                const preferred = roleRoutes.find((route) => route.enabled);
+                const hasOpenBreaker = roleRoutes.some((route) => breakerStatus[route.id]?.state === "open");
+                return <tr key={role}>
+                  <td><p className="font-semibold">{role}</p><p className="mt-1.5 font-mono text-[11px] text-muted-foreground">{patterns.filter((p) => p.role === role).map((p) => p.pattern).join(" / ") || (role === "auto" ? "未命中角色" : "尚未配置匹配规则")}</p></td>
+                  <td>{channels.find((c) => c.id === preferred?.channel_id)?.name ?? "尚未配置"}</td>
+                  <td className="max-w-[260px] break-all font-mono text-xs">{preferred?.target_model ?? "—"}</td>
+                  <td>{roleRoutes.length} 条</td>
+                  <td><Badge variant={hasOpenBreaker ? "destructive" : "secondary"}>{hasOpenBreaker ? "存在已熔断路由" : roleRoutes.length ? "正常" : "未配置"}</Badge></td>
+                  <td><Button variant="outline" size="sm" aria-label={`查看 ${role} 角色详情`} onClick={() => setSelectedRole(role)}>配置</Button></td>
+                </tr>;
+              })}</tbody>
+            </table>
           </div>
 
           <Card className="mb-6">
@@ -523,8 +467,8 @@ export default function RoleRoutesPage() {
                   </Button>
                 </EmptyState>
               ) : (
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto rounded-xl border border-border/60">
+                  <table className="data-table w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-muted-foreground">
                         <th className="px-4 py-3 font-medium">模式</th>
@@ -608,6 +552,9 @@ export default function RoleRoutesPage() {
             </Button>
           </CardHeader>
           <CardContent>
+            <dl className="mb-6 grid grid-cols-2 gap-4 rounded-xl bg-background p-5 lg:grid-cols-4">
+              {[ ["请求数", roleStats[selectedRole]?.requests ?? 0], ["Token", formatTokens(roleStats[selectedRole]?.tokens ?? 0)], ["成功率", successRate(roleStats[selectedRole])], ["平均延迟", `${roleStats[selectedRole]?.avg_latency_ms ?? 0}ms`] ].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold">{value}</dd></div>)}
+            </dl>
             {detailRoutes.length === 0 ? (
               <EmptyState
                 title={`暂无「${selectedRole}」路由`}
@@ -619,7 +566,7 @@ export default function RoleRoutesPage() {
               </EmptyState>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-sm">
+                <table className="data-table w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="w-44 px-4 py-3 font-medium">渠道</th>

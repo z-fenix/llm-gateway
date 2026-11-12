@@ -332,8 +332,10 @@ describe("LogsPage", () => {
     await waitFor(() => expect(screen.getByText("trace-abc")).toBeInTheDocument());
 
     fireEvent.click(screen.getByText("平铺列表"));
-    // 平铺视图下 trace 短名不再作为会话行展示
-    expect(screen.queryByText("trace-abc")).not.toBeInTheDocument();
+    // 平铺视图保留 Trace，但不再显示会话展开入口。
+    expect(screen.getByText("trace-abc")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看请求 1 详情" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /展开会话/ })).not.toBeInTheDocument();
   });
 
   it("选择预设后 stats/trend 立即用新范围请求(不残留旧 filter)", async () => {
@@ -376,7 +378,7 @@ describe("LogsPage", () => {
     expect(screen.getByText("$0.001500")).toBeInTheDocument();
   });
 
-  it("日志表渲染缓存读取/缓存创建/费用列", async () => {
+  it("详情抽屉展示缓存读取、缓存创建与估算费用", async () => {
     mockedApi.listLogs.mockResolvedValue({
       total: 1,
       items: [
@@ -389,10 +391,29 @@ describe("LogsPage", () => {
       ],
     });
     render(<MemoryRouter><LogsPage /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByText("$0.000123")).toBeInTheDocument());
-    const row = screen.getByText("$0.000123").closest("tr")!;
-    expect(within(row).getByText("30")).toBeInTheDocument();
-    expect(within(row).getByText("12")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "查看请求 1 详情" }));
+    const drawer = await screen.findByRole("dialog", { name: "请求详情" });
+    expect(within(drawer).getByText("$0.000123")).toBeInTheDocument();
+    expect(within(drawer).getByText("30")).toBeInTheDocument();
+    expect(within(drawer).getByText("12")).toBeInTheDocument();
+    fireEvent.click(within(drawer).getByRole("tab", { name: "响应内容" }));
+    expect(within(drawer).getByText("(无响应体 / 流式)")).toBeInTheDocument();
+    fireEvent.click(within(drawer).getByRole("tab", { name: "安全发现" }));
+    expect(await within(drawer).findByText("无风险详情")).toBeInTheDocument();
+    expect(mockedApi.getSecurityFindings).toHaveBeenCalledWith("l1");
+  });
+
+  it("安全发现加载失败可在抽屉内重试", async () => {
+    mockedApi.listLogs.mockResolvedValue({ total: 1, items: [makeLog({})] });
+    mockedApi.getSecurityFindings.mockRejectedValueOnce(new Error("审计读取失败"));
+    render(<MemoryRouter><LogsPage /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole("button", { name: "查看请求 1 详情" }));
+    const drawer = await screen.findByRole("dialog", { name: "请求详情" });
+    fireEvent.click(within(drawer).getByRole("tab", { name: "安全发现" }));
+    expect(await within(drawer).findByRole("alert")).toHaveTextContent("审计读取失败");
+    fireEvent.click(within(drawer).getByRole("button", { name: "重试" }));
+    expect(await within(drawer).findByText("无风险详情")).toBeInTheDocument();
+    expect(mockedApi.getSecurityFindings).toHaveBeenCalledTimes(2);
   });
 
   it("趋势维度包含缓存/成本 tab 并可切换", async () => {

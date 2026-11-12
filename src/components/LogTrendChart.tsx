@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -109,7 +111,7 @@ function CustomTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   const entries = payload
-    .filter((p) => p.value !== undefined && p.value !== null && p.value !== 0)
+    .filter((p) => p.value !== undefined && p.value !== null)
     .map((p) => ({
       name: p.name ?? String(p.dataKey),
       value: p.value,
@@ -125,10 +127,7 @@ function CustomTooltip({
         )}
         {entries.map((e, i) => (
           <div key={i} className="flex items-center gap-1.5 text-xs">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: e.color }}
-            />
+            <svg className="h-2 w-3 shrink-0" aria-hidden="true"><rect width="12" height="3" y="2" fill={e.color} /></svg>
             <span className="text-muted-foreground">{e.name}:</span>
             <span className="font-medium text-foreground">
               {dimension === "success"
@@ -177,152 +176,26 @@ export default function LogTrendChart({
     );
   }
 
+  const series = dimension === "calls" ? [{ key: "calls", name: "调用量", color: "var(--chart-1)" }]
+    : dimension === "tokens" ? [{ key: "input", name: "输入 Tokens", color: "var(--chart-1)" }, { key: "output", name: "输出 Tokens", color: "var(--chart-2)" }]
+    : dimension === "cache" ? [{ key: "cache_creation", name: "缓存创建", color: "var(--chart-2)" }, { key: "cache_read", name: "缓存命中", color: "var(--chart-3)" }]
+    : dimension === "success" ? [{ key: "success", name: "成功率", color: "hsl(var(--success))" }]
+    : dimension === "cost" ? [{ key: "cost", name: "费用", color: "var(--chart-1)" }]
+    : RISK_ORDER.map((key) => ({ key, name: RISK_LABELS[key], color: RISK_COLORS[key] }));
+  const axes = <><CartesianGrid vertical={false} stroke="hsl(var(--border))" opacity={0.45} />
+    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} minTickGap={36} dy={8} />
+    <YAxis axisLine={false} tickLine={false} width={46} domain={dimension === "success" ? [0, 100] : [0, "auto"]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: number) => dimension === "success" ? `${v}%` : dimension === "cost" ? formatUsdAxis(v) : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
+    <Tooltip content={<CustomTooltip dimension={dimension} />} /></>;
   return (
-    <div className="h-[220px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorInput" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorOutput" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorCacheCreation" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f97316" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorCacheRead" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-            stroke="hsl(var(--border))"
-            opacity={0.4}
-          />
-          <XAxis
-            dataKey="label"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-            dy={10}
-          />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-            tickFormatter={(v: number) =>
-              dimension === "success"
-                ? `${v}%`
-                : dimension === "cost"
-                  ? formatUsdAxis(v)
-                  : v >= 1000
-                    ? `${(v / 1000).toFixed(1)}k`
-                    : String(v)
-            }
-            width={44}
-          />
-          <Tooltip content={<CustomTooltip dimension={dimension} />} />
-          {dimension === "calls" && (
-            <Area
-              type="monotone"
-              dataKey="calls"
-              name="调用量"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              fill="url(#colorCalls)"
-            />
-          )}
-          {dimension === "tokens" && (
-            <>
-              <Area
-                type="monotone"
-                dataKey="input"
-                name="输入 Tokens"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                fill="url(#colorInput)"
-              />
-              <Area
-                type="monotone"
-                dataKey="output"
-                name="输出 Tokens"
-                stroke="#22c55e"
-                strokeWidth={2}
-                fill="url(#colorOutput)"
-              />
-            </>
-          )}
-          {dimension === "cache" && (
-            <>
-              <Area
-                type="monotone"
-                dataKey="cache_creation"
-                name="缓存创建"
-                stroke="#f97316"
-                strokeWidth={2}
-                fill="url(#colorCacheCreation)"
-              />
-              <Area
-                type="monotone"
-                dataKey="cache_read"
-                name="缓存命中"
-                stroke="#a855f7"
-                strokeWidth={2}
-                fill="url(#colorCacheRead)"
-              />
-            </>
-          )}
-          {dimension === "cost" && (
-            <Area
-              type="monotone"
-              dataKey="cost"
-              name="费用"
-              stroke="#ef4444"
-              strokeWidth={2}
-              strokeDasharray="5 3"
-              fill="url(#colorCost)"
-            />
-          )}
-          {dimension === "success" && (
-            <Area
-              type="monotone"
-              dataKey="success"
-              name="成功率"
-              stroke="#22c55e"
-              strokeWidth={2}
-              fill="none"
-            />
-          )}
-          {dimension === "risk" &&
-            RISK_ORDER.map((l) => (
-              <Area
-                key={l}
-                type="monotone"
-                dataKey={l}
-                name={RISK_LABELS[l] || l}
-                stackId="risk"
-                stroke={RISK_COLORS[l]}
-                fill={RISK_COLORS[l]}
-                fillOpacity={0.6}
-                strokeWidth={1}
-              />
-            ))}
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="min-w-0 space-y-4">
+      <div className="h-[220px] w-full" aria-label={`${series.map((s) => s.name).join("、")}趋势图`}>
+        <ResponsiveContainer width="100%" height="100%">
+          {dimension === "calls" ? <BarChart data={chartData} accessibilityLayer margin={{ top: 10, right: 12, left: 0, bottom: 10 }}>{axes}<Bar dataKey="calls" name="调用量" fill="var(--chart-1)" maxBarSize={18} radius={[4, 4, 0, 0]} isAnimationActive={false} /></BarChart>
+            : <AreaChart data={chartData} accessibilityLayer margin={{ top: 10, right: 12, left: 0, bottom: 10 }}>{axes}{series.map((s) => <Area key={s.key} type="monotone" dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={2} fill={s.color} fillOpacity={0.1} stackId={dimension === "risk" ? "risk" : undefined} isAnimationActive={false} activeDot={{ r: 4, stroke: "hsl(var(--card))", strokeWidth: 2 }} />)}</AreaChart>}
+        </ResponsiveContainer>
+      </div>
+      {series.length > 1 && <ul aria-label="图例" className="flex flex-wrap justify-center gap-x-5 gap-y-2">{series.map((s) => <li key={s.key} className="flex items-center gap-2 text-[11px] text-muted-foreground"><svg className="h-2 w-3 shrink-0" aria-hidden="true"><rect width="12" height="3" y="2" fill={s.color} /></svg>{s.name}</li>)}</ul>}
+      <details className="rounded-xl bg-background/70 px-4 py-3"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">查看数据</summary><div className="mt-3 max-h-64 overflow-auto"><table className="data-table"><caption className="sr-only">与趋势图同口径的数据表</caption><thead><tr><th>时间</th>{series.map((s) => <th key={s.key}>{s.name}</th>)}</tr></thead><tbody>{chartData.map((row, index) => <tr key={index}><td>{row.label}</td>{series.map((s) => <td key={s.key}>{dimension === "cost" ? formatUsd(Number((row as Record<string, unknown>)[s.key])) : dimension === "success" ? `${(row as Record<string, unknown>)[s.key]}%` : Number((row as Record<string, unknown>)[s.key]).toLocaleString()}</td>)}</tr>)}</tbody></table></div></details>
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
 
 export default function PromptsPage() {
   const [list, setList] = useState<Prompt[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -131,8 +132,10 @@ export default function PromptsPage() {
     }
   };
 
+  const selected = list.find((p) => p.id === selectedId) ?? list[0];
+
   return (
-    <div>
+    <div className="page-stack" id="prompts">
       <PageHeader
         title="Prompt 管理"
         description="多套 CLAUDE.md 模板，启用后写入 ~/.claude/CLAUDE.md（自动备份）"
@@ -208,56 +211,13 @@ export default function PromptsPage() {
           <Button onClick={openCreate}>新增 Prompt</Button>
         </EmptyState>
       ) : (
-        <Card className="overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">名称</th>
-                <th className="px-4 py-3 font-medium">描述</th>
-                <th className="px-4 py-3 font-medium">启用</th>
-                <th className="px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b border-border last:border-0 hover:bg-accent/50"
-                >
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    {p.name}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {p.description ?? "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Switch
-                      checked={p.enabled}
-                      onCheckedChange={() => handleEnable(p)}
-                      aria-label={`启用 ${p.name}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="text-primary hover:underline"
-                        onClick={() => openEdit(p)}
-                      >
-                        编辑
-                      </button>
-                      <button
-                        className="text-destructive hover:underline"
-                        onClick={() => setDeleting(p)}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+        <div className="grid items-start gap-5 lg:grid-cols-[292px_minmax(0,1fr)]">
+          <Card className="space-y-3 p-4"><p className="px-1 py-2 text-sm font-semibold">我的模板</p>{list.map((p) => <div key={p.id} className={`rounded-xl p-4 ${selected?.id === p.id ? "bg-accent" : "bg-background"}`}>
+            <button className="w-full text-left" onClick={() => setSelectedId(p.id)}><p className="text-sm font-medium">{p.name}</p><p className="mt-2 text-xs text-muted-foreground">{p.description ?? "暂无描述"}</p></button>
+            <div className="mt-3 flex items-center justify-between gap-2"><Switch checked={p.enabled} onCheckedChange={() => handleEnable(p)} aria-label={`启用 ${p.name}`} /><div className="flex gap-3 text-xs"><button className="text-primary hover:underline" onClick={() => openEdit(p)}>编辑</button><button className="text-destructive hover:underline" onClick={() => setDeleting(p)}>删除</button></div></div>
+          </div>)}</Card>
+          <Card className="min-w-0 p-6"><div className="page-toolbar"><h2 className="text-lg font-semibold">模板预览</h2><Button variant="outline" onClick={() => openEdit(selected)}>修改模板</Button></div><p className="mb-5 mt-3 text-xs text-muted-foreground">启用后写入 ~/.claude/CLAUDE.md，原文件自动备份；同时仅启用一套模板。</p><pre className="min-h-[360px] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-background p-5 font-mono text-xs leading-7">{selected.content}</pre><p className="mt-4 text-xs text-muted-foreground">保存模板不会自动启用；切换模板时才写入全局文件。</p></Card>
+        </div>
       )}
 
       <ConfirmDialog

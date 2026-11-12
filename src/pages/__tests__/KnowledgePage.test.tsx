@@ -66,8 +66,7 @@ describe("KnowledgePage", () => {
     await waitFor(() =>
       expect(screen.getAllByText("文档库").length).toBeGreaterThan(0)
     );
-    expect(screen.getByText("3")).toBeInTheDocument();
-    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getByText("3 份文档 · 12 个分块")).toBeInTheDocument();
   });
 
   it("新建库调用 createKb", async () => {
@@ -75,6 +74,7 @@ describe("KnowledgePage", () => {
       { id: "ch1", name: "渠道A" } as any,
     ]);
     render(<KnowledgePage />);
+    fireEvent.click(screen.getByRole("button", { name: "创建知识库" }));
     await waitFor(() =>
       expect(screen.getByPlaceholderText("知识库名称")).toBeInTheDocument()
     );
