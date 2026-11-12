@@ -308,6 +308,34 @@ pub fn load_messages(path: &Path) -> Result<Vec<SessionMessage>, String> {
     Ok(messages)
 }
 
+/// 提取 (首条, 末条) 用户消息文本，供请求日志内容匹配使用。只读头尾行。
+pub fn content_bounds(path: &Path) -> Option<(Option<String>, Option<String>)> {
+    let (head, tail) = read_head_tail_lines(path, 40, 60).ok()?;
+    let first = head.iter().find_map(|line| user_text_from_line(line));
+    let last = tail.iter().rev().find_map(|line| user_text_from_line(line));
+    Some((first, last))
+}
+
+/// 单条 JSONL 记录：response_item 的用户 message 且有文本 → Some(text)。
+fn user_text_from_line(line: &str) -> Option<String> {
+    let value: Value = serde_json::from_str(line).ok()?;
+    if value.get("type").and_then(Value::as_str) != Some("response_item") {
+        return None;
+    }
+    let payload = value.get("payload")?;
+    if payload.get("type").and_then(Value::as_str) != Some("message")
+        || payload.get("role").and_then(Value::as_str) != Some("user")
+    {
+        return None;
+    }
+    let text = payload.get("content").map(extract_text).unwrap_or_default();
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
 pub fn delete_session(_root: &Path, path: &Path, session_id: &str) -> Result<bool, String> {
     let meta = parse_session(path)
         .ok_or_else(|| format!("Failed to parse Codex session metadata: {}", path.display()))?;
@@ -684,6 +712,27 @@ mod tests {
         assert_eq!(msgs[1].content, "[Tool: read_file]");
         assert_eq!(msgs[2].role, "tool");
         assert_eq!(msgs[2].content, "file contents");
+    }
+
+    #[test]
+    fn content_bounds_finds_first_and_last_user_texts() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("cb.jsonl");
+        std::fs::write(
+            &path,
+            concat!(
+                r#"{"type":"session_meta","payload":{"id":"t1","cwd":"/repo"}}"#, "\n",
+                r#"{"type":"response_item","payload":{"type":"message","role":"user","content":"第一条输入"}}"#, "\n",
+                r#"{"type":"response_item","payload":{"type":"function_call","name":"read_file"}}"#, "\n",
+                r#"{"type":"response_item","payload":{"type":"message","role":"assistant","content":"回复"}}"#, "\n",
+                r#"{"type":"response_item","payload":{"type":"message","role":"user","content":"最新的输入"}}"#, "\n",
+            ),
+        )
+        .unwrap();
+
+        let (first, last) = content_bounds(&path).unwrap();
+        assert_eq!(first.as_deref(), Some("第一条输入"));
+        assert_eq!(last.as_deref(), Some("最新的输入"));
     }
 
     #[test]
