@@ -60,6 +60,10 @@
 - 前端构建仍有原主包超过 500 kB 的警告；阅读器已独立分包。本项目无 ESLint 配置，不声称 lint 通过。
 - 作者自审，没有独立第二位代码审查者；cc-switch 未修改、未复制其私有阅读组件树。
 
+## 发布
+
+实现提交 `6844cf1f21859bcd9ac56d94df4f1234c3f69a81`（`feat: restore gateway design and add structured session reader`）已从 `style/design-parity` 快进合入 `master`，推送 `origin/master` 成功，并用 `git ls-remote` 核对到相同 SHA。包含前两轮未提交的 UI 工作、本轮修正与合成验收证据；无 force push。本文发布记录随后以纯文档提交补齐，不更改已验证代码。
+
 ## 复验
 
 ```bash

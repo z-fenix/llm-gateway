@@ -6,7 +6,9 @@
 - [x] 结构化会话解析与阅读器
 - [x] 架构对比
 - [x] 全量测试与浏览器验收
-- [ ] 提交、合入 master、推送并核对远端
+- [x] 提交、合入 master、推送并核对远端
+
+发布：实现提交 `6844cf1f21859bcd9ac56d94df4f1234c3f69a81` 已快进合入 `master`，推送 `origin/master` 成功；`git ls-remote origin refs/heads/master` 返回同一 SHA。本发布记录随后以纯文档提交补齐。最终前端 43 文件 / 441 测试通过，后端 547 测试通过，浏览器 64 场景通过；typecheck、build、fmt、暂存区 diff --check 通过。仅 Pencil 设计稿同步受额度限制未执行。
 
 约束：保留前两轮改动；cc-switch 只读；不使用代理/worktree；测试不操作真实凭据、会话或 CLI 配置；不强推。
 Pre-flight：会话解析新增可选 blocks，由前端类型与 reader 消费；旧 content/role/ts 保留。模型列表 API 签名不变，改变空/错结果的可见语义。
