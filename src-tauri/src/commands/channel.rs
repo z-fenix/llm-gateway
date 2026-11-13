@@ -358,6 +358,13 @@ async fn list_channel_models_with_state(
         timeout_secs as u64
     });
     let deadline = tokio::time::Instant::now() + timeout;
+    // Discovery must not follow redirects carrying x-api-key or query credentials.
+    // Keep the gateway's regular forwarding client unchanged.
+    let http = reqwest::Client::builder()
+        .no_proxy()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|_| "初始化模型列表 HTTP 客户端失败".to_string())?;
     let mut out = Vec::new();
     let mut cursors = std::collections::HashSet::new();
     // 不跟随响应内任意 URL：只在原端点追加游标，避免向其他主机发送凭据。
@@ -366,7 +373,7 @@ async fn list_channel_models_with_state(
         if remaining.is_zero() {
             return Err("获取模型列表超时".into());
         }
-        let mut req = state.http.get(url.clone()).timeout(remaining);
+        let mut req = http.get(url.clone()).timeout(remaining);
         if let Some((name, value)) =
             crate::provider::adapter::auth_header(&upstream_protocol, &api_key)
         {
@@ -379,6 +386,12 @@ async fn list_channel_models_with_state(
             .send()
             .await
             .map_err(|e| format!("请求上游失败: {}", e.without_url()))?;
+        if resp.status().is_redirection() {
+            return Err(format!(
+                "上游返回重定向 {}，请直接填写最终 API 的 Base URL；为保护凭据未自动跳转",
+                resp.status()
+            ));
+        }
         if !resp.status().is_success() {
             return Err(format!("上游返回状态码 {}", resp.status()));
         }
@@ -778,6 +791,73 @@ mod tests {
         .await
         .unwrap_err();
         assert!(error.contains("游标重复"));
+    }
+
+    #[tokio::test]
+    async fn model_listing_rejects_overflowing_timeout_without_panicking() {
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let result = list_channel_models_with_state(
+            &state,
+            "http://127.0.0.1:1".into(),
+            "openai-chat".into(),
+            "synthetic".into(),
+            i64::MAX,
+            None,
+        )
+        .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn model_listing_does_not_follow_redirects_or_forward_credentials() {
+        use axum::{response::Redirect, routing::get, Router};
+        use std::sync::{
+            atomic::{AtomicUsize, Ordering},
+            Arc,
+        };
+        let hits = Arc::new(AtomicUsize::new(0));
+        let capture = hits.clone();
+        let dest = Router::new().route(
+            "/redirected",
+            get(move || {
+                let capture = capture.clone();
+                async move {
+                    capture.fetch_add(1, Ordering::SeqCst);
+                    axum::Json(serde_json::json!({"data":[{"id":"wrong-host"}]}))
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let location = format!("http://{}/redirected", listener.local_addr().unwrap());
+        let dest_task = tokio::spawn(async move { axum::serve(listener, dest).await.unwrap() });
+        let source = Router::new().route(
+            "/v1/models",
+            get(move || {
+                let location = location.clone();
+                async move { Redirect::temporary(&location) }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let source_task = tokio::spawn(async move { axum::serve(listener, source).await.unwrap() });
+        let state = AppState::new(Db::new_in_memory().unwrap());
+        let result = list_channel_models_with_state(
+            &state,
+            base,
+            "anthropic-messages".into(),
+            "synthetic-key-no-redirect".into(),
+            5,
+            None,
+        )
+        .await;
+        source_task.abort();
+        dest_task.abort();
+        assert_eq!(
+            hits.load(Ordering::SeqCst),
+            0,
+            "model discovery must not contact the redirected host"
+        );
+        assert!(result.unwrap_err().contains("307"));
     }
 
     #[tokio::test]

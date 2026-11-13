@@ -1,0 +1,78 @@
+$ vitest run "src/components/__tests__/SessionReader.test.tsx"
+
+ RUN  v2.1.9 D:/workplace/project/tools/llm-gateway
+
+ ❯ src/components/__tests__/SessionReader.test.tsx (9 tests | 2 failed) 4378ms
+   ✓ 会话阅读交互 > 工具过程折叠，打开后显示失败和真实输入输出 1079ms
+   ✓ 会话阅读交互 > 正文搜索自动展开折叠过程并定位；清除后恢复折叠 401ms
+   ✓ 会话阅读交互 > 收起再展开过程时保留已展开的工具详情 737ms
+   ✓ 会话阅读交互 > 工具筛选下过程实际展开时 aria-expanded 不能为 false 682ms
+   × 会话阅读交互 > 工具筛选中被隐藏轮次的目录入口不能跳到错误的第一行 765ms
+     → expect(element).toBeDisabled()
+
+Received element is not disabled:
+  <button
+  class="block w-full truncate rounded p-2 text-left text-xs hover:bg-accent"
+/>
+   × 会话阅读交互 > 剪贴板拒绝复制时不能显示代码已复制图标 246ms
+     → expected SVGSVGElement{ …(2), [Symbol(impl)]: SVGSVGElementImpl{ …(34), …(2) } } to be null
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/__tests__/SessionReader.test.tsx > 会话阅读交互 > 工具筛选中被隐藏轮次的目录入口不能跳到错误的第一行
+Error: expect(element).toBeDisabled()
+
+Received element is not disabled:
+  <button
+  class="block w-full truncate rounded p-2 text-left text-xs hover:bg-accent"
+/>
+ ❯ src/components/__tests__/SessionReader.test.tsx:66:59
+     64|     fireEvent.click(screen.getByRole("button",{name:"工具"}));
+     65|     fireEvent.click(screen.getByRole("button",{name:"轮次目录"}));
+     66|     expect(screen.getByRole("button",{name:/2\. 无工具问题/})).toBeDis…
+       |                                                           ^
+     67|   });
+     68|   it("剪贴板拒绝复制时不能显示代码已复制图标", async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/components/__tests__/SessionReader.test.tsx > 会话阅读交互 > 剪贴板拒绝复制时不能显示代码已复制图标
+AssertionError: expected SVGSVGElement{ …(2), [Symbol(impl)]: SVGSVGElementImpl{ …(34), …(2) } } to be null
+
+- Expected:
+null
+
++ Received:
+<svg
+  class="lucide lucide-check"
+  fill="none"
+  height="13"
+  stroke="currentColor"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  stroke-width="2"
+  viewBox="0 0 24 24"
+  width="13"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M20 6 9 17l-5-5"
+  />
+</svg>
+
+ ❯ src/components/__tests__/SessionReader.test.tsx:75:49
+     73|     await act(async()=>{fireEvent.click(copy);});
+     74|     expect(writeText).toHaveBeenCalledWith("const n = 1;\n");
+     75|     expect(copy.querySelector(".lucide-check")).toBeNull();
+       |                                                 ^
+     76|   });
+     77|   it("复制会话包含工具结果；有恢复命令才显示复制入口", async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 7 passed (9)
+   Start at  09:32:43
+   Duration  17.95s (transform 929ms, setup 707ms, collect 5.80s, tests 4.38s, environment 3.64s, prepare 530ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

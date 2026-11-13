@@ -62,7 +62,7 @@ export function ModelCombobox({ value, onChange, options, loading, placeholder =
           <PopoverTrigger asChild><Button type="button" variant="ghost" size="icon" aria-label="选择模型" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"><ChevronsUpDown className="h-4 w-4 opacity-50" /></Button></PopoverTrigger>
         </div>
       </PopoverAnchor>
-      <PopoverContent align="start" sideOffset={6} onOpenAutoFocus={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="z-[70] max-h-[min(280px,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] min-w-56 overflow-y-auto rounded-xl p-1.5">
+      <PopoverContent align="start" sideOffset={6} onInteractOutside={event => { if (event.target === input.current) event.preventDefault(); }} onOpenAutoFocus={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="z-[70] max-h-[min(280px,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] min-w-56 overflow-y-auto rounded-xl p-1.5">
         <div role="listbox" id={listId} aria-label="模型候选">
           {filtered.length === 0 ? <p className="px-3 py-2 text-xs text-muted-foreground">{loading ? "加载中…" : "无可用模型，可直接输入"}</p> : filtered.map((option, index) => (
             <button key={option} id={`${listId}-${index}`} type="button" role="option" aria-selected={option === value} onClick={() => choose(option)} onMouseEnter={() => setActive(index)} className={cn("flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent", active === index && "bg-accent", option === value && "font-medium")}>

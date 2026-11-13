@@ -1,0 +1,39 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling llm-gateway v0.1.0 (D:\workplace\project\tools\llm-gateway\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 51s
+     Running unittests src\lib.rs (target\debug\deps\llm_gateway_lib-e9094a33b66a6416.exe)
+
+running 28 tests
+test commands::channel::tests::create_channel_rejects_invalid_and_inserts_valid ... ok
+test commands::channel::tests::create_channel_trims_name_and_base_url ... ok
+test commands::channel::tests::list_channel_models_anthropic_fetches_all_pages_with_headers ... ok
+test commands::channel::tests::list_channel_models_fetches_upstream_models ... ok
+test commands::channel::tests::list_channel_models_gemini_encodes_key_and_follows_page_token ... ok
+test commands::channel::tests::list_channel_models_masked_key_uses_db_key ... ok
+test commands::channel::tests::list_channel_models_status_errors_and_repeated_cursor_are_not_empty_success ... ok
+test commands::channel::tests::list_channel_models_unreachable_errors ... ok
+test commands::channel::tests::model_listing_does_not_follow_redirects_or_forward_credentials ... ok
+test commands::channel::tests::model_listing_rejects_overflowing_timeout_without_panicking ... ok
+test commands::channel::tests::model_map_empty_model_rejected ... ok
+test commands::channel::tests::model_map_overwrite_updates_target ... ok
+test commands::channel::tests::model_map_set_get_delete_roundtrip ... ok
+test commands::channel::tests::parse_models_response_empty_ok ... ok
+test commands::channel::tests::parse_models_response_gemini_strips_models_prefix ... ok
+test commands::channel::tests::parse_models_response_invalid_json_errors ... ok
+test commands::channel::tests::parse_models_response_openai_list ... ok
+test commands::channel::tests::parse_models_response_rejects_wrong_schema_and_deduplicates ... ok
+test commands::channel::tests::update_channel_short_masked_key_preserves_original ... ok
+test commands::channel::tests::update_channel_validates_after_unmask ... ok
+test commands::channel::tests::update_channel_with_masked_key_preserves_original ... ok
+test commands::channel::tests::validate_blank_name_rejected ... ok
+test commands::channel::tests::validate_empty_models_rejected ... ok
+test commands::channel::tests::validate_invalid_base_url_rejected ... ok
+test commands::channel::tests::validate_missing_api_key_rejected ... ok
+test commands::channel::tests::validate_timeout_below_1_rejected ... ok
+test commands::channel::tests::validate_valid_channel_passes ... ok
+test commands::channel::tests::validate_whitespace_model_entry_rejected ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 452 filtered out; finished in 7.77s

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import SessionReader from "../sessions/SessionReader";
 import type { SessionMessage } from "../../types";
@@ -22,6 +22,23 @@ describe("会话阅读交互", () => {
     fireEvent.click(screen.getByRole("button",{name:"清除查找"}));
     expect(screen.queryByText("secret needle")).not.toBeInTheDocument();
   });
+  it("收起再展开过程时保留已展开的工具详情", () => {
+    render(<SessionReader messages={messages}/>);
+    const process=screen.getByRole("button",{name:/执行过程/});
+    fireEvent.click(process);
+    fireEvent.click(screen.getByRole("button",{name:/Read/}));
+    expect(screen.getByText("secret needle")).toBeVisible();
+    fireEvent.click(process);
+    fireEvent.click(process);
+    expect(screen.getByRole("button",{name:/Read/})).toHaveAttribute("aria-expanded","true");
+    expect(screen.getByText("secret needle")).toBeVisible();
+  });
+  it("工具筛选下过程实际展开时 aria-expanded 不能为 false", () => {
+    render(<SessionReader messages={messages}/>);
+    fireEvent.click(screen.getByRole("button",{name:"工具"}));
+    expect(screen.getByRole("button",{name:/Read/})).toBeInTheDocument();
+    expect(screen.getByRole("button",{name:/执行过程/})).toHaveAttribute("aria-expanded","true");
+  });
   it("Markdown 不执行 HTML，不自动加载远程图片，不创建危险链接", () => {
     const {container} = render(<SessionReader messages={[{role:"assistant",content:'<script>alert(1)</script>\n\n![track](https://example.com/track)\n\n[bad](javascript:alert(1))'}]} />);
     expect(container.querySelector("script,img")).toBeNull();
@@ -41,6 +58,21 @@ describe("会话阅读交互", () => {
       Object.defineProperty(window,"innerWidth",{configurable:true,value:width});
       HTMLElement.prototype.scrollIntoView=original;
     }
+  });
+  it("工具筛选中被隐藏轮次的目录入口不能跳到错误的第一行", () => {
+    render(<SessionReader messages={[...messages,{role:"user",content:"无工具问题"},{role:"assistant",content:"直接回复"}]}/>);
+    fireEvent.click(screen.getByRole("button",{name:"工具"}));
+    fireEvent.click(screen.getByRole("button",{name:"轮次目录"}));
+    expect(screen.getByRole("button",{name:/2\. 无工具问题/})).toBeDisabled();
+  });
+  it("剪贴板拒绝复制时不能显示代码已复制图标", async () => {
+    const writeText=vi.fn().mockRejectedValue(new Error("clipboard denied"));
+    Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText}});
+    render(<SessionReader messages={messages}/>);
+    const copy=screen.getByRole("button",{name:"复制代码"});
+    await act(async()=>{fireEvent.click(copy);});
+    expect(writeText).toHaveBeenCalledWith("const n = 1;\n");
+    expect(copy.querySelector(".lucide-check")).toBeNull();
   });
   it("复制会话包含工具结果；有恢复命令才显示复制入口", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);

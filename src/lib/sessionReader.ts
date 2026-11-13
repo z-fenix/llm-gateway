@@ -32,29 +32,31 @@ export function buildSessionTurns(messages: SessionMessage[]): SessionTurn[] {
     turns.push(current); current = undefined;
     endsWithAssistantText = false;
   };
+  const appendBlock = (block: SessionBlock, message: SessionMessage) => {
+    const turn = ensure();
+    endsWithAssistantText = block.type === "text" && message.role === "assistant";
+    if (block.type === "tool_result") {
+      const call = block.id ? [...turn.steps].reverse().find(s => s.kind === "tool" && s.id === block.id && s.output === undefined) : undefined;
+      if (call) { call.output = block.output; call.status = block.status; }
+      else turn.steps.push({key:`step-${serial++}`,kind:"tool",id:block.id,output:block.output,status:block.status,ts:message.ts});
+      return;
+    }
+    const base = {key:`step-${serial++}`,ts:message.ts};
+    if (block.type === "tool_call") turn.steps.push({...base,kind:"tool",id:block.id,name:block.name,input:block.input,status:"unknown"});
+    else if (block.type === "thinking") turn.steps.push({...base,kind:"thinking",text:block.text});
+    else if (block.type === "text") turn.steps.push({...base,kind:message.role === "assistant" ? "note" : "thinking",text:block.text});
+  };
   for (const message of messages) {
     const blocks = effectiveBlocks(message);
-    // CLI user records can contain both prior tool results and a new question.
-    const results = blocks.filter((b): b is Extract<SessionBlock,{type:"tool_result"}> => b.type === "tool_result");
-    for (const result of results) {
-      endsWithAssistantText = false;
-      const turn = ensure();
-      const call = result.id ? [...turn.steps].reverse().find(s => s.kind === "tool" && s.id === result.id && s.output === undefined) : undefined;
-      if (call) { call.output = result.output; call.status = result.status; }
-      else turn.steps.push({key:`step-${serial++}`,kind:"tool",id:result.id,output:result.output,status:result.status,ts:message.ts});
-    }
-    const text = blocks.filter(b => b.type === "text").map(b => (b as {text:string}).text).join("\n");
-    if (message.role === "user" && text.trim()) {
-      finish(); ensure().question = {text,ts:message.ts};
-    }
-    for (const block of blocks) {
-      if (block.type === "tool_result" || (block.type === "text" && message.role === "user")) continue;
-      const turn = ensure();
-      endsWithAssistantText = block.type === "text" && message.role === "assistant";
-      const base = {key:`step-${serial++}`,ts:message.ts};
-      if (block.type === "tool_call") turn.steps.push({...base,kind:"tool",id:block.id,name:block.name,input:block.input,status:"unknown"});
-      else if (block.type === "thinking") turn.steps.push({...base,kind:"thinking",text:block.text});
-      else if (block.type === "text") turn.steps.push({...base,kind:message.role === "assistant" ? "note" : "thinking",text:block.text});
+    if (message.role === "user") {
+      // User wrappers may contain results for the prior turn plus a new question.
+      for (const block of blocks) if (block.type === "tool_result") appendBlock(block, message);
+      const text = blocks.filter(b => b.type === "text").map(b => (b as {text:string}).text).join("\n");
+      if (text.trim()) { finish(); ensure().question = {text,ts:message.ts}; }
+      for (const block of blocks) if (block.type !== "tool_result" && block.type !== "text") appendBlock(block, message);
+    } else {
+      // Gemini can store call + result + reply in one message. Preserve block order.
+      for (const block of blocks) appendBlock(block, message);
     }
   }
   finish();
@@ -68,7 +70,7 @@ export function readerRows(turns: SessionTurn[], filter: ReaderFilter, expanded:
     const steps = filter === "tools" ? turn.steps.filter(s=>s.kind==="tool") : turn.steps;
     if (steps.length && filter !== "conversation") {
       rows.push({key:`${turn.key}-process`,turn:index,kind:"process",text:`${steps.length} 个执行步骤`});
-      if (searching || expanded.has(turn.key) || filter === "tools") for (const step of steps) rows.push({key:step.key,turn:index,kind:"step",step,text:stepText(step)});
+      if (searching || expanded.has(turn.key)) for (const step of steps) rows.push({key:step.key,turn:index,kind:"step",step,text:stepText(step)});
     }
     if (turn.final && filter !== "tools") rows.push({key:`${turn.key}-a`,turn:index,kind:"final",part:turn.final,text:turn.final.text});
   });

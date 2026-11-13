@@ -1,0 +1,905 @@
+[
+  {
+    "name": "inline-tools-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 10 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-1440",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-light-1440.png 1440 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(false);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 10 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 10 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-1440",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-dark-1440.png 1440 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(true);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-1024",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-light-1024.png 1024 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(false);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 11 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-1024",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-dark-1024.png 1024 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(true);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-768",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-light-768.png 768 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(false);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-768",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-dark-768.png 768 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(true);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 12 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-768",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/#/channels D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/models-inflight-delete-dark-768.png 768 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(true);await click('新建渠道');await wait(()=>document.querySelector('[role=dialog]'));if(!window.__DESIGN_PREVIEW__)throw Error('Refusing real backend mutation');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=(cmd,args)=>cmd==='list_channel_models'?new Promise(resolve=>{window.releaseModels=()=>resolve(['new-upstream']);}):invoke(cmd,args);await click('获取模型列表');await wait(()=>window.releaseModels);await click('删除模型');window.releaseModels();const option=await wait(()=>[...document.querySelectorAll('[role=option]')].find(n=>n.textContent==='new-upstream'));const inputElement=document.querySelector('input[role=combobox]');if(document.activeElement!==inputElement)throw Error('Restored model row not focused');const preserved=inputElement.value;option.click();await wait(()=>inputElement.value==='new-upstream');return {preserved,selected:inputElement.value,mode:'delete'};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Restored model row not focused\r\n    at <anonymous>:11:717\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Restored model row not focused\r\n    at <anonymous>:11:717\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "inline-tools-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-390",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-light-390.png 390 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(false);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:123\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-390",
+    "failed": true,
+    "error": "Error: Command failed: C:\\software\\env\\nodejs\\node.exe D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs http://127.0.0.1:5177/?state=long#/logs?tab=sessions D:/workplace/project/tools/llm-gateway/docs/changes/2026-11-13-validation-followup/edge/screenshots/fold-virtual-dark-390.png 390 1000 (async()=>{\nconst wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing expected UI: '+f.toString());};\nconst button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);\nconst click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,80));};\nconst input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};\nconst theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));};\nconst useMessages=messages=>{if(!window.__DESIGN_PREVIEW__)throw Error('Refusing to override a real backend');const invoke=window.__TAURI_INTERNALS__.invoke;window.__TAURI_INTERNALS__.invoke=async(cmd,args)=>cmd==='get_session_messages'?messages:invoke(cmd,args);};\nconst openSession=async()=>{(await wait(()=>document.querySelector('[aria-label=\"会话列表\"] button'))).click();await wait(()=>document.querySelector('[data-session-reader]'));};\nconst processButton=()=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes('执行过程'));\nconst toolButton=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.includes(name)&&n.hasAttribute('aria-controls'));\nawait theme(true);await openSession();processButton().click();const tool=await wait(()=>toolButton('Read'));tool.click();await wait(()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'));processButton().click();await wait(()=>!toolButton('Read'));processButton().click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');await click('跳到底部');await wait(()=>!toolButton('Read'));await click('轮次目录');(await wait(()=>[...document.querySelectorAll('button')].find(n=>/^1\\. /.test(n.textContent.trim())))).click();await wait(()=>toolButton('Read')?.getAttribute('aria-expanded')==='true');if(button('轮次目录').getAttribute('data-state')==='open')button('轮次目录').click();if(!document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0'))throw Error('Expanded tool result was lost');return {expanded:true,virtualRows:document.querySelectorAll('[data-row]').length};})()\nfile:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n",
+    "detail": "file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29\r\n  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);\r\n                              ^\r\n\r\nError: Error: Missing expected UI: ()=>document.querySelector('[aria-label=\"会话消息\"]').textContent.includes('synthetic-needle-0')\r\n    at wait (<anonymous>:2:118)\r\n    at async <anonymous>:11:122\r\n    at evaluate (file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:29:31)\r\n    at async file:///D:/workplace/project/tools/llm-gateway/scripts/design-audit.mjs:42:54\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+  },
+  {
+    "name": "tools-outline-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 13 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  }
+]

@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 const run=promisify(execFile),root=fileURLToPath(new URL('..',import.meta.url)).replace(/\\/g,'/').replace(/\/$/,'');
-const out=root+'/docs/changes/2026-11-12-reader-and-models';await mkdir(out+'/screenshots',{recursive:true});
+const out=process.env.AUDIT_OUTPUT || root+'/docs/changes/2026-11-12-reader-and-models';await mkdir(out+'/screenshots',{recursive:true});
 const helpers=`const wait=async(f)=>{for(let i=0;i<100;i++){const v=f();if(v)return v;await new Promise(r=>setTimeout(r,80));}throw Error('Missing UI '+f.toString())};const button=name=>[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===name||n.getAttribute('aria-label')===name);const click=async(name)=>{(await wait(()=>button(name))).click();await new Promise(r=>setTimeout(r,100))};const theme=async(dark)=>{await click('主题设置');await click(dark?'深色':'浅色');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,150))};const input=(selector,value)=>{const n=document.querySelector(selector);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,value);n.dispatchEvent(new Event('input',{bubbles:true}));};`;
 const cases=[];
 for(const width of [1440,1024,768,390])for(const dark of [false,true]){

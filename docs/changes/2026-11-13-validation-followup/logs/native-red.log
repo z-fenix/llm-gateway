@@ -1,0 +1,26 @@
+    Blocking waiting for file lock on build directory
+   Compiling llm-gateway v0.1.0 (D:\workplace\project\tools\llm-gateway\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 13s
+     Running unittests src\lib.rs (target\debug\deps\llm_gateway_lib-e9094a33b66a6416.exe)
+
+running 2 tests
+test commands::channel::tests::model_listing_does_not_follow_redirects_or_forward_credentials ... FAILED
+test commands::channel::tests::model_listing_rejects_overflowing_timeout_without_panicking ... ok
+
+failures:
+
+---- commands::channel::tests::model_listing_does_not_follow_redirects_or_forward_credentials stdout ----
+
+thread 'commands::channel::tests::model_listing_does_not_follow_redirects_or_forward_credentials' (24968) panicked at src\commands\channel.rs:807:9:
+assertion `left == right` failed: model discovery must not contact the redirected host
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    commands::channel::tests::model_listing_does_not_follow_redirects_or_forward_credentials
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 478 filtered out; finished in 2.18s
+
+error: test failed, to rerun pass `--lib`

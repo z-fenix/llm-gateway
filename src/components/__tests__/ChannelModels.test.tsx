@@ -24,6 +24,28 @@ describe("新建渠道真实模型结果", () => {
     expect(await screen.findByRole("option", { name: "private-model" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "gpt-4o" })).not.toBeInTheDocument();
   });
+  it("请求开始时没有模型行，期间手动添加的模型不能被结果覆盖", async () => {
+    let resolve!: (v: string[]) => void;
+    vi.mocked(api.listChannelModels).mockImplementation(()=>new Promise(r=>{resolve=r;}));
+    show();
+    fireEvent.click(screen.getByRole("button",{name:"删除模型"}));
+    fireEvent.click(screen.getByRole("button",{name:"获取模型列表"}));
+    fireEvent.click(screen.getByRole("button",{name:/添加模型/}));
+    fireEvent.change(screen.getByPlaceholderText("输入或选择模型…"),{target:{value:"manually-added"}});
+    await act(async()=>resolve(["upstream-model"]));
+    expect(screen.getByPlaceholderText("输入或选择模型…")).toHaveValue("manually-added");
+    expect(screen.getByRole("option",{name:"upstream-model"})).toBeInTheDocument();
+  });
+  it("请求开始后删除全部模型，返回时应补行并展开候选", async () => {
+    let resolve!: (v:string[])=>void;
+    vi.mocked(api.listChannelModels).mockImplementation(()=>new Promise(r=>{resolve=r;}));
+    show();
+    fireEvent.click(screen.getByRole("button",{name:"获取模型列表"}));
+    fireEvent.click(screen.getByRole("button",{name:"删除模型"}));
+    await act(async()=>resolve(["upstream-model"]));
+    expect(screen.getByRole("option",{name:"upstream-model"})).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("输入或选择模型…")).toHaveFocus();
+  });
   it("修改地址使旧请求失效，不能显示上一地址的模型", async () => {
     let resolve!: (v: string[]) => void;
     vi.mocked(api.listChannelModels).mockImplementation(() => new Promise(r => { resolve = r; }));

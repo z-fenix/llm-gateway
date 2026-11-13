@@ -1,0 +1,1034 @@
+[
+  {
+    "name": "inline-tools-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 16 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-1440",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 16 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 10
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 16 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 16 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-1440",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 17 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 10
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-1440",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-1440",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1440,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-1024",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 17 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 9
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-1024",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 17 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 9
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-1024",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-1024",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 1024,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-768",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 17 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 10
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 17 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-768",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 18 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 10
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-768",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-768",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 768,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-light-390",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 18 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 10
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-light-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-light-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-light-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  },
+  {
+    "name": "inline-tools-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\n思考\nread_file\n完成\nTOOL\n\n输入参数\n\n{\n  \"path\": \"synthetic.ts\"\n}\n\n输出结果\n\ninline tool result\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "paired": true,
+      "status": "read_file完成TOOL",
+      "steps": "执行过程2 个执行步骤"
+    },
+    "failed": false
+  },
+  {
+    "name": "fold-virtual-dark-390",
+    "url": "http://127.0.0.1:5177/?state=long#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 18 分钟前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-0\n\n排查连接超时 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 1 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/\n\nsession-1\n\n整理接口文档 · long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-long-session-\n\nClaude · 2 小时前\n\nD:/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/project/deep/proje",
+    "errors": [],
+    "interaction": {
+      "expanded": true,
+      "virtualRows": 10
+    },
+    "failed": false
+  },
+  {
+    "name": "tools-outline-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "共 2 轮1. 验证同条 Gemini 记录中的工具调用2. 不需要工具的第二轮"
+    ],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\n执行过程\n1 个执行步骤\nread_file\n完成\nTOOL\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "hiddenTurnDisabled": true,
+      "expanded": "true"
+    },
+    "failed": false
+  },
+  {
+    "name": "clipboard-denied-dark-390",
+    "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "日志与会话"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [],
+    "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 18 分钟前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n\n验证同条 Gemini 记录中的工具调用\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n完成\n代码\n复制\nconst fixture = true;\n\nUSER\n第 2 轮\n\n不需要工具的第二轮\n\nASSISTANT\n第 2 轮 · 最终回复\n\n直接回复\n\n2 轮 · 4 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+    "errors": [],
+    "interaction": {
+      "attempts": 1,
+      "incorrectSuccess": false
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-add-dark-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "manual-local",
+      "selected": "new-upstream",
+      "mode": "add"
+    },
+    "failed": false
+  },
+  {
+    "name": "models-inflight-delete-dark-390",
+    "url": "http://127.0.0.1:5177/#/channels",
+    "width": 390,
+    "height": 1000,
+    "h1": [
+      "渠道管理"
+    ],
+    "overflow": false,
+    "mainOverflow": false,
+    "dialogOverflow": false,
+    "dialogs": [
+      "新建渠道配置上游服务；保存后可在列表测试连通性。渠道名称 *供应商OpenAI上游协议 *OpenAI Chat CompletionsBase URL *API Key *凭据将加密存储在本地，日志"
+    ],
+    "text": "渠道管理\n\n连接上游服务，配置调度优先级与模型映射。\n\n新建渠道\n全部\n启用\n禁用\n渠道\t上游协议\t优先级 / 权重\t支持模型\t调用 / 平均延迟\t启用\t操作\n\n\nAnthropic 主线路\n\nhttps://api.anthropic.com\n\n\tAnthropic Messages\n\nclaude\n\n\t100 / 3\t1 个模型\t\n\n12,480 / 842 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nOpenAI 官方\n\nhttps://api.openai.com/v1\n\n\tOpenAI Chat\n\nopenai\n\n\t80 / 3\t1 个模型\t\n\n10,380 / 1042 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nDeepSeek 备用\n\nhttps://api.deepseek.com\n\n\tOpenAI Chat\n\ndeepseek\n\n\t60 / 3\t1 个模型\t\n\n8,280 / 1242 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\nGemini 多模态\n\nhttps://generativelanguage.googleapis.com\n\n\tGemini Native\n\ngemini\n\n\t40 / 3\t1 个模型\t\n\n6,180 / 1442 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n\n\n\n测试渠道\n\nhttps://example.invalid/v1\n\n\tOpenAI Responses\n\ncustom\n\n\t20 / 3\t1 个模型\t\n\n4,080 / 1642 ms\n\n成功率 99.2% · 4.8M Token\n\n\t\n\t\n测试\n共 5 个渠道 · 4 个已启用\nCtrl + F 搜索\n调度如何选择渠道？\n\n优先级高的渠道先尝试；同优先级按权重分配。角色命中时优先使用该角色的专属路由。",
+    "errors": [],
+    "interaction": {
+      "preserved": "",
+      "selected": "new-upstream",
+      "mode": "delete"
+    },
+    "failed": false
+  }
+]

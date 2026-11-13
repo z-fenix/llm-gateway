@@ -113,14 +113,14 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
       const models = [...new Set(list.map(m => m.trim()).filter(Boolean))];
       setModelSource(models.length ? "upstream" : "empty");
       setModelOptions(models.length ? models : STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []);
-      if (!(f.models ?? []).length) addModel();
+      ensureModelRow();
       setModelRefresh(value => value + 1);
     } catch (err) {
       if (request !== modelRequest.current) return;
       setModelSource("static");
       setModelOptions(STATIC_MODEL_CATALOG[f.supplier ?? "openai"] ?? []);
       setModelError(`获取失败：${err instanceof Error ? err.message : String(err)}。请检查地址、协议与凭据，或手动输入模型 ID。`);
-      if (!(f.models ?? []).length) addModel();
+      ensureModelRow();
       setModelRefresh(value => value + 1);
     } finally {
       if (request === modelRequest.current) setModelFetching(false);
@@ -139,6 +139,11 @@ export default function ChannelForm({ initial, onSubmit, onCancel }: {
     // 仅在挂载时同步一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const ensureModelRow = () => {
+    if (!modelKeys.current.length) modelKeys.current.push(uid());
+    // Fetching can outlive model edits; never replace the latest user input with a captured array.
+    setF(current => current.models?.length ? current : { ...current, models: [""] });
+  };
   const addModel = () => {
     modelKeys.current.push(uid());
     set("models", [...(f.models ?? []), ""]);

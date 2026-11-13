@@ -1,0 +1,16 @@
+ACTION {"preview":true,"reader":true}
+{
+  "url": "http://127.0.0.1:5177/#/logs?tab=sessions",
+  "width": 1440,
+  "height": 1000,
+  "h1": [
+    "日志与会话"
+  ],
+  "overflow": false,
+  "mainOverflow": false,
+  "dialogOverflow": false,
+  "dialogs": [],
+  "text": "日志与会话\n\n从请求记录追踪调用，按本地会话还原上下文。\n\n刷新\n关闭\n请求日志\n本地会话\n全部\nClaude\nCodex\nGemini\n\n最近会话 · 3 条\n\n完善角色路由与自动回退\n\nClaude · 1 小时前\n\nD:/workspace/llm-gateway\n\nsession-0\n\n排查连接超时\n\nClaude · 2 小时前\n\nD:/workspace/llm-gateway\n\nsession-1\n\n整理接口文档\n\nClaude · 3 小时前\n\nD:/workspace/llm-gateway\n\nsession-2\n\n完善角色路由与自动回退\n\nClaude · llm-gateway · 2026/11/13 09:36:10\n\n查看关联日志\n\nD:/workspace/llm-gateway\n\n全部\n对话\n工具\n展开过程\n复制恢复命令\nUSER\n第 1 轮\n11:02\n\n第 1 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 1 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 2 轮\n11:02\n\n第 2 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\n含失败步骤\nASSISTANT\n第 2 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\nUSER\n第 3 轮\n11:02\n\n第 3 轮：检查角色路由配置与失败回退。\n\n执行过程\n2 个执行步骤\nASSISTANT\n第 3 轮 · 最终回复\n配置检查完成\n优先级与回退配置已检查\n补充熔断恢复测试\n代码\n复制\nconst priority = 100;\nconst cooldown = 60;\n\n项目\t状态\n回退\t已验证\n3 轮 · 12 条消息 · 本地只读记录\n跳到底部\n\n内容读取自本地 CLI 会话文件；删除本地会话前需再次确认。",
+  "errors": []
+}
+Screenshot: C:/Users/Administrator/AppData/Local/Temp/publish-reader.png

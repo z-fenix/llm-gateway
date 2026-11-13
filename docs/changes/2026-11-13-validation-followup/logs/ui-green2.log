@@ -1,0 +1,24 @@
+$ vitest run "src/lib/__tests__/sessionReader.test.ts" "src/components/__tests__/ChannelModels.test.tsx" "src/components/__tests__/SessionReader.test.tsx" "src/components/__tests__/ModelCombobox.test.tsx"
+
+ RUN  v2.1.9 D:/workplace/project/tools/llm-gateway
+
+ ✓ src/lib/__tests__/sessionReader.test.ts (7 tests) 15ms
+ ✓ src/components/__tests__/ChannelModels.test.tsx (6 tests) 4271ms
+   ✓ 新建渠道真实模型结果 > 空上游明确提示而不把静态模型标为上游成功 1450ms
+   ✓ 新建渠道真实模型结果 > 错误可见且保留手动填写能力 610ms
+   ✓ 新建渠道真实模型结果 > 只列出真实上游结果，不混入不受支持的静态模型 536ms
+   ✓ 新建渠道真实模型结果 > 请求开始时没有模型行，期间手动添加的模型不能被结果覆盖 871ms
+   ✓ 新建渠道真实模型结果 > 请求开始后删除全部模型，返回时应补行并展开候选 437ms
+   ✓ 新建渠道真实模型结果 > 修改地址使旧请求失效，不能显示上一地址的模型 363ms
+ ✓ src/components/__tests__/SessionReader.test.tsx (7 tests) 3580ms
+   ✓ 会话阅读交互 > 工具过程折叠，打开后显示失败和真实输入输出 1394ms
+   ✓ 会话阅读交互 > 正文搜索自动展开折叠过程并定位；清除后恢复折叠 718ms
+   ✓ 会话阅读交互 > 收起再展开过程时保留已展开的工具详情 700ms
+ ✓ src/components/__tests__/ModelCombobox.test.tsx (7 tests) 1500ms
+   ✓ ModelCombobox > 渲染可输入的占位符 409ms
+   ✓ ModelCombobox > 已有模型不隐藏其他候选，展开后可选择不同模型 453ms
+
+ Test Files  4 passed (4)
+      Tests  27 passed (27)
+   Start at  09:30:39
+   Duration  30.20s (transform 7.53s, setup 5.53s, collect 19.07s, tests 9.37s, environment 23.42s, prepare 3.26s)

@@ -15,6 +15,7 @@ export default function SessionReader({messages,resumeCommand}: {messages:Sessio
   const [filter,setFilter] = useState<ReaderFilter>("all");
   const [query,setQuery] = useState("");
   const [expanded,setExpanded] = useState<Set<string>>(new Set());
+  const [expandedSteps,setExpandedSteps] = useState<Set<string>>(new Set());
   const [hit,setHit] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
   const readerRoot = useRef<HTMLDivElement>(null);
@@ -33,9 +34,14 @@ export default function SessionReader({messages,resumeCommand}: {messages:Sessio
   useEffect(()=>{setHit(0);},[query,filter]);
   useEffect(()=>{if(target>=0) jump(target);},[target,large]);
   const toggle = (key:string) => setExpanded(previous=>{const next=new Set(previous);next.has(key)?next.delete(key):next.add(key);return next;});
+  const toggleStep = (key:string) => setExpandedSteps(previous=>{const next=new Set(previous);next.has(key)?next.delete(key):next.add(key);return next;});
+  const selectFilter = (value:ReaderFilter) => {
+    setFilter(value); setQuery("");
+    if(value === "tools") setExpanded(new Set(turns.filter(turn=>turn.steps.some(step=>step.kind === "tool")).map(turn=>turn.key)));
+  };
   const renderRow = (row:ReaderRow,index:number) => <div className={cn("min-w-0 py-1",target===index&&"rounded-lg ring-1 ring-primary/50")}>
     {row.kind==="process" ? <button type="button" aria-expanded={expanded.has(turns[row.turn].key)||!!query.trim()} onClick={()=>toggle(turns[row.turn].key)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-muted-foreground hover:bg-accent"><ChevronDown size={14} className={cn(!expanded.has(turns[row.turn].key)&&!query.trim()&&"-rotate-90")}/><span>执行过程</span><span>{row.text}</span>{turns[row.turn].steps.some(s=>s.status==="error")&&<span className="text-destructive">含失败步骤</span>}</button>
-      : row.kind==="step" ? <div className="px-3"><SessionStep key={row.step!.key} step={row.step!} query={query.trim()}/></div>
+      : row.kind==="step" ? <div className="px-3"><SessionStep key={row.step!.key} step={row.step!} query={query.trim()} open={expandedSteps.has(row.step!.key)} onToggle={()=>toggleStep(row.step!.key)}/></div>
       : <article className={cn("min-w-0 rounded-lg p-4",row.kind==="question"?"bg-background":"border-b border-border/60")}>
         <div className="mb-2 flex items-center gap-2 text-[10px] text-muted-foreground"><span className="font-semibold">{row.kind==="question"?"USER":"ASSISTANT"}</span><span>第 {row.turn+1} 轮{row.kind==="final"?" · 最终回复":""}</span>{row.part?.ts!=null&&Number.isFinite(row.part.ts)&&<time className="ml-auto" dateTime={new Date(row.part.ts).toISOString()}>{new Date(row.part.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</time>}<Button size="icon" variant="ghost" className="ml-auto h-6 w-6" aria-label={row.kind==="question"?"复制提问":"复制回复"} onClick={()=>void copySessionText(row.text)}><Copy size={12}/></Button></div>
         <div className="text-[13px] leading-[1.65]"><SessionMarkdown content={row.text} query={query.trim()}/></div>
@@ -43,9 +49,9 @@ export default function SessionReader({messages,resumeCommand}: {messages:Sessio
   </div>;
   return <div ref={readerRoot} className="flex h-[560px] min-h-0 min-w-0 flex-none flex-col gap-3 lg:h-auto lg:flex-1" data-session-reader>
     <div className="flex shrink-0 flex-wrap items-center gap-2">
-      <div className="segmented-control" aria-label="阅读筛选">{([["all","全部"],["conversation","对话"],["tools","工具"]] as const).map(([value,label])=><button key={value} type="button" aria-pressed={filter===value} className={cn("segmented-item px-3 text-xs",filter===value&&"bg-card text-foreground shadow-sm")} onClick={()=>{setFilter(value);setQuery("");}}>{label}</button>)}</div>
+      <div className="segmented-control" aria-label="阅读筛选">{([["all","全部"],["conversation","对话"],["tools","工具"]] as const).map(([value,label])=><button key={value} type="button" aria-pressed={filter===value} className={cn("segmented-item px-3 text-xs",filter===value&&"bg-card text-foreground shadow-sm")} onClick={()=>selectFilter(value)}>{label}</button>)}</div>
       <Button variant="ghost" size="sm" className="text-xs" onClick={()=>setExpanded(expanded.size===turns.length?new Set():new Set(turns.map(t=>t.key)))}>{expanded.size===turns.length?"收起过程":"展开过程"}</Button>
-      <Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" aria-label="轮次目录"><List size={15}/></Button></PopoverTrigger><PopoverContent align="end" className="max-h-72 w-64 overflow-y-auto p-2"><p className="p-2 text-xs text-muted-foreground">共 {turns.length} 轮</p>{turns.map((t,i)=><button key={t.key} className="block w-full truncate rounded p-2 text-left text-xs hover:bg-accent" onClick={()=>jump(Math.max(0,rows.findIndex(r=>r.turn===i)))}>{i+1}. {t.question?.text.slice(0,60)||"会话开始"}</button>)}</PopoverContent></Popover>
+      <Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" aria-label="轮次目录"><List size={15}/></Button></PopoverTrigger><PopoverContent align="end" className="max-h-72 w-64 overflow-y-auto p-2"><p className="p-2 text-xs text-muted-foreground">共 {turns.length} 轮</p>{turns.map((t,i)=>{const rowIndex=rows.findIndex(row=>row.turn===i);return <button key={t.key} disabled={rowIndex<0} title={rowIndex<0?"该轮没有当前筛选下的内容":undefined} className="block w-full truncate rounded p-2 text-left text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50" onClick={()=>{if(rowIndex>=0)jump(rowIndex);}}>{i+1}. {t.question?.text.slice(0,60)||"会话开始"}</button>;})}</PopoverContent></Popover>
       <Button variant="ghost" size="icon" aria-label="复制会话" onClick={()=>void copySessionText(transcriptMarkdown(turns))}><Copy size={15}/></Button>
       {resumeCommand&&<Button variant="ghost" size="sm" className="text-xs" onClick={()=>void copySessionText(resumeCommand)}>复制恢复命令</Button>}
     </div>

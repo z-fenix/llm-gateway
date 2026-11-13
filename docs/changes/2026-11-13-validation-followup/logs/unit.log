@@ -1,0 +1,499 @@
+$ vitest run
+
+ RUN  v2.1.9 D:/workplace/project/tools/llm-gateway
+
+stderr | src/pages/__tests__/LogsPage.test.tsx > LogsPage > 手动刷新 dispatch gateway-refresh 供顶栏同步网关状态
+Warning: An update to LogsPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at LogsPage (D:\workplace\project\tools\llm-gateway\src\pages\LogsPage.tsx:575:53)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+Warning: An update to LogsPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at LogsPage (D:\workplace\project\tools\llm-gateway\src\pages\LogsPage.tsx:575:53)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+Warning: An update to LogsPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at LogsPage (D:\workplace\project\tools\llm-gateway\src\pages\LogsPage.tsx:575:53)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+Warning: An update to LogsPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at LogsPage (D:\workplace\project\tools\llm-gateway\src\pages\LogsPage.tsx:575:53)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+
+ ✓ src/pages/__tests__/ChannelsPage.test.tsx (15 tests) 9740ms
+   ✓ ChannelsPage > 新建渠道：对话框填写并保存调用 createChannel 并刷新列表 1848ms
+   ✓ ChannelsPage > 编辑渠道：打开对话框并加载模型映射 617ms
+   ✓ ChannelsPage > 删除渠道需经过确认弹窗：确认后才调用 deleteChannel 并刷新 731ms
+   ✓ ChannelsPage > 编辑弹窗通过 onOpenChange 关闭（点 X）会清空 editing 状态 1248ms
+   ✓ ChannelsPage 渠道页改版（Task 8） > 连通检测调用对应渠道，不修改配置统计 404ms
+   ✓ ChannelsPage 渠道表单 DSH 改造（Task 2） > 新建模态按设计展示协议与调度字段 768ms
+   ✓ ChannelsPage 渠道表单 DSH 改造（Task 2） > 必填缺失：pristine 无行内错误但应用禁用；触碰名称后行内错误出现；补全后恢复可用 1500ms
+   ✓ ChannelsPage 渠道表单 DSH 改造（Task 2） > 编辑态 key 留空提交：updateChannel payload 的 api_key 为原掩码值 564ms
+   ✓ ChannelsPage 渠道表单 DSH 改造（Task 2） > busy 提交中：应用文案切换为「应用中」且取消禁用，完成后恢复关闭 1122ms
+ ✓ src/pages/__tests__/SettingsPage.test.tsx (20 tests) 19239ms
+   ✓ SettingsPage > 默认展示常规设置，通过分组切换到 CLI 配置 1198ms
+   ✓ SettingsPage > 未知分组地址回退到常规设置 306ms
+   ✓ SettingsPage > 渲染各分组卡片 532ms
+   ✓ SettingsPage > CLI target 下拉显示友好标签 698ms
+   ✓ SettingsPage > 保存端口调用 setPreferredPort 836ms
+   ✓ SettingsPage > 端口保存后显示立即重启按钮，点击调用 restartGateway 988ms
+   ✓ SettingsPage > 整流器卡片渲染并显示子开关文案 513ms
+   ✓ SettingsPage > 点击启用整流器开关调用 setRectifierConfig('enabled', false) 801ms
+   ✓ SettingsPage > 点击编辑配置读取 readCliConfig 并填充 textarea 1251ms
+   ✓ SettingsPage > 输入非法 JSON 显示 JSON 格式错误 1252ms
+   ✓ SettingsPage > 格式化按钮将压缩 JSON 美化 953ms
+   ✓ SettingsPage > 保存调用 writeCliConfigContent(target, cliJson) 1366ms
+   ✓ SettingsPage > 设置当前网关仅改写 env 变量并回填编辑框 2318ms
+   ✓ SettingsPage > Codex 目标编辑器显示 config.toml 提示 1236ms
+   ✓ SettingsPage > 关闭行为卡片渲染且默认开启，点击调用 setMinimizeToTray 319ms
+   ✓ SettingsPage > 模型定价卡渲染列表与新增表单 460ms
+   ✓ SettingsPage > 保存定价前归一化模型名并调用 upsertModelPrice 933ms
+   ✓ SettingsPage > Anthropic 参考按钮按 1.25x/0.1x 填充缓存价格 797ms
+   ✓ SettingsPage > 删除定价需确认并调用 deleteModelPrice 559ms
+   ✓ SettingsPage > 取消 CLI 写入确认不修改文件，非法 JSON 不能提交 1919ms
+ ✓ src/pages/__tests__/LogsPage.test.tsx (23 tests) 18869ms
+   ✓ LogsPage > filter bar 变更触发 listLogs/getLogStats/getLogTimeseries 联动 1221ms
+   ✓ LogsPage > 角色筛选下拉包含 auto 选项 1374ms
+   ✓ LogsPage > 统计行渲染调用量、成功率、真实 Token、缓存命中率与费用 409ms
+   ✓ LogsPage > 排行按需打开，不占用首屏 748ms
+   ✓ LogsPage > 表格状态/风险徽章使用 StatusBadge 语义类 506ms
+   ✓ LogsPage > 详情入口保留请求序号的可访问名称 972ms
+   ✓ LogsPage > 手动刷新 dispatch gateway-refresh 供顶栏同步网关状态 876ms
+   ✓ LogsPage > 趋势面板 4 tab 切换 dimension 1329ms
+   ✓ LogsPage > 时间范围改变后趋势使用对应桶宽，弹窗可关闭后再次打开 1680ms
+   ✓ LogsPage > 删除该日之前需确认并调 deleteLogsBefore 1418ms
+   ✓ LogsPage > 保留天数输入非负校验 1719ms
+   ✓ LogsPage > 按会话分组视图：按 trace_id 分组并展示会话汇总 382ms
+   ✓ LogsPage > 展开会话后显示该 trace 的全部日志 336ms
+   ✓ LogsPage > 会话内日志可展开详情（含 TraceID） 515ms
+   ✓ LogsPage > 切换回平铺列表视图 515ms
+   ✓ LogsPage > 选择预设后 stats/trend 立即用新范围请求(不残留旧 filter) 986ms
+   ✓ LogsPage > 详情抽屉展示缓存读取、缓存创建与估算费用 684ms
+   ✓ LogsPage > 安全发现加载失败可在抽屉内重试 1398ms
+   ✓ LogsPage > 趋势维度包含缓存/成本 tab 并可切换 716ms
+ ✓ src/lib/__tests__/theme.test.ts (28 tests) 199ms
+ ✓ src/pages/__tests__/RoleRoutesPage.test.tsx (13 tests) 5743ms
+   ✓ RoleRoutesPage > 总览展示 6 个角色行，点击进入详情空状态与新增入口 728ms
+   ✓ RoleRoutesPage > 切换路由渠道调用 upsertRoleRoute 保留其他字段 769ms
+   ✓ RoleRoutesPage > 详情面板新增路由对话框创建多供应商路由 1043ms
+   ✓ RoleRoutesPage > 删除路由走确认对话框并调用 deleteRoleRoute(id) 379ms
+   ✓ RoleRoutesPage > 切换全局兜底渠道调用 setFallback，清除按钮调用 clearFallback 308ms
+   ✓ RoleRoutesPage > 新增规则：对话框填写并调用 upsertRolePattern 515ms
+   ✓ RoleRoutesPage > 编辑规则：对话框预填并保存原 id 386ms
+   ✓ RoleRoutesPage > 新增路由 pristine：应用禁用且无行内错误；渠道/模型失焦出现行内错误；补全后恢复可用 319ms
+   ✓ RoleRoutesPage > 路由提交中：应用显示「应用中」且取消禁用 342ms
+   ✓ RoleRoutesPage > 规则提交中：应用显示「应用中」且取消禁用 309ms
+ ✓ src/pages/__tests__/KnowledgePage.test.tsx (18 tests) 3033ms
+   ✓ KnowledgePage > 渲染知识库列表 333ms
+   ✓ KnowledgePage > 新建库调用 createKb 573ms
+ ✓ src/pages/__tests__/McpServersPage.test.tsx (11 tests) 2364ms
+   ✓ McpServersPage > 新增 stdio 服务器，填写 command/args/env 后保存调用 upsertMcpServer 430ms
+   ✓ McpServersPage > 切换为 http 类型显示 url/headers 并保存正确配置 317ms
+   ✓ McpServersPage > 必填字段失焦后出现行内错误；补全后应用恢复可用 361ms
+ ✓ src/pages/__tests__/PromptsPage.test.tsx (11 tests) 2624ms
+   ✓ PromptsPage > 列表渲染 prompts 与启用开关 322ms
+   ✓ PromptsPage > 点击启用开关调用 enablePrompt 并刷新列表 325ms
+   ✓ PromptsPage > 打开新增对话框，填写后保存调用 upsertPrompt 395ms
+ ✓ src/pages/__tests__/SkillsPage.test.tsx (11 tests) 2772ms
+   ✓ SkillsPage > 点击启用开关调用 toggleSkillEnabled 并刷新列表 410ms
+   ✓ SkillsPage > 新增 skill，填写字段后保存调用 upsertSkill 464ms
+   ✓ SkillsPage > 必填字段失焦后出现行内错误；补全后应用恢复可用 328ms
+   ✓ SkillsPage > 提交中：应用显示「应用中」且取消禁用，成功后关闭弹框 340ms
+ ✓ src/components/form/__tests__/form.test.tsx (22 tests) 485ms
+ ✓ src/pages/__tests__/ApiKeysPage.test.tsx (11 tests) 2508ms
+   ✓ ApiKeysPage 生成密钥 > 名称为空时按钮禁用，点击不产生任何调用（修复“无响应”） 532ms
+stderr | src/pages/__tests__/DashboardPage.test.tsx > DashboardPage > 统计数据未返回时展示加载状态
+Warning: An update to DashboardPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at DashboardPage (D:\workplace\project\tools\llm-gateway\src\pages\DashboardPage.tsx:48:43)
+Warning: An update to DashboardPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at DashboardPage (D:\workplace\project\tools\llm-gateway\src\pages\DashboardPage.tsx:48:43)
+Warning: An update to DashboardPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at DashboardPage (D:\workplace\project\tools\llm-gateway\src\pages\DashboardPage.tsx:48:43)
+
+stderr | src/pages/__tests__/DashboardPage.test.tsx > DashboardPage > 手动刷新时 dispatch gateway-refresh 供顶栏同步网关状态
+Warning: An update to DashboardPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at DashboardPage (D:\workplace\project\tools\llm-gateway\src\pages\DashboardPage.tsx:48:43)
+
+ ✓ src/pages/__tests__/DashboardPage.test.tsx (13 tests) 2400ms
+   ✓ DashboardPage > 统计加载失败后可重试恢复，不显示伪造数据 440ms
+   ✓ DashboardPage > 选择 30d 预设 → 按天 bucket 重新拉取趋势 453ms
+stderr | src/pages/__tests__/SessionsPage.test.tsx > SessionsPage > 搜索输入按标题过滤
+Warning: Encountered two children with the same key, `claude:sess-abc:/home/u/.claude/projects/app/sess-abc.jsonl`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+    at div
+    at div
+    at D:\workplace\project\tools\llm-gateway\src\components\ui\card.tsx:7:50
+    at div
+    at div
+    at SessionsPage (D:\workplace\project\tools\llm-gateway\src\pages\SessionsPage.tsx:63:48)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+
+ ✓ src/pages/__tests__/SessionsPage.test.tsx (8 tests) 2541ms
+   ✓ SessionsPage > 空列表展示空状态 330ms
+   ✓ SessionsPage > provider 筛选只显示对应会话 360ms
+   ✓ SessionsPage > 快速切换会话后，旧请求不能覆盖当前消息 474ms
+   ✓ SessionsPage > 点击会话请求消息并渲染 451ms
+   ✓ SessionsPage > 删除走确认对话框并调用 deleteSession 302ms
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 填写合法值后提交触发 onSubmit
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 编辑态密钥不回填（write-only），placeholder 提示已保存
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 编辑态 key 留空提交：api_key 原样回传原掩码哨兵值
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 编辑态 key 输入新值后提交：api_key 用新值
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 添加模型后输入并提交：onSubmit 收到 models 数组
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 删除模型移除对应行：删除后提交只保留剩余模型
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+stderr | src/components/__tests__/ChannelForm.test.tsx > ChannelForm validation > 删除全部模型后：仍提示「至少需要一个模型」且应用禁用
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+Warning: An update to ChannelForm inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ChannelForm (D:\workplace\project\tools\llm-gateway\src\components\ChannelForm.tsx:56:24)
+
+ ✓ src/components/__tests__/ChannelForm.test.tsx (13 tests) 6694ms
+   ✓ ChannelForm validation > 空表单 pristine：无行内错误（不喊错）但应用禁用，点击不触发 onSubmit 303ms
+   ✓ ChannelForm validation > 无效 Base URL 展示格式错误且应用禁用 367ms
+   ✓ ChannelForm validation > 非 http/https 协议的 URL 被拒绝 624ms
+   ✓ ChannelForm validation > timeout_secs < 1 被拒绝：折叠区 summary 行显示未通过计数且应用禁用 2321ms
+   ✓ ChannelForm validation > 填写合法值后提交触发 onSubmit 557ms
+   ✓ ChannelForm validation > 添加模型后输入并提交：onSubmit 收到 models 数组 682ms
+   ✓ ChannelForm validation > 删除模型移除对应行：删除后提交只保留剩余模型 364ms
+ ✓ src/pages/__tests__/RoundTwoParity.test.tsx (7 tests) 3874ms
+   ✓ 第二轮九项问题回归 > 日志渠道筛选使用可展开的设计下拉，不是浏览器原生 select 2525ms
+   ✓ 第二轮九项问题回归 > 会话消息显示选中标题、项目路径和轻量 USER/TOOL 元信息 477ms
+stderr | src/pages/__tests__/RoundTwoParity.test.tsx > 第二轮九项问题回归 > 应用栏可选择深色、浅色和跟随系统
+Warning: An update to Layout inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Layout (D:\workplace\project\tools\llm-gateway\src\components\Layout.tsx:30:46)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+Warning: An update to Layout inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Layout (D:\workplace\project\tools\llm-gateway\src\components\Layout.tsx:30:46)
+    at Router (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:7036:13)
+    at MemoryRouter (file:///D:/workplace/project/tools/llm-gateway/node_modules/.pnpm/react-router@7.18.2_react-d_f28bbcba036810d489ea82cb874e3489/node_modules/react-router/dist/development/chunk-62JRHF6Z.mjs:6952:3)
+
+stderr | src/pages/__tests__/DesignParity.test.tsx > 设计稿页面结构与入口回归 > 常规设置包含备份配置入口且 CLI 页签可切换
+Switch is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+Switch is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+Switch is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+Switch is changing from controlled to uncontrolled. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.
+
+ ✓ src/pages/__tests__/DesignParity.test.tsx (10 tests) 3142ms
+   ✓ 设计稿页面结构与入口回归 > 概览显示真实网关地址与接入入口 739ms
+   ✓ 设计稿页面结构与入口回归 > 日志主视图保留更多筛选入口，清理功能按需打开 1044ms
+   ✓ 设计稿页面结构与入口回归 > 角色规则通过入口展开，不占用概览首屏 350ms
+   ✓ 设计稿页面结构与入口回归 > 常规设置包含备份配置入口且 CLI 页签可切换 315ms
+ ✓ src/components/__tests__/SessionReader.test.tsx (9 tests) 2447ms
+   ✓ 会话阅读交互 > 工具过程折叠，打开后显示失败和真实输入输出 847ms
+   ✓ 会话阅读交互 > 收起再展开过程时保留已展开的工具详情 461ms
+ ✓ src/components/__tests__/LogTrendChart.test.tsx (13 tests) 133ms
+ ✓ src/pages/__tests__/SecurityPage.test.tsx (8 tests) 2281ms
+   ✓ SecurityPage > renders the three sections 341ms
+   ✓ SecurityPage > uses substring wording for custom rule pattern placeholder 309ms
+   ✓ SecurityPage > 自定义规则删除通过 ConfirmDialog 确认后调用 deleteCustomSecurityRule 710ms
+ ✓ src/tokens-guard.test.ts (10 tests) 10ms
+ ✓ src/components/__tests__/ChannelFormModelMap.test.tsx (8 tests) 1847ms
+   ✓ ChannelForm 模型映射 > 编辑时获取模型自动展开，并显示与已填模型不同的候选 718ms
+   ✓ ChannelForm 模型映射 > 模型行为空且获取失败时仍展开内置候选 305ms
+ ✓ src/components/__tests__/SegmentedTabs.test.tsx (9 tests) 304ms
+ ✓ src/lib/__tests__/sessionReader.test.ts (7 tests) 9ms
+ ✓ src/components/__tests__/ModelCombobox.test.tsx (7 tests) 642ms
+ ✓ src/components/__tests__/ChannelModels.test.tsx (6 tests) 1805ms
+   ✓ 新建渠道真实模型结果 > 空上游明确提示而不把静态模型标为上游成功 758ms
+ ✓ src/lib/__tests__/usage.test.ts (13 tests) 6ms
+ ✓ src/pages/__tests__/RecordsPage.test.tsx (4 tests) 1042ms
+   ✓ RecordsPage 页签由 URL 查询驱动 > 默认 ?tab 缺省时落在日志页签 542ms
+ ✓ src/components/__tests__/StatusBadge.test.tsx (25 tests) 66ms
+ ✓ src/lib/__tests__/api.test.ts (10 tests) 9ms
+ ✓ src/lib/__tests__/chartColors.test.tsx (9 tests) 5ms
+ ✓ src/components/__tests__/Layout.test.tsx (5 tests) 1331ms
+   ✓ Layout > 标识当前路由并显示真实服务地址 617ms
+   ✓ Layout > 跳过导航聚焦主内容，不改变路由 320ms
+ ✓ src/lib/__tests__/trend.test.ts (5 tests) 6ms
+ ✓ src/components/__tests__/StatCard.test.tsx (9 tests) 106ms
+ ✓ src/lib/__tests__/usageRange.test.ts (8 tests) 5ms
+ ✓ src/components/__tests__/SegmentedControl.test.tsx (2 tests) 288ms
+stderr | src/components/__tests__/RefreshControls.test.tsx > useRefreshInterval > 变更后写回 localStorage
+Warning: An update to Probe inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Probe (D:\workplace\project\tools\llm-gateway\src\components\__tests__\RefreshControls.test.tsx:46:39)
+
+ ✓ src/components/__tests__/RefreshControls.test.tsx (5 tests) 649ms
+   ✓ RefreshControls > 渲染刷新按钮与间隔选项，点击刷新触发 onRefresh 361ms
+ ✓ src/components/__tests__/UsageDateRangePicker.test.tsx (4 tests) 1279ms
+   ✓ UsageDateRangePicker > 触发器显示当前预设标签 340ms
+   ✓ UsageDateRangePicker > 点击预设按钮立即应用所选预设 452ms
+   ✓ UsageDateRangePicker > 开始时间晚于结束时间时,确定被拒绝并显示错误 379ms
+ ✓ src/lib/__tests__/roleSort.test.ts (4 tests) 4ms
+ ✓ src/components/__tests__/ConfirmDialog.test.tsx (3 tests) 598ms
+   ✓ ConfirmDialog > 确认与取消分别触发对应操作 471ms
+ ✓ src/lib/__tests__/tokenUnits.test.ts (29 tests) 29ms
+ ✓ src/components/__tests__/PageHeader.test.tsx (1 test) 240ms
+ ✓ src/components/__tests__/DialogScroll.test.tsx (1 test) 361ms
+   ✓ 弹窗内部滚动 > 仅正文可滚动，标题和操作留在滚动区外 359ms
+ ✓ src/lib/__tests__/useFormValidation.test.ts (1 test) 20ms
+
+ Test Files  43 passed (43)
+      Tests  449 passed (449)
+   Start at  09:34:41
+   Duration  135.80s (transform 24.87s, setup 17.66s, collect 78.77s, tests 101.75s, environment 112.97s, prepare 18.07s)

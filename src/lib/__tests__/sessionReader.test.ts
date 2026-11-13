@@ -32,6 +32,27 @@ describe("会话阅读模型", () => {
     expect(turns[0].final).toBeUndefined();
     expect(turns[0].steps.some(s=>s.text==="正在等待工具")).toBe(true);
   });
+  it("Gemini 同一消息中的调用和结果配成一个步骤，顺序不颠倒", () => {
+    const turns = buildSessionTurns([m("user","检查"),m("assistant","done",[
+      {type:"thinking",text:"先读取"},
+      {type:"tool_call",id:"g1",name:"read_file",input:{path:"a.ts"}},
+      {type:"tool_result",id:"g1",output:"file contents",status:"success"},
+      {type:"text",text:"完成"},
+    ])]);
+    expect(turns[0].steps).toHaveLength(2);
+    expect(turns[0].steps[0]).toMatchObject({kind:"thinking",text:"先读取"});
+    expect(turns[0].steps[1]).toMatchObject({kind:"tool",name:"read_file",output:"file contents",status:"success"});
+    expect(turns[0].final?.text).toBe("完成");
+  });
+  it("正文在工具结果之前时，结果才是最后事件，不能伪造最终回复", () => {
+    const turns = buildSessionTurns([m("user","Q"),m("assistant","",[
+      {type:"tool_call",id:"c",name:"Read",input:{}},
+      {type:"text",text:"仍在执行"},
+      {type:"tool_result",id:"c",output:"ok",status:"success"},
+    ])]);
+    expect(turns[0].steps).toHaveLength(2);
+    expect(turns[0].final).toBeUndefined();
+  });
   it("搜索包含折叠工具输出；筛选不丢失问答且复制保留工具原文", () => {
     const turns = buildSessionTurns([m("user","Q"), m("tool","needle"), m("assistant","A")]);
     const rows = readerRows(turns, "all", new Set(), true);

@@ -1,0 +1,730 @@
+$ vitest run "src/lib/__tests__/sessionReader.test.ts" "src/components/__tests__/ChannelModels.test.tsx" "src/components/__tests__/SessionReader.test.tsx"
+
+ RUN  v2.1.9 D:/workplace/project/tools/llm-gateway
+
+ ❯ src/lib/__tests__/sessionReader.test.ts (7 tests | 2 failed) 20ms
+   × 会话阅读模型 > Gemini 同一消息中的调用和结果配成一个步骤，顺序不颠倒 10ms
+     → expected [ { key: 'step-0', …(5) }, …(2) ] to have a length of 2 but got 3
+   × 会话阅读模型 > 正文在工具结果之前时，结果才是最后事件，不能伪造最终回复 2ms
+     → expected { text: '仍在执行', ts: undefined } to be undefined
+ ❯ src/components/__tests__/ChannelModels.test.tsx (6 tests | 2 failed) 1116ms
+   ✓ 新建渠道真实模型结果 > 空上游明确提示而不把静态模型标为上游成功 481ms
+   × 新建渠道真实模型结果 > 请求开始时没有模型行，期间手动添加的模型不能被结果覆盖 124ms
+     → expect(element).toHaveValue(manually-added)
+
+Expected the element to have value:
+  manually-added
+Received:
+
+   × 新建渠道真实模型结果 > 请求开始后删除全部模型，返回时应补行并展开候选 175ms
+     → Unable to find an accessible element with the role "option" and name "upstream-model"
+
+Here are the accessible roles:
+
+  textbox:
+
+  Name "渠道名称":
+  <input
+    aria-invalid="false"
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-name"
+    placeholder="名称"
+    required=""
+    value=""
+  />
+
+  Name "Base URL *":
+  <input
+    aria-invalid="false"
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-base-url"
+    placeholder="Base URL，如 https://api.deepseek.com"
+    required=""
+    value=""
+  />
+
+  --------------------------------------------------
+  combobox:
+
+  Name "供应商":
+  <button
+    aria-autocomplete="none"
+    aria-expanded="false"
+    aria-label="供应商"
+    class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+    data-state="closed"
+    dir="ltr"
+    role="combobox"
+    type="button"
+  />
+
+  Name "上游协议":
+  <button
+    aria-autocomplete="none"
+    aria-expanded="false"
+    aria-label="上游协议"
+    class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+    data-state="closed"
+    dir="ltr"
+    role="combobox"
+    type="button"
+  />
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  <p
+    class="text-[11px] text-muted-foreground"
+  />
+
+  Name "":
+  <p
+    class="text-xs text-muted-foreground"
+  />
+
+  Name "":
+  <p
+    class="mt-1 text-[11px] text-muted-foreground"
+  />
+
+  --------------------------------------------------
+  button:
+
+  Name "获取模型列表":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-8 rounded-full px-3 text-xs"
+    type="button"
+  />
+
+  Name "添加模型":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-8 rounded-full px-3 text-xs"
+    type="button"
+  />
+
+  Name "配置映射":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-8 rounded-full px-3 text-xs"
+    disabled=""
+  />
+
+  Name "取消":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-9 px-4 py-2"
+    type="button"
+  />
+
+  Name "创建渠道":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
+    disabled=""
+    type="button"
+  />
+
+  --------------------------------------------------
+  alert:
+
+  Name "":
+  <p
+    class="mt-1 text-xs text-destructive"
+    role="alert"
+  />
+
+  --------------------------------------------------
+  heading:
+
+  Name "模型名称映射":
+  <h3
+    class="text-sm font-medium"
+  />
+
+  --------------------------------------------------
+  spinbutton:
+
+  Name "优先级":
+  <input
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-priority"
+    placeholder="优先级"
+    type="number"
+    value="0"
+  />
+
+  Name "权重":
+  <input
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-weight"
+    placeholder="权重"
+    type="number"
+    value="1"
+  />
+
+  Name "超时（秒）":
+  <input
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-timeout"
+    placeholder="超时秒数（>=1）"
+    type="number"
+    value="60"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden"
+    >
+      <div
+        class="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pr-1 space-y-5"
+        data-dialog-body="true"
+      >
+        <div
+          class="grid gap-4 sm:grid-cols-2"
+        >
+          <div
+            class="space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              for="channel-name"
+            >
+              渠道名称
+              <span
+                aria-hidden="true"
+              >
+                *
+              </span>
+            </label>
+            <input
+              aria-invalid="false"
+              class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+              id="channel-name"
+              placeholder="名称"
+              required=""
+              value=""
+            />
+          </div>
+          <div
+            class="space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              供应商
+            </label>
+            <button
+              aria-autocomplete="none"
+              aria-expanded="false"
+              aria-label="供应商"
+              class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+              data-state="closed"
+              dir="ltr"
+              role="combobox"
+              type="button"
+            >
+              <span
+                style="pointer-events: none;"
+              >
+                OpenAI
+              </span>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down h-4 w-4 opacity-50"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div
+          class="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]"
+        >
+          <div
+            class="min-w-0 space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              上游协议 *
+            </label>
+            <button
+              aria-autocomplete="none"
+              aria-expanded="false"
+              aria-label="上游协议"
+              class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+              data-state="closed"
+              dir="ltr"
+              role="combobox"
+              type="button"
+            >
+              <span
+                style="pointer-events: none;"
+              >
+                OpenAI Chat Completions
+              </span>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down h-4 w-4 opacity-50"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              for="channel-base-url"
+            >
+              Base URL *
+            </label>
+            <input
+              aria-invalid="false"
+              class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"[3...
+ ❯ src/components/__tests__/SessionReader.test.tsx (7 tests | 2 failed) 640ms
+   × 会话阅读交互 > 收起再展开过程时保留已展开的工具详情 138ms
+     → expect(element).toHaveAttribute("aria-expanded", "true") // element.getAttribute("aria-expanded") === "true"
+
+Expected the element to have attribute:
+  aria-expanded="true"
+Received:
+  aria-expanded="false"
+   × 会话阅读交互 > 工具筛选下过程实际展开时 aria-expanded 不能为 false 60ms
+     → expect(element).toHaveAttribute("aria-expanded", "true") // element.getAttribute("aria-expanded") === "true"
+
+Expected the element to have attribute:
+  aria-expanded="true"
+Received:
+  aria-expanded="false"
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/__tests__/ChannelModels.test.tsx > 新建渠道真实模型结果 > 请求开始时没有模型行，期间手动添加的模型不能被结果覆盖
+Error: expect(element).toHaveValue(manually-added)
+
+Expected the element to have value:
+  manually-added
+Received:
+
+ ❯ src/components/__tests__/ChannelModels.test.tsx:36:53
+     34|     fireEvent.change(screen.getByPlaceholderText("输入或选择模型…"),{t…
+     35|     await act(async()=>resolve(["upstream-model"]));
+     36|     expect(screen.getByPlaceholderText("输入或选择模型…")).toHaveValue…
+       |                                                     ^
+     37|     expect(screen.getByRole("option",{name:"upstream-model"})).toBeInT…
+     38|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  src/components/__tests__/ChannelModels.test.tsx > 新建渠道真实模型结果 > 请求开始后删除全部模型，返回时应补行并展开候选
+TestingLibraryElementError: Unable to find an accessible element with the role "option" and name "upstream-model"
+
+Here are the accessible roles:
+
+  textbox:
+
+  Name "渠道名称":
+  <input
+    aria-invalid="false"
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-name"
+    placeholder="名称"
+    required=""
+    value=""
+  />
+
+  Name "Base URL *":
+  <input
+    aria-invalid="false"
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-base-url"
+    placeholder="Base URL，如 https://api.deepseek.com"
+    required=""
+    value=""
+  />
+
+  --------------------------------------------------
+  combobox:
+
+  Name "供应商":
+  <button
+    aria-autocomplete="none"
+    aria-expanded="false"
+    aria-label="供应商"
+    class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+    data-state="closed"
+    dir="ltr"
+    role="combobox"
+    type="button"
+  />
+
+  Name "上游协议":
+  <button
+    aria-autocomplete="none"
+    aria-expanded="false"
+    aria-label="上游协议"
+    class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+    data-state="closed"
+    dir="ltr"
+    role="combobox"
+    type="button"
+  />
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  <p
+    class="text-[11px] text-muted-foreground"
+  />
+
+  Name "":
+  <p
+    class="text-xs text-muted-foreground"
+  />
+
+  Name "":
+  <p
+    class="mt-1 text-[11px] text-muted-foreground"
+  />
+
+  --------------------------------------------------
+  button:
+
+  Name "获取模型列表":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-8 rounded-full px-3 text-xs"
+    type="button"
+  />
+
+  Name "添加模型":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-8 rounded-full px-3 text-xs"
+    type="button"
+  />
+
+  Name "配置映射":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-8 rounded-full px-3 text-xs"
+    disabled=""
+  />
+
+  Name "取消":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-card hover:bg-muted hover:text-foreground h-9 px-4 py-2"
+    type="button"
+  />
+
+  Name "创建渠道":
+  <button
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
+    disabled=""
+    type="button"
+  />
+
+  --------------------------------------------------
+  alert:
+
+  Name "":
+  <p
+    class="mt-1 text-xs text-destructive"
+    role="alert"
+  />
+
+  --------------------------------------------------
+  heading:
+
+  Name "模型名称映射":
+  <h3
+    class="text-sm font-medium"
+  />
+
+  --------------------------------------------------
+  spinbutton:
+
+  Name "优先级":
+  <input
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-priority"
+    placeholder="优先级"
+    type="number"
+    value="0"
+  />
+
+  Name "权重":
+  <input
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-weight"
+    placeholder="权重"
+    type="number"
+    value="1"
+  />
+
+  Name "超时（秒）":
+  <input
+    class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+    id="channel-timeout"
+    placeholder="超时秒数（>=1）"
+    type="number"
+    value="60"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden"
+    >
+      <div
+        class="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pr-1 space-y-5"
+        data-dialog-body="true"
+      >
+        <div
+          class="grid gap-4 sm:grid-cols-2"
+        >
+          <div
+            class="space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              for="channel-name"
+            >
+              渠道名称
+              <span
+                aria-hidden="true"
+              >
+                *
+              </span>
+            </label>
+            <input
+              aria-invalid="false"
+              class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+              id="channel-name"
+              placeholder="名称"
+              required=""
+              value=""
+            />
+          </div>
+          <div
+            class="space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              供应商
+            </label>
+            <button
+              aria-autocomplete="none"
+              aria-expanded="false"
+              aria-label="供应商"
+              class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+              data-state="closed"
+              dir="ltr"
+              role="combobox"
+              type="button"
+            >
+              <span
+                style="pointer-events: none;"
+              >
+                OpenAI
+              </span>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down h-4 w-4 opacity-50"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div
+          class="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]"
+        >
+          <div
+            class="min-w-0 space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              上游协议 *
+            </label>
+            <button
+              aria-autocomplete="none"
+              aria-expanded="false"
+              aria-label="上游协议"
+              class="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"
+              data-state="closed"
+              dir="ltr"
+              role="combobox"
+              type="button"
+            >
+              <span
+                style="pointer-events: none;"
+              >
+                OpenAI Chat Completions
+              </span>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chevron-down h-4 w-4 opacity-50"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m6 9 6 6 6-6"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="space-y-1.5"
+          >
+            <label
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              for="channel-base-url"
+            >
+              Base URL *
+            </label>
+            <input
+              aria-invalid="false"
+              class="flex h-10 min-w-0 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"[3...
+ ❯ Object.getElementError node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/__tests__/ChannelModels.test.tsx:46:19
+     44|     fireEvent.click(screen.getByRole("button",{name:"删除模型"}));
+     45|     await act(async()=>resolve(["upstream-model"]));
+     46|     expect(screen.getByRole("option",{name:"upstream-model"})).toBeInT…
+       |                   ^
+     47|     expect(screen.getByPlaceholderText("输入或选择模型…")).toHaveFocus…
+     48|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/components/__tests__/SessionReader.test.tsx > 会话阅读交互 > 收起再展开过程时保留已展开的工具详情
+Error: expect(element).toHaveAttribute("aria-expanded", "true") // element.getAttribute("aria-expanded") === "true"
+
+Expected the element to have attribute:
+  aria-expanded="true"
+Received:
+  aria-expanded="false"
+ ❯ src/components/__tests__/SessionReader.test.tsx:33:54
+     31|     fireEvent.click(process);
+     32|     fireEvent.click(process);
+     33|     expect(screen.getByRole("button",{name:/Read/})).toHaveAttribute("…
+       |                                                      ^
+     34|     expect(screen.getByText("secret needle")).toBeVisible();
+     35|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/components/__tests__/SessionReader.test.tsx > 会话阅读交互 > 工具筛选下过程实际展开时 aria-expanded 不能为 false
+Error: expect(element).toHaveAttribute("aria-expanded", "true") // element.getAttribute("aria-expanded") === "true"
+
+Expected the element to have attribute:
+  aria-expanded="true"
+Received:
+  aria-expanded="false"
+ ❯ src/components/__tests__/SessionReader.test.tsx:40:54
+     38|     fireEvent.click(screen.getByRole("button",{name:"工具"}));
+     39|     expect(screen.getByRole("button",{name:/Read/})).toBeInTheDocument…
+     40|     expect(screen.getByRole("button",{name:/执行过程/})).toHaveAttribu…
+       |                                                      ^
+     41|   });
+     42|   it("Markdown 不执行 HTML，不自动加载远程图片，不创建危险链接", () =>…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/lib/__tests__/sessionReader.test.ts > 会话阅读模型 > Gemini 同一消息中的调用和结果配成一个步骤，顺序不颠倒
+AssertionError: expected [ { key: 'step-0', …(5) }, …(2) ] to have a length of 2 but got 3
+
+- Expected
++ Received
+
+- 2
++ 3
+
+ ❯ src/lib/__tests__/sessionReader.test.ts:42:28
+     40|       {type:"text",text:"完成"},
+     41|     ])]);
+     42|     expect(turns[0].steps).toHaveLength(2);
+       |                            ^
+     43|     expect(turns[0].steps[0]).toMatchObject({kind:"thinking",text:"先…
+     44|     expect(turns[0].steps[1]).toMatchObject({kind:"tool",name:"read_fi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/lib/__tests__/sessionReader.test.ts > 会话阅读模型 > 正文在工具结果之前时，结果才是最后事件，不能伪造最终回复
+AssertionError: expected { text: '仍在执行', ts: undefined } to be undefined
+
+- Expected:
+undefined
+
++ Received:
+Object {
+  "text": "仍在执行",
+  "ts": undefined,
+}
+
+ ❯ src/lib/__tests__/sessionReader.test.ts:54:28
+     52|     ])]);
+     53|     expect(turns[0].steps).toHaveLength(2);
+     54|     expect(turns[0].final).toBeUndefined();
+       |                            ^
+     55|   });
+     56|   it("搜索包含折叠工具输出；筛选不丢失问答且复制保留工具原文", () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+ Test Files  3 failed (3)
+      Tests  6 failed | 14 passed (20)
+   Start at  09:22:57
+   Duration  8.89s (transform 1.56s, setup 1.05s, collect 4.95s, tests 1.78s, environment 6.68s, prepare 1.02s)
+
+[ELIFECYCLE] Command failed with exit code 1.

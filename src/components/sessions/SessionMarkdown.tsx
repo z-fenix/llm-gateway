@@ -5,9 +5,9 @@ import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 
-export async function copySessionText(text: string) {
-  try { await navigator.clipboard.writeText(text); toast.success("已复制"); }
-  catch { toast.error("复制失败，请检查剪贴板权限"); }
+export async function copySessionText(text: string): Promise<boolean> {
+  try { await navigator.clipboard.writeText(text); toast.success("已复制"); return true; }
+  catch { toast.error("复制失败，请检查剪贴板权限"); return false; }
 }
 export function HighlightText({text,query}: {text:string;query:string}) {
   const q = query.trim();
@@ -18,7 +18,7 @@ export function HighlightText({text,query}: {text:string;query:string}) {
 function CodeBlock({children}: {children:React.ReactNode}) {
   const [copied,setCopied] = useState(false);
   const text = (node:React.ReactNode):string => typeof node === "string" ? node : Array.isArray(node) ? node.map(text).join("") : node && typeof node === "object" && "props" in node ? text(node.props.children) : "";
-  return <div className="my-3 min-w-0 overflow-hidden rounded-lg border border-border bg-background"><div className="flex items-center justify-between border-b border-border px-3 py-1 text-[11px] text-muted-foreground"><span>代码</span><Button variant="ghost" size="sm" aria-label="复制代码" className="h-7" onClick={async()=>{await copySessionText(text(children));setCopied(true);}}>{copied ? <Check size={13}/> : <Copy size={13}/>}复制</Button></div><pre className="m-0 max-w-full overflow-x-auto p-3 font-mono text-xs leading-relaxed">{children}</pre></div>;
+  return <div className="my-3 min-w-0 overflow-hidden rounded-lg border border-border bg-background"><div className="flex items-center justify-between border-b border-border px-3 py-1 text-[11px] text-muted-foreground"><span>代码</span><Button variant="ghost" size="sm" aria-label="复制代码" className="h-7" onClick={async()=>{setCopied(await copySessionText(text(children)));}}>{copied ? <Check size={13}/> : <Copy size={13}/>}复制</Button></div><pre className="m-0 max-w-full overflow-x-auto p-3 font-mono text-xs leading-relaxed">{children}</pre></div>;
 }
 export default function SessionMarkdown({content,query=""}: {content:string;query?:string}) {
   // Large transcripts remain readable without an unbounded Markdown parse.
