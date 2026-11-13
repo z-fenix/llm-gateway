@@ -2,7 +2,7 @@
   "date": "2026-11-13",
   "baseCommit": "79b914f0b323b12c72fc360f479c424f5a7e76a7",
   "branch": "fix/reader-model-verification-20261113",
-  "publication": "explicitly authorized by user; prepared for commit and push to master",
+  "publication": { "implementationCommit": "fa34523ee6965411306d37980aaa74740edc97ff", "targetBranch": "master", "remote": "origin", "pushed": true, "implementationRemoteShaVerified": true, "method": "fast-forward only, no force push", "followUp": "publication record committed separately; runtime code unchanged" },
   "environment": { "platform": "win32", "os": "Windows 10 Enterprise LTSC 2021", "node": "24.19.0" },
   "frontend": { "command": "pnpm test:unit", "files": 43, "tests": 449, "addedTests": 8, "failed": 0, "typecheck": "passed", "rendererBuild": "passed", "log": "logs/unit.log" },
   "backend": { "command": "cargo test", "testProcesses": 17, "unitTests": 480, "integrationTests": 69, "totalTests": 549, "addedTests": 2, "failed": 0, "formatCheck": "passed", "log": "logs/cargo.log", "overflowTimeout": "boundary coverage passed before the fix on this Windows platform; not a reproduced panic" },

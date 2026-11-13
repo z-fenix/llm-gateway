@@ -39,6 +39,6 @@ Ruling: 本轮执行作者自审，不启用多代理 — 保持既有执行边�
 - [x] 通过 MCP 更新既有 `Lkmfa / XaYZP`；补齐搜索/筛选、过程/工具配对、最终回复与只读统计，清除 placeholder，保持原画布尺寸。
 - [x] 导出并查看 `pencil/Lkmfa.png`；更新 `LXn14` 预览地址与 1440×1000 尺寸。
 - [x] 发布前复验：前端 449、后端 549、类型/构建/格式再次通过；独立 Chrome 阅读器与工具展开 smoke 通过。
-- [ ] 提交、快进合入 master、推送 origin/master 并核验远端 SHA。
+- [x] 实现提交 `fa34523ee6965411306d37980aaa74740edc97ff` 已快进合入 master 并推送 origin/master；`git ls-remote` 返回相同 SHA。发布记录随后以纯文档提交补齐，运行时代码不变。
 
 Pencil 内嵌浏览器的交互/截图 IPC 超时，未把元数据更新当成内嵌交互已验证；独立 Chrome 预览正常，详见 `pencil/sync.json`。
